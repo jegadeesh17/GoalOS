@@ -5,7 +5,7 @@ from datetime import date, timedelta
 
 import streamlit as st
 
-from components.layout import empty_state, hero_card, info_card, page_header, section, stat_card
+from components.layout import empty_state, hero_card, info_card, mentor_panel, page_header, section, stat_card
 from database.repositories.log_repository import LogRepository
 from services.journal_helpers import log_task_stats
 from utils import configure_page, init_app
@@ -30,9 +30,7 @@ if today_log and today_log.morning_ai_output:
     output = json.loads(today_log.morning_ai_output)
     mentor_rule = output.get("mentor_rule")
     if mentor_rule:
-      hero_card("Mentor Rule", mentor_rule)
-      if output.get("past_mistake_called_out"):
-        info_card(f"Pattern: {output['past_mistake_called_out']}", "warning")
+      mentor_panel(output)
   except json.JSONDecodeError:
     pass
 

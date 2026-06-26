@@ -7,6 +7,7 @@ from pathlib import Path
 import streamlit as st
 
 from components.layout import page_header, section, stat_card
+from ai.openrouter_client import OpenRouterClient
 from config.settings import settings
 from database.migrations import run_migrations
 from database.repositories.coach_repository import CoachRepository
@@ -22,7 +23,33 @@ page_header("Settings", "Configure AI and manage your local data.")
 
 section("OpenRouter")
 with st.container(border=True):
-  model = st.text_input("Model", value=settings.OPENROUTER_MODEL)
+  if settings.OPENROUTER_API_KEY:
+    st.success("API key configured — mentor uses AI + your journal data.")
+  else:
+    st.warning("No API key — mentor uses journal-based rules only. Add a key for full AI personalization.")
+  model = st.selectbox(
+    "Model",
+    options=[
+      "anthropic/claude-sonnet-4",
+      "meta-llama/llama-3.3-70b-instruct",
+      "google/gemini-2.5-flash-preview",
+      "openai/gpt-4o-mini",
+    ],
+    index=0 if settings.OPENROUTER_MODEL not in [
+      "anthropic/claude-sonnet-4",
+      "meta-llama/llama-3.3-70b-instruct",
+      "google/gemini-2.5-flash-preview",
+      "openai/gpt-4o-mini",
+    ] else [
+      "anthropic/claude-sonnet-4",
+      "meta-llama/llama-3.3-70b-instruct",
+      "google/gemini-2.5-flash-preview",
+      "openai/gpt-4o-mini",
+    ].index(settings.OPENROUTER_MODEL),
+    help="claude-3.5-sonnet is retired on OpenRouter — use claude-sonnet-4",
+  )
+  if settings.OPENROUTER_MODEL == "anthropic/claude-3.5-sonnet":
+    st.error("Your model anthropic/claude-3.5-sonnet is retired. Save with claude-sonnet-4 selected.")
   api_key = st.text_input("API Key", value=settings.OPENROUTER_API_KEY, type="password")
   if st.button("Save Settings", type="primary"):
     env_path = Path(__file__).resolve().parent.parent / ".env"
@@ -41,7 +68,18 @@ with st.container(border=True):
       if key not in found:
         new_lines.append(f"{key}={val}")
     env_path.write_text("\n".join(new_lines) + "\n")
-    st.toast("Settings saved. Restart the app to apply.", icon="✅")
+    st.toast("Settings saved.", icon="✅")
+    st.rerun()
+
+  if st.button("Test OpenRouter connection", use_container_width=True):
+    client = OpenRouterClient()
+    client.refresh_config()
+    with st.spinner("Calling OpenRouter..."):
+      result = client.test_connection()
+    if result.get("ok"):
+      st.success(f"Working — model `{result['model']}` replied: \"{result.get('reply', 'OK')}\"")
+    else:
+      st.error(f"Failed — {result.get('error')}: {result.get('detail', '')}")
 
 section("Database")
 log_repo = LogRepository()

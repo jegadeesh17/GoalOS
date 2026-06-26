@@ -22,6 +22,7 @@ from models.daily_log import DailyLog, DailyLogUpdate
 from models.weekly_review import WeeklyReviewCreate
 from services.analytics_service import calculate_daily_scores
 from services.memory_service import MemoryService
+from services.mentor_briefing import build_mentor_briefing
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,11 @@ class CoachService:
       if row:
         weekly = dict(row)
 
-    return {
+    recent_coach = [
+      r.model_dump(mode="json") for r in self.coach_repo.get_recent(5)
+    ]
+
+    ctx = {
       "date": target_date.isoformat(),
       "user_vision": self._get_user_vision(),
       "active_goals": [self._serialize_goal(g) for g in goals],
@@ -81,15 +86,29 @@ class CoachService:
       "unfulfilled_commitments": [
         m.model_dump(mode="json") for m in self.memory_service.get_commitments()
       ],
-      "recent_coach_advice": [
-        r.model_dump(mode="json") for r in self.coach_repo.get_recent(5)
-      ],
+      "recent_coach_advice": recent_coach,
     }
+    ctx["mentor_briefing"] = build_mentor_briefing(
+      target_date,
+      ctx.get("today_log"),
+      recent_logs,
+      ctx["user_vision"],
+      recent_coach,
+    )
+    return ctx
 
   def get_morning_coaching(self, target_date: date, log: DailyLog) -> dict:
     """Run mentor pipeline and store output."""
+    self.llm.refresh_config()
     context = self.build_context(target_date, log.planned_tasks or log.gratitude or "")
     context["today_log"] = self._serialize_log(log)
+    context["mentor_briefing"] = build_mentor_briefing(
+      target_date,
+      context["today_log"],
+      self.log_repo.get_recent(14),
+      context["user_vision"],
+      context["recent_coach_advice"],
+    )
     result = run_morning_coach(context, self.llm)
 
     self.log_repo.update(log.id, DailyLogUpdate(

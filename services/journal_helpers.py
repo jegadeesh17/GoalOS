@@ -2,9 +2,41 @@
 
 import json
 import re
+import uuid
 from datetime import date
 
 from models.daily_log import DailyLog
+
+_SORT_SEP = "\u2060"  # reserved
+
+
+def ensure_task_ids(tasks: list[dict]) -> list[dict]:
+  """Assign stable ids for UI state (not persisted to DB)."""
+  for t in tasks:
+    if not t.get("id"):
+      t["id"] = uuid.uuid4().hex[:8]
+  return tasks
+
+
+def build_sort_labels(tasks: list[dict]) -> tuple[list[str], dict[str, str]]:
+  """Build unique drag labels and map each label back to task id."""
+  seen: dict[str, int] = {}
+  labels: list[str] = []
+  label_to_id: dict[str, str] = {}
+  for t in tasks:
+    preview = (t.get("text") or "").strip() or "New task"
+    if len(preview) > 55:
+      preview = preview[:52] + "..."
+    base = f"⠿ {preview}"
+    if base not in seen:
+      seen[base] = 1
+      label = base
+    else:
+      seen[base] += 1
+      label = f"{base} ({seen[base]})"
+    labels.append(label)
+    label_to_id[label] = t["id"]
+  return labels, label_to_id
 
 
 def parse_tasks(text: str) -> list[dict]:

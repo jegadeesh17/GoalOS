@@ -114,6 +114,44 @@ def coaching_block(label: str, text: str):
   )
 
 
+def mentor_panel(mentor: dict, show_goal: bool = True):
+  """Render mentor rule with clear AI vs fallback status."""
+  if not mentor.get("mentor_rule"):
+    return
+
+  source = mentor.get("source", "ai")
+  if source == "ai":
+    model = mentor.get("model", "OpenRouter")
+    info_card(f"✓ Live AI — {model}", "success")
+    if mentor.get("generated_at"):
+      st.caption(f"Generated at {mentor['generated_at'][:19].replace('T', ' ')} UTC")
+  elif source == "personalized_fallback":
+    reason = mentor.get("fallback_reason", "ai_unavailable")
+    detail = mentor.get("fallback_detail", "")
+    labels = {
+      "no_api_key": "No API key",
+      "invalid_api_key": "Invalid API key",
+      "insufficient_credits": "No OpenRouter credits",
+      "model_not_found": "Model not found",
+      "api_error": "API error",
+      "invalid_response": "Bad AI response",
+    }
+    label = labels.get(reason, reason)
+    msg = f"Not AI — journal-based rule. Reason: {label}"
+    if detail:
+      msg += f" ({detail})"
+    info_card(msg, "warning")
+  else:
+    info_card("Not AI — generic fallback. Set API key in Settings and import journal history.", "danger")
+
+  hero_card("Mentor Rule", mentor["mentor_rule"])
+  coaching_block("Why", mentor.get("why_this_rule", ""))
+  coaching_block("Pattern called out", mentor.get("past_mistake_called_out", ""))
+  if show_goal:
+    coaching_block("Goal connection", mentor.get("goal_connection", ""))
+  coaching_block("If you ignore this", mentor.get("if_you_ignore_this", ""))
+
+
 def style_chart(fig: go.Figure, height: int = 260, y_range: tuple | None = (0, 100)) -> go.Figure:
   fig.update_layout(**PLOTLY_LAYOUT, height=height)
   if y_range:

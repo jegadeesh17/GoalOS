@@ -1,14 +1,17 @@
 """Today's Journal — morning plans + evening review in your handwritten style."""
 
 import json
+import uuid
 from datetime import date
 
 import streamlit as st
 
-from components.layout import coaching_block, hero_card, info_card, page_header, section
+from components.layout import coaching_block, hero_card, info_card, mentor_panel, page_header, section
+from config.settings import settings
 from database.repositories.log_repository import LogRepository
 from models.daily_log import DailyLogCreate
 from services.journal_helpers import (
+  ensure_task_ids,
   load_tasks_from_log,
   log_task_stats,
   normalize_tasks,
@@ -41,61 +44,86 @@ def _plans_text(log) -> str:
 
 def _init_task_state() -> list[dict]:
   if task_state_key not in st.session_state:
-    loaded = load_tasks_from_log(existing)
+    loaded = ensure_task_ids(load_tasks_from_log(existing))
     st.session_state[task_state_key] = loaded or []
-  return st.session_state[task_state_key]
+  return ensure_task_ids(st.session_state[task_state_key])
+
+
+def _sync_task_texts(tasks: list[dict]) -> list[dict]:
+  """Read latest text from widget state into task dicts."""
+  synced = []
+  for t in tasks:
+    key = f"m_task_{t['id']}"
+    text = st.session_state.get(key, t.get("text", ""))
+    synced.append({**t, "text": text})
+  return synced
+
+
+def _move_task(tasks: list[dict], task_id: str, direction: int) -> list[dict]:
+  """Move task up (direction=-1) or down (direction=+1)."""
+  tasks = _sync_task_texts(tasks)
+  idx = next((i for i, t in enumerate(tasks) if t["id"] == task_id), None)
+  if idx is None:
+    return tasks
+  new_idx = idx + direction
+  if new_idx < 0 or new_idx >= len(tasks):
+    return tasks
+  tasks[idx], tasks[new_idx] = tasks[new_idx], tasks[idx]
+  return tasks
 
 
 def _render_task_editor() -> list[dict]:
-  """Add-entry task list — #1 is highest priority."""
-  tasks = _init_task_state()
+  """Task list with visible ↑ ↓ reorder — #1 is highest priority."""
+  tasks = _sync_task_texts(_init_task_state())
+  st.session_state[task_state_key] = tasks
+
   section("TASKS")
-  st.caption("#1 is your highest priority. Add tasks in order of importance.")
+  st.caption("#1 = highest priority · use ↑ ↓ on the right to reorder")
 
   if not tasks:
     st.caption("No tasks yet — add your first one below.")
 
-  remove_idx = None
-  move = None
+  remove_id = None
   for i, task in enumerate(tasks):
-    col_rank, col_text, col_up, col_down, col_del = st.columns([0.6, 7, 0.5, 0.5, 0.5])
+    col_rank, col_text, col_up, col_down, col_del = st.columns([0.5, 6.5, 0.5, 0.5, 0.5])
     with col_rank:
       st.markdown(f"**#{i + 1}**")
     with col_text:
-      tasks[i]["text"] = st.text_input(
+      st.text_input(
         f"Task {i + 1}",
         value=task.get("text", ""),
-        key=f"m_task_{today}_{i}",
+        key=f"m_task_{task['id']}",
         label_visibility="collapsed",
         placeholder="e.g. Solve 10 Codekata problems",
       )
     with col_up:
-      if i > 0 and st.button("↑", key=f"m_up_{today}_{i}", help="Higher priority"):
-        move = (i, i - 1)
+      if i > 0 and st.button("↑", key=f"m_up_{task['id']}", help="Move up (higher priority)"):
+        st.session_state[task_state_key] = _move_task(tasks, task["id"], -1)
+        st.rerun()
+      elif i == 0:
+        st.button("↑", key=f"m_up_{task['id']}", disabled=True, help="Already top priority")
     with col_down:
-      if i < len(tasks) - 1 and st.button("↓", key=f"m_down_{today}_{i}", help="Lower priority"):
-        move = (i, i + 1)
+      if i < len(tasks) - 1 and st.button("↓", key=f"m_down_{task['id']}", help="Move down (lower priority)"):
+        st.session_state[task_state_key] = _move_task(tasks, task["id"], 1)
+        st.rerun()
+      elif i == len(tasks) - 1:
+        st.button("↓", key=f"m_down_{task['id']}", disabled=True, help="Already lowest priority")
     with col_del:
-      if st.button("✕", key=f"m_del_{today}_{i}", help="Remove"):
-        remove_idx = i
+      if st.button("✕", key=f"m_del_{task['id']}", help="Remove"):
+        remove_id = task["id"]
 
-  if move:
-    a, b = move
-    tasks[a], tasks[b] = tasks[b], tasks[a]
-    st.session_state[task_state_key] = normalize_tasks(tasks)
-    st.rerun()
-
-  if remove_idx is not None:
-    tasks.pop(remove_idx)
-    st.session_state[task_state_key] = normalize_tasks(tasks)
-    st.rerun()
-
-  if st.button("+ Add task", use_container_width=False):
-    tasks.append({"text": "", "completed": False, "priority": len(tasks) + 1})
+  if remove_id is not None:
+    tasks = [t for t in _sync_task_texts(tasks) if t["id"] != remove_id]
     st.session_state[task_state_key] = tasks
     st.rerun()
 
-  return normalize_tasks([t for t in tasks if t.get("text", "").strip()])
+  if st.button("+ Add task", use_container_width=False):
+    tasks = _sync_task_texts(tasks)
+    tasks.append({"id": uuid.uuid4().hex[:8], "text": "", "completed": False, "priority": len(tasks) + 1})
+    st.session_state[task_state_key] = tasks
+    st.rerun()
+
+  return normalize_tasks(_sync_task_texts(tasks))
 
 
 def _render_task_checklist(tasks: list[dict]) -> list[dict]:
@@ -108,10 +136,11 @@ def _render_task_checklist(tasks: list[dict]) -> list[dict]:
   updated = []
   done = 0
   for task in tasks:
+    tid = task.get("id") or str(task["priority"])
     checked = st.checkbox(
       f"#{task['priority']}  {task['text']}",
       value=task.get("completed", False),
-      key=f"e_task_{today}_{task['priority']}",
+      key=f"e_task_{today}_{tid}",
     )
     updated.append({**task, "completed": checked})
     if checked:
@@ -160,6 +189,12 @@ with tab_morning:
 
   morning_tasks = _render_task_editor()
 
+  if not settings.OPENROUTER_API_KEY:
+    info_card(
+      "No OpenRouter API key — mentor rules use your journal data only. Add a key in Settings for AI mentoring.",
+      "warning",
+    )
+
   with st.expander("Time slots (optional)", expanded=False):
     st.caption("Pin tasks to time — write manually if you want a schedule.")
     plans_text = st.text_area(
@@ -175,10 +210,7 @@ with tab_morning:
       mentor = json.loads(existing.morning_ai_output)
       if mentor.get("mentor_rule"):
         section("Today's Rule")
-        hero_card("Mentor Rule", mentor["mentor_rule"])
-        coaching_block("Why", mentor.get("why_this_rule", ""))
-        coaching_block("Pattern called out", mentor.get("past_mistake_called_out", ""))
-        coaching_block("If you ignore this", mentor.get("if_you_ignore_this", ""))
+        mentor_panel(mentor)
     except json.JSONDecodeError:
       pass
 

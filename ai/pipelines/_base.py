@@ -17,19 +17,18 @@ def format_context(context: dict[str, Any]) -> str:
 
 
 def fallback_morning(context: dict) -> dict:
-  takeaway = "Follow your plan without gliding."
-  if context.get("recent_logs"):
-    for log in context["recent_logs"][:3]:
-      if isinstance(log, dict) and log.get("takeaway"):
-        takeaway = log["takeaway"]
-        break
+  from services.mentor_briefing import personalized_fallback_rule
+  briefing = context.get("mentor_briefing")
+  if briefing:
+    return personalized_fallback_rule(briefing)
   return {
-    "mentor_rule": f"You will execute your first planned work block with zero phone use. No exceptions.",
-    "why_this_rule": "Your reviews show you drift and waste time when you don't lock in early.",
-    "past_mistake_called_out": "Making plans you don't follow — gliding through the day.",
-    "goal_connection": f"Yesterday's takeaway: {takeaway}. Today you prove you're serious.",
-    "if_you_ignore_this": "Another day lost. Your 1-year goals slip further away.",
-    "confidence": 0.3,
+    "mentor_rule": "You will complete your #1 task before opening your phone. No exceptions.",
+    "why_this_rule": "Set your OpenRouter API key in Settings for fully personalized mentoring.",
+    "past_mistake_called_out": "No journal history loaded yet.",
+    "goal_connection": "Define your 1-year goal on the Goals page.",
+    "if_you_ignore_this": "Another generic day instead of targeted growth.",
+    "confidence": 0.2,
+    "source": "generic_fallback",
   }
 
 

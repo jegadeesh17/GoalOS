@@ -28,7 +28,7 @@ class Settings:
   """Central configuration for GoalOS."""
 
   OPENROUTER_API_KEY: str = _get_setting("OPENROUTER_API_KEY", "")
-  OPENROUTER_MODEL: str = _get_setting("OPENROUTER_MODEL", "anthropic/claude-3.5-sonnet")
+  OPENROUTER_MODEL: str = _get_setting("OPENROUTER_MODEL", "anthropic/claude-sonnet-4")
   DB_PATH: str = _get_setting("DB_PATH", str(_BASE_DIR / "goalos.db"))
   CHROMA_PATH: str = _get_setting("CHROMA_PATH", str(_BASE_DIR / "chroma_db"))
   LOG_LEVEL: str = _get_setting("LOG_LEVEL", "INFO")

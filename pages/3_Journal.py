@@ -251,6 +251,15 @@ with tab_evening:
   if not existing or not existing.morning_completed:
     info_card("Complete your morning journal first — tasks unlock the evening review.", "warning")
   else:
+    if existing.evening_completed:
+      info_card("Day closed. See you tomorrow.", "success")
+      stats = log_task_stats(existing)
+      if stats["total"]:
+        hero_card(
+          "Today's score",
+          f"{stats['completed']}/{stats['total']} tasks · {stats['rate']}%",
+        )
+
     evening_tasks = _render_task_checklist(load_tasks_from_log(existing))
 
     section("REVIEW")
@@ -291,13 +300,4 @@ with tab_evening:
       if takeaway:
         from services.memory_service import MemoryService
         MemoryService().store(takeaway, "commitment", 0.7, today, "journal")
-      st.toast("Day closed. See you tomorrow.", icon="🌙")
       st.rerun()
-
-    if existing and existing.evening_completed:
-      stats = log_task_stats(existing)
-      if stats["total"]:
-        hero_card(
-          "Today's score",
-          f"{stats['completed']}/{stats['total']} tasks · {stats['rate']}%",
-        )

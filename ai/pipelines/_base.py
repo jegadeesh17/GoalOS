@@ -25,7 +25,7 @@ def fallback_morning(context: dict) -> dict:
     "mentor_rule": "You will complete your #1 task before opening your phone. No exceptions.",
     "why_this_rule": "Set your OpenRouter API key in Settings for fully personalized mentoring.",
     "past_mistake_called_out": "No journal history loaded yet.",
-    "goal_connection": "Define your 1-year goal on the Goals page.",
+    "goal_connection": "Define your 1-, 5-, and 10-year goals on the Goals page.",
     "if_you_ignore_this": "Another generic day instead of targeted growth.",
     "confidence": 0.2,
     "source": "generic_fallback",

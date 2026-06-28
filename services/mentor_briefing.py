@@ -160,10 +160,10 @@ def format_briefing_for_prompt(briefing: dict) -> str:
     "",
   ]
 
-  if briefing.get("one_year_goal"):
+  if briefing.get("one_year_goal") or briefing.get("five_year_goal") or briefing.get("ten_year_goal"):
     lines += [
-      "LONG-TERM GOALS (priority 1yr > 5yr > 10yr):",
-      f"  1-year: {briefing['one_year_goal']}",
+      "LONG-TERM GOALS (equal priority — daily work must advance all three):",
+      f"  1-year: {briefing.get('one_year_goal') or '(not set)'}",
       f"  5-year: {briefing.get('five_year_goal') or '(not set)'}",
       f"  10-year: {briefing.get('ten_year_goal') or '(not set)'}",
       "",
@@ -214,7 +214,8 @@ def format_briefing_for_prompt(briefing: dict) -> str:
 
   lines.append(
     "INSTRUCTION: Quote or reference at least ONE specific review, takeaway, or failed task above. "
-    "Tie today's rule to their #1 task and 1-year goal."
+    "Tie today's rule to their #1 task and connect it to their long-term goals — "
+    "1-year, 5-year, and 10-year are equal priority; emphasize the 10-year identity when relevant."
   )
   return "\n".join(lines)
 
@@ -225,7 +226,9 @@ def personalized_fallback_rule(briefing: dict) -> dict:
   review = briefing.get("most_recent_review")
   takeaway = briefing.get("most_recent_takeaway") or ""
   repeated = briefing.get("repeated_incomplete_tasks") or []
-  one_year = briefing.get("one_year_goal") or "your 1-year goal"
+  one_year = briefing.get("one_year_goal") or ""
+  five_year = briefing.get("five_year_goal") or ""
+  ten_year = briefing.get("ten_year_goal") or ""
   avg = briefing.get("avg_task_completion_7d")
 
   if repeated:
@@ -246,7 +249,17 @@ def personalized_fallback_rule(briefing: dict) -> dict:
     why = "No more planning without execution."
     mistake = "Plans without follow-through."
 
-  consequence = f"Your 1-year goal ({_clip(one_year, 80)}) slips another day."
+  goal_bits = []
+  for label, text in [("10-year", ten_year), ("5-year", five_year), ("1-year", one_year)]:
+    if text:
+      goal_bits.append(f"{label}: {_clip(text, 60)}")
+  if goal_bits:
+    goal_connection = "Today's work serves all horizons — " + " · ".join(goal_bits)
+    consequence = f"Another day where you don't move toward: {' · '.join(goal_bits)}."
+  else:
+    goal_connection = "Define your 1-, 5-, and 10-year goals on the Goals page."
+    consequence = "Another generic day instead of targeted growth across your horizons."
+
   if avg is not None and avg < 50:
     consequence = f"At {avg}% task completion, you are not serious yet. {consequence}"
 
@@ -254,7 +267,7 @@ def personalized_fallback_rule(briefing: dict) -> dict:
     "mentor_rule": rule,
     "why_this_rule": why,
     "past_mistake_called_out": mistake,
-    "goal_connection": f"This directly serves: {_clip(one_year, 100)}",
+    "goal_connection": goal_connection,
     "if_you_ignore_this": consequence,
     "confidence": 0.5,
     "source": "personalized_fallback",

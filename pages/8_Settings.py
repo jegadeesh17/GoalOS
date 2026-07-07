@@ -23,29 +23,26 @@ page_header("Settings", "Configure AI and manage your local data.")
 
 section("OpenRouter")
 with st.container(border=True):
+  model_options = [
+    "anthropic/claude-sonnet-4",
+    "meta-llama/llama-3.3-70b-instruct",
+    "google/gemini-2.5-flash-preview",
+    "openai/gpt-4o-mini",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "openai/gpt-oss-20b:free",
+    "qwen/qwen3-coder:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "google/gemma-4-31b-it:free",
+  ]
   if settings.OPENROUTER_API_KEY:
     st.success("API key configured — mentor uses AI + your journal data.")
   else:
     st.warning("No API key — mentor uses journal-based rules only. Add a key for full AI personalization.")
+  st.caption("If credits are over, pick a `:free` model to keep AI responses running.")
   model = st.selectbox(
     "Model",
-    options=[
-      "anthropic/claude-sonnet-4",
-      "meta-llama/llama-3.3-70b-instruct",
-      "google/gemini-2.5-flash-preview",
-      "openai/gpt-4o-mini",
-    ],
-    index=0 if settings.OPENROUTER_MODEL not in [
-      "anthropic/claude-sonnet-4",
-      "meta-llama/llama-3.3-70b-instruct",
-      "google/gemini-2.5-flash-preview",
-      "openai/gpt-4o-mini",
-    ] else [
-      "anthropic/claude-sonnet-4",
-      "meta-llama/llama-3.3-70b-instruct",
-      "google/gemini-2.5-flash-preview",
-      "openai/gpt-4o-mini",
-    ].index(settings.OPENROUTER_MODEL),
+    options=model_options,
+    index=0 if settings.OPENROUTER_MODEL not in model_options else model_options.index(settings.OPENROUTER_MODEL),
     help="claude-3.5-sonnet is retired on OpenRouter — use claude-sonnet-4",
   )
   if settings.OPENROUTER_MODEL == "anthropic/claude-3.5-sonnet":

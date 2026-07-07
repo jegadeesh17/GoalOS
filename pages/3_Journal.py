@@ -211,6 +211,14 @@ with tab_morning:
       if mentor.get("mentor_rule"):
         section("Today's Rule")
         mentor_panel(mentor)
+        source = mentor.get("source", "ai")
+        if source != "ai":
+          st.caption("This rule is fallback output. Regenerate now if AI is available.")
+          if st.button("Regenerate Rule with AI", use_container_width=True):
+            with st.spinner("Regenerating mentor rule..."):
+              coach.get_morning_coaching(today, existing)
+            st.toast("Rule regenerated.", icon="✅")
+            st.rerun()
     except json.JSONDecodeError:
       pass
 

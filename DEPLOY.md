@@ -1,66 +1,54 @@
-# GoalOS — Streamlit Deploy Guide (Beginner Friendly)
+# GoalOS — Streamlit Cloud Deployment
 
-GoalOS runs as a **Streamlit app**.
+## Prerequisites
 
-## 1) Run locally first
+- GitHub repo: [github.com/jegadeesh17/GoalOS](https://github.com/jegadeesh17/GoalOS)
+- [OpenRouter](https://openrouter.ai) API key
+- [Streamlit Community Cloud](https://share.streamlit.io) account (sign in with GitHub)
 
-```powershell
-cd c:\Users\jegad\GoalOS
-pip install -r requirements.txt
-streamlit run app.py
-```
+## Deploy (5 steps)
 
-Open `http://localhost:8501`.
+1. **Push latest `main`** to `github.com/jegadeesh17/GoalOS`.
 
----
+2. Open [share.streamlit.io](https://share.streamlit.io) → **New app**.
 
-## 2) Deploy to Streamlit Community Cloud (free)
+3. **Repository:** `jegadeesh17/GoalOS`  
+   **Branch:** `main`  
+   **Main file path:** `app.py`
 
-1. Push your code to GitHub.
-2. Go to [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub.
-3. Click **New app**.
-4. Select:
-   - Repository: your `GoalOS` repo
-   - Branch: `main`
-   - Main file path: `app.py`
-5. Open **Advanced settings** and add secrets:
-   - `OPENROUTER_API_KEY`
-   - `OPENROUTER_MODEL`
-   - `DB_PATH`
-   - `CHROMA_PATH`
-6. Click **Deploy**.
-
----
-
-## 3) Streamlit Cloud secrets format
-
-Paste this in the Streamlit **Secrets** box:
+4. **Advanced settings → Secrets** — paste:
 
 ```toml
-OPENROUTER_API_KEY = "your-key"
-OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet"
-DB_PATH = "/mount/src/goalos.db"
-CHROMA_PATH = "/mount/src/chroma_db"
+OPENROUTER_API_KEY = "sk-or-v1-..."
+OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+DB_PATH = "goalos.db"
+CHROMA_PATH = "chroma_db"
 LOG_LEVEL = "INFO"
 ```
 
-Replace only `OPENROUTER_API_KEY` with your real key.
+Use a `:free` model for demos without paid credits. Paths are relative to the app root on Streamlit Cloud.
 
----
+5. Click **Deploy**. First boot may take 3–5 minutes (sentence-transformers download).
 
-## 4) Important notes for personal use
+## After deploy
 
-- Streamlit Cloud free apps are internet-reachable by URL.
-- Do not share the URL if this is personal.
-- Never commit real secrets into GitHub.
+- Copy the app URL (e.g. `https://goalos.streamlit.app`) into your resume and LinkedIn.
+- Pin the repo on GitHub: Profile → **Customize your pins** → select **GoalOS**.
 
----
+## Local smoke test before push
 
-## 5) Stack
+```powershell
+cd c:\Users\jegad\projects\GoalOS
+pip install -r requirements.txt
+pytest -q
+streamlit run app.py
+```
 
-| Layer | Tech |
-|-------|------|
-| UI + App | Streamlit |
-| Data | SQLite, ChromaDB |
-| AI | OpenRouter |
-| Hosting | Streamlit Community Cloud |
+## Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| App crashes on startup | Check Secrets tab; `OPENROUTER_API_KEY` must be set |
+| Embedding model slow | Normal on cold start; subsequent runs use cache |
+| AI returns fallback text | Verify API key and model name; try a `:free` model |
+| ChromaDB errors | Ensure `CHROMA_PATH` is writable (use relative path above) |

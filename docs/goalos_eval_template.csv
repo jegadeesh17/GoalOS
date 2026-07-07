@@ -1,0 +1,6 @@
+query_id,query_text,expected_focus,retrieved_memory_count,retrieval_relevance_0_to_2,response_usefulness_1_to_5,hallucination_flag,notes
+Q01,"I delayed deep work because of meetings. What should I change tomorrow?","execution discipline",,,
+Q02,"I keep skipping workouts after office. Give me a realistic recovery plan.","health consistency",,,
+Q03,"I promised to finish SQL practice but missed it. What is the minimum next step?","commitment recovery",,,
+Q04,"I feel productive but long-term goals are not moving.","goal alignment",,,
+Q05,"Weekly review: what pattern is hurting me most?","pattern detection",,,

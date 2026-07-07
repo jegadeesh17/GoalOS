@@ -9,6 +9,14 @@ goalos.log
 chroma_db/
 
 # Removed legacy stacks
-api/
+# API package (FastAPI portfolio endpoints)
+# api/ was previously ignored — allow portfolio wrapper
+!api/
+!api/**
 static/
 web/
+
+# DVC and Model artifacts
+.dvc/
+*.pth
+*.joblib

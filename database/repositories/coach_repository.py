@@ -12,7 +12,7 @@ class CoachRepository:
   """CRUD operations for coach responses."""
 
   def create(self, response: CoachResponseCreate) -> CoachResponse:
-    data = response.model_dump()
+    data = response.model_dump(mode="json")
     with get_db() as conn:
       columns = ", ".join(data.keys())
       placeholders = ", ".join("?" * len(data))

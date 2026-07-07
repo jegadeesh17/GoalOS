@@ -12,7 +12,7 @@ class ScoreRepository:
   """CRUD operations for scores."""
 
   def create(self, score: ScoreCreate) -> Score:
-    data = score.model_dump()
+    data = score.model_dump(mode="json")
     with get_db() as conn:
       columns = ", ".join(data.keys())
       placeholders = ", ".join("?" * len(data))

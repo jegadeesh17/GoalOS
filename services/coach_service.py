@@ -9,6 +9,7 @@ from ai.openrouter_client import OpenRouterClient
 from ai.pipelines.evening_coach import run_evening_coach
 from ai.pipelines.future_self_coach import run_future_self_coach
 from ai.pipelines.goal_alignment_coach import run_goal_alignment_coach
+from ai.pipelines.agent_morning_coach import run_agent_morning_coach
 from ai.pipelines.morning_coach import run_morning_coach
 from ai.pipelines.reflection_coach import run_reflection_coach
 from ai.pipelines.weekly_coach import run_weekly_coach
@@ -56,6 +57,10 @@ class CoachService:
   def _serialize_goal(self, goal) -> dict:
     return goal.model_dump(mode="json")
 
+  def _refresh_llm(self) -> None:
+    """Always pick up latest .env model/key before AI calls."""
+    self.llm.refresh_config()
+
   def build_context(self, target_date: date, query: str = "") -> dict:
     """Assemble full context for AI calls."""
     goals = self.goal_repo.get_active()
@@ -99,7 +104,7 @@ class CoachService:
 
   def get_morning_coaching(self, target_date: date, log: DailyLog) -> dict:
     """Run mentor pipeline and store output."""
-    self.llm.refresh_config()
+    self._refresh_llm()
     context = self.build_context(target_date, log.planned_tasks or log.gratitude or "")
     context["today_log"] = self._serialize_log(log)
     context["mentor_briefing"] = build_mentor_briefing(
@@ -109,7 +114,9 @@ class CoachService:
       context["user_vision"],
       context["recent_coach_advice"],
     )
-    result = run_morning_coach(context, self.llm)
+    result = run_agent_morning_coach(context, self.llm)
+    if not (isinstance(result, dict) and result.get("mentor_rule")):
+      result = run_morning_coach(context, self.llm)
 
     self.log_repo.update(log.id, DailyLogUpdate(
       morning_ai_output=json.dumps(result),
@@ -124,6 +131,7 @@ class CoachService:
 
   def get_evening_coaching(self, target_date: date, log: DailyLog) -> dict:
     """Run evening pipeline, extract memories, calculate scores."""
+    self._refresh_llm()
     context = self.build_context(target_date, log.journal_entry or "")
     context["today_log"] = self._serialize_log(log)
     result = run_evening_coach(context, self.llm)
@@ -162,6 +170,7 @@ class CoachService:
 
   def get_weekly_coaching(self, week_start: date) -> dict:
     """Run weekly pipeline and store in weekly_reviews."""
+    self._refresh_llm()
     from services.journal_helpers import week_task_stats
 
     week_end = week_start + timedelta(days=6)
@@ -184,11 +193,13 @@ class CoachService:
     return result
 
   def get_goal_alignment(self) -> dict:
+    self._refresh_llm()
     context = self.build_context(date.today())
     return run_goal_alignment_coach(context, self.llm)
 
   def prefill_from_journal(self, journal_text: str) -> dict:
     """AI pre-fill win and lesson from journal."""
+    self._refresh_llm()
     context = self.build_context(date.today())
     result = run_reflection_coach(context, journal_text, self.llm)
     return {
@@ -198,6 +209,7 @@ class CoachService:
 
   def chat(self, message: str, history: list[dict]) -> dict:
     """Conversational coach with full context."""
+    self._refresh_llm()
     context = self.build_context(date.today(), message)
     system = (
       "You are the Mentor — a strict personal guide shaping the user into who they want to become. "
@@ -234,11 +246,13 @@ class CoachService:
     }
 
   def get_future_self(self) -> dict:
+    self._refresh_llm()
     context = self.build_context(date.today())
     return run_future_self_coach(context, self.llm)
 
   def get_dashboard_recommendation(self) -> str:
     """Today's mentor rule for dashboard."""
+    self._refresh_llm()
     today = date.today()
     log = self.log_repo.get_by_date(today)
     if log and log.morning_ai_output:
@@ -254,6 +268,7 @@ class CoachService:
 
   def get_dashboard_interpretations(self, metrics: dict) -> dict:
     """Batch interpretations for dashboard metrics."""
+    self._refresh_llm()
     system = "Generate one short interpretation sentence per metric. Return JSON with metric keys."
     user_msg = f"Metrics: {json.dumps(metrics)}\nReturn JSON like {{'streak': '...', 'growth': '...'}}"
     try:

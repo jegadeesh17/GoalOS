@@ -12,7 +12,7 @@ class MemoryRepository:
   """CRUD operations for memories."""
 
   def create(self, memory: MemoryCreate) -> Memory:
-    data = memory.model_dump()
+    data = memory.model_dump(mode="json")
     with get_db() as conn:
       columns = ", ".join(data.keys())
       placeholders = ", ".join("?" * len(data))

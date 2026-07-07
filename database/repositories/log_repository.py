@@ -12,7 +12,7 @@ class LogRepository:
   """CRUD operations for daily logs."""
 
   def create(self, log: DailyLogCreate) -> DailyLog:
-    data = log.model_dump()
+    data = log.model_dump(mode="json")
     data["morning_completed"] = int(data.get("morning_completed", False))
     data["evening_completed"] = int(data.get("evening_completed", False))
     data["imported"] = int(data.get("imported", False))

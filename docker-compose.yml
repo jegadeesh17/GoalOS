@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  goalos:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./goalos.db:/app/goalos.db
+      - ./chroma_db:/app/chroma_db
+    env_file:
+      - .env
+    environment:
+      - STREAMLIT_SERVER_PORT=8501

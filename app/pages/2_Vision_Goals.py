@@ -1,5 +1,13 @@
 """Long-term goals — 1 year, 5 year, 10 year (equal priority for daily coaching)."""
 
+import os
+import sys
+
+_APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _APP_DIR not in sys.path:
+  sys.path.insert(0, _APP_DIR)
+import bootstrap  # noqa: F401
+
 import streamlit as st
 
 from components.layout import info_card, page_header, section

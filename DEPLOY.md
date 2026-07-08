@@ -14,7 +14,7 @@
 
 3. **Repository:** `jegadeesh17/GoalOS`  
    **Branch:** `main`  
-   **Main file path:** `app.py`
+   **Main file path:** `app/app.py`
 
 4. **Advanced settings → Secrets** — paste:
 
@@ -41,7 +41,7 @@ Use a `:free` model for demos without paid credits. Paths are relative to the ap
 cd c:\Users\jegad\projects\GoalOS
 pip install -r requirements.txt
 pytest -q
-streamlit run app.py
+streamlit run app/app.py
 ```
 
 ## Troubleshooting

@@ -1,5 +1,7 @@
 """GoalOS — dashboard landing: today's rule, status, streak."""
 
+import bootstrap  # noqa: F401 — project root on sys.path
+
 import json
 from datetime import date, timedelta
 

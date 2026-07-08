@@ -50,5 +50,5 @@
 ```powershell
 cd c:\Users\jegad\projects\GoalOS
 pytest -q
-streamlit run app.py
+streamlit run app/app.py
 ```

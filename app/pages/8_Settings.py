@@ -2,7 +2,13 @@
 
 import os
 import shutil
+import sys
 from pathlib import Path
+
+_APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _APP_DIR not in sys.path:
+  sys.path.insert(0, _APP_DIR)
+import bootstrap  # noqa: F401
 
 import streamlit as st
 

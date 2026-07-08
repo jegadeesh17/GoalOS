@@ -43,7 +43,7 @@ Point out `mentor_rule`, `tools_used`, and `source` fields in the response.
 ## 4. Streamlit UI (1 min)
 
 ```bash
-streamlit run app.py
+streamlit run app/app.py
 ```
 
 Journal page → Save Morning & Get Mentor Rule → show persisted coaching output.

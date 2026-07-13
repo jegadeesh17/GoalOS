@@ -16,12 +16,17 @@ class ScoreRepository:
     with get_db() as conn:
       columns = ", ".join(data.keys())
       placeholders = ", ".join("?" * len(data))
-      cursor = conn.execute(
-        f"INSERT INTO scores ({columns}) VALUES ({placeholders})",
+      conn.execute(
+        f"INSERT INTO scores ({columns}, is_current) VALUES ({placeholders}, TRUE) "
+        "ON CONFLICT(date, scope) WHERE is_current = TRUE DO UPDATE SET "
+        "goal_alignment_score=excluded.goal_alignment_score, consistency_score=excluded.consistency_score, "
+        "health_score=excluded.health_score, learning_score=excluded.learning_score, "
+        "productivity_score=excluded.productivity_score, momentum_score=excluded.momentum_score, "
+        "overall_growth_score=excluded.overall_growth_score, gap_score=excluded.gap_score, "
+        "calculated_at=CURRENT_TIMESTAMP",
         list(data.values()),
       )
-      score_id = cursor.lastrowid
-      row = conn.execute("SELECT * FROM scores WHERE id = ?", (score_id,)).fetchone()
+      row = conn.execute("SELECT * FROM scores WHERE date = ? AND scope = ? AND is_current = TRUE", (data["date"], data["scope"])).fetchone()
     return Score(**row_to_dict(row))
 
   def get_by_id(self, score_id: int) -> Optional[Score]:
@@ -32,7 +37,7 @@ class ScoreRepository:
   def get_by_date(self, score_date: date, scope: str = "daily") -> Optional[Score]:
     with get_db() as conn:
       row = conn.execute(
-        "SELECT * FROM scores WHERE date = ? AND scope = ? ORDER BY calculated_at DESC LIMIT 1",
+        "SELECT * FROM scores WHERE date = ? AND scope = ? AND is_current = TRUE ORDER BY calculated_at DESC LIMIT 1",
         (score_date.isoformat(), scope),
       ).fetchone()
     return Score(**row_to_dict(row)) if row else None
@@ -40,7 +45,7 @@ class ScoreRepository:
   def get_recent(self, last_n: int = 7, scope: str = "daily") -> list[Score]:
     with get_db() as conn:
       rows = conn.execute(
-        "SELECT * FROM scores WHERE scope = ? ORDER BY date DESC LIMIT ?",
+        "SELECT * FROM scores WHERE scope = ? AND is_current = TRUE ORDER BY date DESC LIMIT ?",
         (scope, last_n),
       ).fetchall()
     return [Score(**row_to_dict(r)) for r in rows]
@@ -48,7 +53,7 @@ class ScoreRepository:
   def get_range(self, start: date, end: date, scope: str = "daily") -> list[Score]:
     with get_db() as conn:
       rows = conn.execute(
-        "SELECT * FROM scores WHERE date >= ? AND date <= ? AND scope = ? ORDER BY date ASC",
+        "SELECT * FROM scores WHERE date >= ? AND date <= ? AND scope = ? AND is_current = TRUE ORDER BY date ASC",
         (start.isoformat(), end.isoformat(), scope),
       ).fetchall()
     return [Score(**row_to_dict(r)) for r in rows]

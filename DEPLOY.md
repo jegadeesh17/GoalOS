@@ -1,54 +1,22 @@
-# GoalOS — Streamlit Cloud Deployment
+# Deployment
 
-## Prerequisites
+GoalOS is designed for a trusted single user. SQLite and ChromaDB require durable writable storage; Streamlit Community Cloud is suitable only for a disposable demo with synthetic data.
 
-- GitHub repo: [github.com/jegadeesh17/GoalOS](https://github.com/jegadeesh17/GoalOS)
-- [OpenRouter](https://openrouter.ai) API key
-- [Streamlit Community Cloud](https://share.streamlit.io) account (sign in with GitHub)
-
-## Deploy (5 steps)
-
-1. **Push latest `main`** to `github.com/jegadeesh17/GoalOS`.
-
-2. Open [share.streamlit.io](https://share.streamlit.io) → **New app**.
-
-3. **Repository:** `jegadeesh17/GoalOS`  
-   **Branch:** `main`  
-   **Main file path:** `app/app.py`
-
-4. **Advanced settings → Secrets** — paste:
-
-```toml
-OPENROUTER_API_KEY = "sk-or-v1-..."
-OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
-DB_PATH = "goalos.db"
-CHROMA_PATH = "chroma_db"
-LOG_LEVEL = "INFO"
-```
-
-Use a `:free` model for demos without paid credits. Paths are relative to the app root on Streamlit Cloud.
-
-5. Click **Deploy**. First boot may take 3–5 minutes (sentence-transformers download).
-
-## After deploy
-
-- Copy the app URL (e.g. `https://goalos.streamlit.app`) into your resume and LinkedIn.
-- Pin the repo on GitHub: Profile → **Customize your pins** → select **GoalOS**.
-
-## Local smoke test before push
+## Local Docker
 
 ```powershell
-cd c:\Users\jegad\projects\GoalOS
-pip install -r requirements.txt
-pytest -q
-streamlit run app/app.py
+docker compose up --build
 ```
 
-## Troubleshooting
+Persist `goalos.db` and `chroma_db` on a private volume. Keep `.env`, backups, and exports outside source control.
 
-| Issue | Fix |
-|-------|-----|
-| App crashes on startup | Check Secrets tab; `OPENROUTER_API_KEY` must be set |
-| Embedding model slow | Normal on cold start; subsequent runs use cache |
-| AI returns fallback text | Verify API key and model name; try a `:free` model |
-| ChromaDB errors | Ensure `CHROMA_PATH` is writable (use relative path above) |
+## FastAPI
+
+For any non-local API deployment, set:
+
+```text
+ENVIRONMENT=production
+GOALOS_API_TOKEN=<long-random-secret>
+```
+
+Every protected endpoint requires `Authorization: Bearer <GOALOS_API_TOKEN>`. Keep the Streamlit UI behind a trusted network or platform access control; it does not provide multi-user authentication.

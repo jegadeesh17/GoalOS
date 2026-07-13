@@ -83,11 +83,28 @@ class LogRepository:
     return self.get_by_id(log_id)
 
   def upsert_by_date(self, log: DailyLogCreate) -> DailyLog:
+    """Legacy full-form upsert that does not erase existing optional fields."""
     existing = self.get_by_date(log.date)
     if existing:
-      update_data = DailyLogUpdate(**log.model_dump())
-      return self.update(existing.id, update_data)  # type: ignore
+      data = log.model_dump(mode="json", exclude_none=True)
+      # ``DailyLogCreate`` has false defaults. Treat them as omitted for a merge so
+      # saving a morning form cannot reset an already-completed evening.
+      for field in ("morning_completed", "evening_completed", "imported"):
+        if data.get(field) is False:
+          data.pop(field)
+      data.pop("date", None)
+      return self.update(existing.id, DailyLogUpdate(**data))  # type: ignore[arg-type]
     return self.create(log)
+
+  def upsert_fields(self, log_date: date, changes: DailyLogUpdate) -> DailyLog:
+    """Create a dated log or apply only explicitly supplied fields to it."""
+    existing = self.get_by_date(log_date)
+    if existing:
+      updated = self.update(existing.id, changes)
+      assert updated is not None
+      return updated
+    create_data = changes.model_dump(exclude_unset=True)
+    return self.create(DailyLogCreate(date=log_date, **create_data))
 
   def delete(self, log_id: int) -> bool:
     with get_db() as conn:

@@ -39,7 +39,7 @@ def test_health(client):
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok"
-    assert body["memory_count"] == 5
+    assert body == {"status": "ok"}
 
 
 def test_coach_morning_schema(client):

@@ -98,9 +98,10 @@ if "No journal entries" not in summary:
   st.markdown(summary)
 
 section("Search")
-col1, col2 = st.columns([3, 1])
+col1, col2, col3 = st.columns([3, 1, 1])
 search_query = col1.text_input("Semantic search", placeholder="Search memories and journals...", label_visibility="collapsed")
 filter_type = col2.selectbox("Filter", ["all", "log", "weekly", "memory", "coaching"], label_visibility="collapsed")
+memory_status = col3.selectbox("Memory status", ["active", "completed", "archived", "all"], label_visibility="collapsed")
 
 if search_query:
   with st.spinner("Searching..."):
@@ -134,8 +135,30 @@ if filter_type in ("all", "weekly"):
     render_timeline_entry("weekly", date.fromisoformat(review["week_start"]), content)
 
 if filter_type in ("all", "memory"):
-  for mem in memory_repo.get_all()[:20]:
-    render_timeline_entry("memory", mem.source_date or date.today(), mem.text, {"type": mem.type})
+  section("Memory management")
+  memories = memory_repo.get_all(status=None if memory_status == "all" else memory_status)
+  for mem in memories[:50]:
+    with st.expander(f"{mem.type.replace('_', ' ').title()} · {mem.source_date or 'undated'}"):
+      render_memory_card(mem)
+      st.caption(f"Status: {mem.status} · index: {mem.index_status} · source: {mem.source_type or 'unknown'}")
+      cols = st.columns(4)
+      with cols[0]:
+        if st.button("Helpful", key=f"helpful_{mem.id}"):
+          memory_service.update(mem.id, user_feedback=1)
+          st.rerun()
+      with cols[1]:
+        if st.button("Not helpful", key=f"unhelpful_{mem.id}"):
+          memory_service.update(mem.id, user_feedback=-1)
+          st.rerun()
+      with cols[2]:
+        action = "complete" if mem.type == "commitment" else "archive"
+        if st.button(action.title(), key=f"state_{mem.id}"):
+          memory_service.update(mem.id, status="completed" if action == "complete" else "archived")
+          st.rerun()
+      with cols[3]:
+        if st.button("Delete", key=f"delete_{mem.id}"):
+          memory_service.delete(mem.id)
+          st.rerun()
 
 if filter_type in ("all", "coaching"):
   for resp in coach_repo.get_recent(20):

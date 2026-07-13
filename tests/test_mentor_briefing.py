@@ -11,7 +11,7 @@ def test_fallback_uses_review_quote():
     "one_year_goal": "Get placed by June",
     "most_recent_review": {
       "date": "2026-06-24",
-      "text": "No work, wasted time in soft porn. Time once gone cant be bought.",
+      "text": "No work, wasted time scrolling. Time once gone cannot be bought.",
     },
     "repeated_incomplete_tasks": [],
     "most_recent_takeaway": "",
@@ -19,7 +19,7 @@ def test_fallback_uses_review_quote():
   }
   result = personalized_fallback_rule(briefing)
   assert "codekata" in result["mentor_rule"].lower()
-  assert "2026-06-24" in result["why_this_rule"] or "soft porn" in result["why_this_rule"].lower()
+  assert "2026-06-24" in result["why_this_rule"] or "scrolling" in result["why_this_rule"].lower()
   assert result["source"] == "personalized_fallback"
 
 

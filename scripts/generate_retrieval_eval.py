@@ -1,91 +1,60 @@
-"""Generate memory retrieval evaluation report."""
+"""Generate a deterministic retrieval report from committed synthetic fixtures."""
 
 from __future__ import annotations
 
-import csv
+import json
 import os
+import shutil
 import sys
+import tempfile
 from datetime import date
+from pathlib import Path
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, ROOT)
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 
-from services.memory_service import MemoryService
+from config.settings import settings
+from database.migrations import run_migrations
+from services.memory_service import MemoryService, clear_collection_cache
 
-TEMPLATE = os.path.join(ROOT, "docs", "goalos_eval_template.csv")
-REPORT = os.path.join(ROOT, "reports", "evaluation.md")
-
+REPORT = ROOT / "reports" / "evaluation.md"
+FIXTURE = ROOT / "data" / "retrieval_eval.json"
 SEED_MEMORIES = [
-    ("I delayed deep work because meetings ran long.", "journal_insight", 0.8),
-    ("Skipped workout after office three days this week.", "journal_insight", 0.7),
-    ("Missed SQL practice commitment on Tuesday.", "commitment", 0.9),
-    ("Long-term goals not moving despite busy days.", "journal_insight", 0.75),
-    ("Pattern: late-night scrolling hurts morning focus.", "journal_insight", 0.85),
+  ("Start the most important task before messages during the morning block.", "lesson", 0.9),
+  ("Schedule exercise before evening fatigue to avoid skipping it after work.", "lesson", 0.8),
+  ("A protected morning block improves focus and makes important work easier to start.", "journal_insight", 0.8),
 ]
 
 
-def _load_queries() -> list[dict]:
-    rows = []
-    with open(TEMPLATE, encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            rows.append(row)
-    return rows
-
-
-def _score_hit(query: str, expected_focus: str, memories: list) -> tuple[str, float]:
-    if not memories:
-        return "miss", 0.0
-    joined = " ".join(m.text.lower() for m in memories[:3])
-    focus_tokens = expected_focus.lower().split()
-    hits = sum(1 for token in focus_tokens if token in joined or token in query.lower())
-    if hits >= 2 or expected_focus.lower() in joined:
-        return "hit", 2.0
-    if hits == 1:
-        return "partial", 1.0
-    return "miss", 0.0
-
-
 def main() -> None:
+  fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+  root = Path(tempfile.mkdtemp(prefix="goalos-retrieval-eval-"))
+  old_db, old_chroma = settings.DB_PATH, settings.CHROMA_PATH
+  try:
+    settings.DB_PATH, settings.CHROMA_PATH = str(root / "eval.db"), str(root / "chroma")
+    clear_collection_cache()
+    run_migrations()
     memory = MemoryService()
-    if memory.count() < 3:
-        for text, mem_type, importance in SEED_MEMORIES:
-            memory.store(text, mem_type, importance=importance, source_date=date.today())
-
-    queries = _load_queries()
-    lines = [
-        "# GoalOS — Memory Retrieval Evaluation",
-        "",
-        "Manual 5-query retrieval check using composite ranking (40% semantic, 30% importance, 20% recency, 10% frequency).",
-        "",
-        "| Query ID | Query | Expected Focus | Top Memory | Result | Score |",
-        "|----------|-------|----------------|------------|--------|-------|",
-    ]
+    for text, memory_type, importance in SEED_MEMORIES:
+      memory.store(text, memory_type, importance, date(2026, 1, 1), "synthetic_eval")
+    lines = ["# GoalOS Memory Retrieval Evaluation", "", "Synthetic, deterministic evaluation. Scores are lexical expected-term matches over the top three results.", "", "| Query | Top result | Matched terms | Score |", "|---|---|---|---|"]
     scores = []
-    for row in queries:
-        retrieved = memory.retrieve(row["query_text"], top_k=3)
-        top_text = retrieved[0].text[:80] + "..." if retrieved else "(none)"
-        result, score = _score_hit(row["query_text"], row["expected_focus"], retrieved)
-        scores.append(score)
-        lines.append(
-            f"| {row['query_id']} | {row['query_text'][:50]}... | {row['expected_focus']} | {top_text} | {result} | {score} |"
-        )
-
-    avg = sum(scores) / len(scores) if scores else 0
-    lines.extend(
-        [
-            "",
-            f"**Average retrieval relevance (0–2):** {avg:.2f}",
-            "",
-            "## Notes",
-            "- Seeded demo memories used when corpus is sparse; replace with your journal import for production eval.",
-            "- Regenerate: `python scripts/generate_retrieval_eval.py`",
-        ]
-    )
-    os.makedirs(os.path.dirname(REPORT), exist_ok=True)
-    with open(REPORT, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
+    for item in fixture:
+      retrieved = memory.retrieve(item["query"], top_k=3)
+      joined = " ".join(result.text.casefold() for result in retrieved)
+      matched = [term for term in item["expected_terms"] if term.casefold() in joined]
+      score = round(2 * len(matched) / len(item["expected_terms"]), 2)
+      scores.append(score)
+      top = retrieved[0].text[:90] if retrieved else "(none)"
+      lines.append(f"| {item['query']} | {top} | {', '.join(matched) or 'none'} | {score:.2f} |")
+    lines.extend(["", f"**Average retrieval relevance (0-2):** {sum(scores) / len(scores):.2f}", "", "Run: `python scripts/generate_retrieval_eval.py`."])
+    REPORT.write_text("\n".join(lines), encoding="utf-8")
     print(f"Wrote {REPORT}")
+  finally:
+    clear_collection_cache()
+    settings.DB_PATH, settings.CHROMA_PATH = old_db, old_chroma
+    shutil.rmtree(root, ignore_errors=True)
 
 
 if __name__ == "__main__":
-    main()
+  main()

@@ -1,217 +1,117 @@
-"""Today's Journal — morning plans + evening review in your handwritten style."""
+"""Daily planning and reflection with task-to-goal links."""
 
+import json
 import os
 import sys
+import uuid
+from datetime import date
 
 _APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _APP_DIR not in sys.path:
   sys.path.insert(0, _APP_DIR)
 import bootstrap  # noqa: F401
 
-import json
-import uuid
-from datetime import date
-
 import streamlit as st
 
-from components.layout import coaching_block, hero_card, info_card, mentor_panel, page_header, section
+from components.layout import hero_card, info_card, mentor_panel, page_header, section
 from config.settings import settings
+from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
-from models.daily_log import DailyLogCreate
-from services.journal_helpers import (
-  ensure_task_ids,
-  load_tasks_from_log,
-  log_task_stats,
-  normalize_tasks,
-  pack_tasks,
-  serialize_journal_fields,
-)
+from database.repositories.milestone_repository import MilestoneRepository
+from models.daily_log import DailyLogUpdate
+from services.journal_helpers import ensure_task_ids, load_tasks_from_log, log_task_stats, normalize_tasks, pack_tasks, serialize_journal_fields
+from services.settings_service import SettingsService
 from utils import configure_page, get_coach_service, init_app
 
 configure_page("Today's Journal | GoalOS", "📓")
 init_app()
 
 today = date.today()
-log_repo = LogRepository()
-coach = get_coach_service()
+log_repo, goal_repo, milestone_repo = LogRepository(), GoalRepository(), MilestoneRepository()
+coach, privacy = get_coach_service(), SettingsService()
 existing = log_repo.get_by_date(today)
 task_state_key = f"tasks_{today.isoformat()}"
 
 
-def _plans_text(log) -> str:
-  if not log or not log.time_blocks:
+def _plans_text() -> str:
+  if not existing or not existing.time_blocks:
     return ""
   try:
-    blocks = json.loads(log.time_blocks)
-    if isinstance(blocks, list) and blocks and isinstance(blocks[0], dict) and "start" in blocks[0]:
-      return "\n".join(f"{b['start']} - {b['end']}: {b['activity']}" for b in blocks)
-    return str(log.time_blocks)
+    blocks = json.loads(existing.time_blocks)
+    if isinstance(blocks, list):
+      return "\n".join(f"{item['start']} - {item['end']}: {item['activity']}" for item in blocks if isinstance(item, dict))
   except (json.JSONDecodeError, TypeError):
-    return log.time_blocks or ""
+    pass
+  return existing.time_blocks
 
 
-def _init_task_state() -> list[dict]:
+def _tasks() -> list[dict]:
   if task_state_key not in st.session_state:
-    loaded = ensure_task_ids(load_tasks_from_log(existing))
-    st.session_state[task_state_key] = loaded or []
+    st.session_state[task_state_key] = ensure_task_ids(load_tasks_from_log(existing))
   return ensure_task_ids(st.session_state[task_state_key])
 
 
-def _sync_task_texts(tasks: list[dict]) -> list[dict]:
-  """Read latest text from widget state into task dicts."""
-  synced = []
-  for t in tasks:
-    key = f"m_task_{t['id']}"
-    text = st.session_state.get(key, t.get("text", ""))
-    synced.append({**t, "text": text})
-  return synced
-
-
-def _move_task(tasks: list[dict], task_id: str, direction: int) -> list[dict]:
-  """Move task up (direction=-1) or down (direction=+1)."""
-  tasks = _sync_task_texts(tasks)
-  idx = next((i for i, t in enumerate(tasks) if t["id"] == task_id), None)
-  if idx is None:
-    return tasks
-  new_idx = idx + direction
-  if new_idx < 0 or new_idx >= len(tasks):
-    return tasks
-  tasks[idx], tasks[new_idx] = tasks[new_idx], tasks[idx]
-  return tasks
-
-
-def _render_task_editor() -> list[dict]:
-  """Task list with visible ↑ ↓ reorder — #1 is highest priority."""
-  tasks = _sync_task_texts(_init_task_state())
-  st.session_state[task_state_key] = tasks
-
-  section("TASKS")
-  st.caption("#1 = highest priority · use ↑ ↓ on the right to reorder")
-
-  if not tasks:
-    st.caption("No tasks yet — add your first one below.")
-
-  remove_id = None
-  for i, task in enumerate(tasks):
-    col_rank, col_text, col_up, col_down, col_del = st.columns([0.5, 6.5, 0.5, 0.5, 0.5])
-    with col_rank:
-      st.markdown(f"**#{i + 1}**")
-    with col_text:
-      st.text_input(
-        f"Task {i + 1}",
-        value=task.get("text", ""),
-        key=f"m_task_{task['id']}",
-        label_visibility="collapsed",
-        placeholder="e.g. Solve 10 Codekata problems",
-      )
-    with col_up:
-      if i > 0 and st.button("↑", key=f"m_up_{task['id']}", help="Move up (higher priority)"):
-        st.session_state[task_state_key] = _move_task(tasks, task["id"], -1)
+def _task_editor() -> list[dict]:
+  tasks = _tasks()
+  goals = goal_repo.get_active()
+  milestones = milestone_repo.get_active()
+  goal_options = {0: "No goal", **{goal.id: goal.title for goal in goals}}
+  section("Tasks")
+  st.caption("Rank tasks and optionally link each one to a goal or milestone.")
+  for index, task in enumerate(tasks):
+    cols = st.columns([0.4, 4.0, 1.5, 1.5, 0.45])
+    with cols[0]:
+      st.caption(f"#{index + 1}")
+    with cols[1]:
+      task["text"] = st.text_input("Task", task.get("text", ""), key=f"task_text_{task['id']}", label_visibility="collapsed")
+    with cols[2]:
+      goal_id = int(task.get("goal_id") or 0)
+      goal_id = goal_id if goal_id in goal_options else 0
+      goal_id = st.selectbox("Goal", list(goal_options), index=list(goal_options).index(goal_id), format_func=lambda value: goal_options[value], key=f"task_goal_{task['id']}", label_visibility="collapsed")
+      if goal_id:
+        task["goal_id"] = goal_id
+      else:
+        task.pop("goal_id", None)
+    with cols[3]:
+      valid_milestones = [m for m in milestones if not task.get("goal_id") or m.goal_id == task["goal_id"]]
+      milestone_options = {0: "No milestone", **{m.id: m.title for m in valid_milestones}}
+      milestone_id = int(task.get("milestone_id") or 0)
+      milestone_id = milestone_id if milestone_id in milestone_options else 0
+      milestone_id = st.selectbox("Milestone", list(milestone_options), index=list(milestone_options).index(milestone_id), format_func=lambda value: milestone_options[value], key=f"task_milestone_{task['id']}", label_visibility="collapsed")
+      if milestone_id:
+        task["milestone_id"] = milestone_id
+      else:
+        task.pop("milestone_id", None)
+    with cols[4]:
+      if st.button("Remove", key=f"remove_{task['id']}"):
+        st.session_state[task_state_key] = [item for item in tasks if item["id"] != task["id"]]
         st.rerun()
-      elif i == 0:
-        st.button("↑", key=f"m_up_{task['id']}", disabled=True, help="Already top priority")
-    with col_down:
-      if i < len(tasks) - 1 and st.button("↓", key=f"m_down_{task['id']}", help="Move down (lower priority)"):
-        st.session_state[task_state_key] = _move_task(tasks, task["id"], 1)
-        st.rerun()
-      elif i == len(tasks) - 1:
-        st.button("↓", key=f"m_down_{task['id']}", disabled=True, help="Already lowest priority")
-    with col_del:
-      if st.button("✕", key=f"m_del_{task['id']}", help="Remove"):
-        remove_id = task["id"]
-
-  if remove_id is not None:
-    tasks = [t for t in _sync_task_texts(tasks) if t["id"] != remove_id]
-    st.session_state[task_state_key] = tasks
-    st.rerun()
-
-  if st.button("+ Add task", use_container_width=False):
-    tasks = _sync_task_texts(tasks)
+  if st.button("Add task"):
     tasks.append({"id": uuid.uuid4().hex[:8], "text": "", "completed": False, "priority": len(tasks) + 1})
     st.session_state[task_state_key] = tasks
     st.rerun()
+  st.session_state[task_state_key] = tasks
+  return normalize_tasks(tasks)
 
-  return normalize_tasks(_sync_task_texts(tasks))
-
-
-def _render_task_checklist(tasks: list[dict]) -> list[dict]:
-  """Evening checklist — one checkbox per task."""
-  section("TASKS")
-  if not tasks:
-    st.caption("No tasks from this morning.")
-    return []
-
-  updated = []
-  done = 0
-  for task in tasks:
-    tid = task.get("id") or str(task["priority"])
-    checked = st.checkbox(
-      f"#{task['priority']}  {task['text']}",
-      value=task.get("completed", False),
-      key=f"e_task_{today}_{tid}",
-    )
-    updated.append({**task, "completed": checked})
-    if checked:
-      done += 1
-
-  st.caption(f"{done}/{len(updated)} completed")
-  return updated
-
-
-plans_default = _plans_text(existing)
 
 page_header("Today's Journal", today.strftime("%A, %d %B %Y"))
+morning_tab, evening_tab = st.tabs(["Morning", "Evening"])
 
-tab_morning, tab_evening = st.tabs(["Morning", "Evening"])
-
-# ── Morning ──────────────────────────────────────────────────────────────────
-with tab_morning:
-  st.caption("GRATITUDE · TASKS · SLEEP & MOOD")
-
-  gratitude = st.text_input(
-    "GRATITUDE",
-    value=existing.gratitude if existing else "",
-    placeholder="grateful for such friendly parents.",
-  )
-
-  col1, col2, col3 = st.columns(3)
-  with col1:
-    sleep_hours = st.number_input(
-      "Sleep (hours)",
-      0.0, 12.0,
-      existing.sleep_hours if existing and existing.sleep_hours else 7.0,
-      0.5,
-    )
-  with col2:
-    sleep_quality = st.slider(
-      "Sleep quality",
-      1, 5,
-      existing.sleep_quality if existing and existing.sleep_quality else 3,
-    )
-  with col3:
-    mood_morning = st.slider(
-      "Mood",
-      1, 5,
-      existing.mood_morning if existing and existing.mood_morning else 3,
-    )
-
-  morning_tasks = _render_task_editor()
-
-  if not settings.OPENROUTER_API_KEY:
-    info_card(
-      "No OpenRouter API key — mentor rules use your journal data only. Add a key in Settings for AI mentoring.",
-      "warning",
-    )
-
-  with st.expander("Time slots (optional)", expanded=False):
-    st.caption("Pin tasks to time — write manually if you want a schedule.")
-    plans_text = st.text_area(
-      "Plans",
-      value=plans_default,
-      height=100,
-      label_visibility="collapsed",
-      placeholder="10:30-12  Codekata\n2-4      Quandao project",
-    )
+with morning_tab:
+  if not privacy.remote_ai_allowed():
+    info_card("Remote AI is off. Saving a morning plan creates a local, journal-based rule. Enable consent in Settings to use OpenRouter.", "warning")
+  elif not settings.OPENROUTER_API_KEY:
+    info_card("Remote AI consent is enabled, but no OpenRouter key is configured. A local fallback will be used.", "warning")
+  gratitude = st.text_input("Gratitude", value=existing.gratitude if existing else "")
+  c1, c2, c3 = st.columns(3)
+  with c1:
+    sleep_hours = st.number_input("Sleep hours", min_value=0.0, max_value=24.0, value=float(existing.sleep_hours) if existing and existing.sleep_hours is not None else 7.0, step=0.5)
+  with c2:
+    sleep_quality = st.slider("Sleep quality", 1, 5, existing.sleep_quality if existing and existing.sleep_quality else 3)
+  with c3:
+    mood_morning = st.slider("Mood", 1, 5, existing.mood_morning if existing and existing.mood_morning else 3)
+  morning_tasks = _task_editor()
+  plans = st.text_area("Time slots (optional)", value=_plans_text(), placeholder="09:00-10:30: Deep work")
 
   if existing and existing.morning_ai_output:
     try:
@@ -219,101 +119,49 @@ with tab_morning:
       if mentor.get("mentor_rule"):
         section("Today's Rule")
         mentor_panel(mentor)
-        source = mentor.get("source", "ai")
-        if source != "ai":
-          st.caption("This rule is fallback output. Regenerate now if AI is available.")
-          if st.button("Regenerate Rule with AI", use_container_width=True):
-            with st.spinner("Regenerating mentor rule..."):
-              coach.get_morning_coaching(today, existing)
-            st.toast("Rule regenerated.", icon="✅")
-            st.rerun()
+        if mentor.get("evidence"):
+          st.caption("Evidence: " + ", ".join(item.get("goal_title") or f"memory #{item.get('memory_id')}" for item in mentor["evidence"] if item.get("goal_title") or item.get("memory_id")))
     except json.JSONDecodeError:
       pass
 
-  if st.button("Save Morning & Get Mentor Rule", type="primary", use_container_width=True):
+  if st.button("Save Morning and Get Mentor Rule", type="primary", use_container_width=True):
     if not morning_tasks:
       st.error("Add at least one task.")
     else:
-      fields = serialize_journal_fields(gratitude, plans_text, morning_tasks)
-      data = DailyLogCreate(
-        date=today,
-        gratitude=fields["gratitude"],
-        time_blocks=fields["time_blocks"],
-        planned_tasks=fields["planned_tasks"],
-        tasks_completed=fields["tasks_completed"],
-        task_completion_rate=fields["task_completion_rate"],
-        sleep_hours=sleep_hours,
-        sleep_quality=sleep_quality,
-        mood_morning=mood_morning,
-        morning_completed=True,
-        evening_completed=existing.evening_completed if existing else False,
-        journal_entry=existing.journal_entry if existing else None,
-        takeaway=existing.takeaway if existing else None,
-      )
-      log = log_repo.upsert_by_date(data)
-      with st.spinner("Mentor is reviewing your past..."):
-        try:
+      try:
+        fields = serialize_journal_fields(gratitude, plans, morning_tasks)
+        log = log_repo.upsert_fields(today, DailyLogUpdate(morning_completed=True, sleep_hours=sleep_hours, sleep_quality=sleep_quality, mood_morning=mood_morning, **fields))
+        with st.spinner("Preparing your mentor rule..."):
           coach.get_morning_coaching(today, log)
-          st.session_state.pop(task_state_key, None)
-          st.toast("Morning saved. Today's rule is set.", icon="✅")
-          st.rerun()
-        except Exception as e:
-          st.error(f"Mentor rule failed: {e}. Your entry was saved.")
+        st.session_state.pop(task_state_key, None)
+        st.toast("Morning saved.", icon="✅")
+        st.rerun()
+      except ValueError as exc:
+        st.error(str(exc))
+      except Exception:
+        st.error("Your entry was saved, but coaching could not be generated.")
 
-# ── Evening ──────────────────────────────────────────────────────────────────
-with tab_evening:
-  st.caption("Check off tasks · REVIEW · TAKEAWAY")
-
+with evening_tab:
   if not existing or not existing.morning_completed:
-    info_card("Complete your morning journal first — tasks unlock the evening review.", "warning")
+    info_card("Complete the morning plan before closing the day.", "warning")
   else:
-    if existing.evening_completed:
-      info_card("Day closed. See you tomorrow.", "success")
-      stats = log_task_stats(existing)
-      if stats["total"]:
-        hero_card(
-          "Today's score",
-          f"{stats['completed']}/{stats['total']} tasks · {stats['rate']}%",
-        )
-
-    evening_tasks = _render_task_checklist(load_tasks_from_log(existing))
-
-    section("REVIEW")
-    review = st.text_area(
-      "Review",
-      value=existing.journal_entry if existing else "",
-      height=120,
-      label_visibility="collapsed",
-      placeholder="I did great work but not focusing on what matters",
-    )
-
-    section("TAKEAWAY")
-    takeaway = st.text_input(
-      "Takeaway",
-      value=existing.takeaway if existing else "",
-      placeholder="Focus and lock in.",
-    )
-
+    tasks = load_tasks_from_log(existing)
+    section("Task review")
+    updated_tasks = []
+    for task in tasks:
+      completed = st.checkbox(f"#{task['priority']} {task['text']}", value=task.get("completed", False), key=f"done_{task.get('id', task['priority'])}")
+      updated_tasks.append({**task, "completed": completed})
+    stats = log_task_stats(existing)
+    if stats["total"]:
+      hero_card("Current task status", f"{stats['completed']}/{stats['total']} complete")
+    review = st.text_area("Review", value=existing.journal_entry or "", height=140)
+    takeaway = st.text_input("Takeaway", value=existing.takeaway or "")
     if st.button("Close the Day", type="primary", use_container_width=True):
-      packed = pack_tasks(evening_tasks)
-      data = DailyLogCreate(
-        date=today,
-        gratitude=existing.gratitude,
-        time_blocks=existing.time_blocks,
-        planned_tasks=packed["planned_tasks"],
-        tasks_completed=packed["tasks_completed"],
-        task_completion_rate=packed["task_completion_rate"],
-        sleep_hours=existing.sleep_hours,
-        sleep_quality=existing.sleep_quality,
-        mood_morning=existing.mood_morning,
-        journal_entry=review,
-        takeaway=takeaway,
-        one_lesson=takeaway,
-        morning_completed=True,
-        evening_completed=True,
-      )
-      log_repo.upsert_by_date(data)
-      if takeaway:
-        from services.memory_service import MemoryService
-        MemoryService().store(takeaway, "commitment", 0.7, today, "journal")
+      packed = pack_tasks(updated_tasks)
+      log = log_repo.upsert_fields(today, DailyLogUpdate(**packed, journal_entry=review or None, takeaway=takeaway or None, one_lesson=takeaway or None, evening_completed=True))
+      try:
+        coach.get_evening_coaching(today, log)
+      except Exception:
+        st.warning("Day saved, but the optional coaching summary could not be generated.")
+      st.toast("Day closed.", icon="✅")
       st.rerun()

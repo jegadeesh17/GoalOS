@@ -120,7 +120,7 @@ def mentor_panel(mentor: dict, show_goal: bool = True):
     return
 
   source = mentor.get("source", "ai")
-  if source == "ai":
+  if source in ("ai", "ai_agent"):
     model = mentor.get("model", "OpenRouter")
     info_card(f"✓ Live AI — {model}", "success")
     if mentor.get("generated_at"):

@@ -18,12 +18,15 @@ from database.repositories.coach_repository import CoachRepository
 from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from database.repositories.score_repository import ScoreRepository
+from database.repositories.weekly_review_repository import WeeklyReviewRepository
 from models.coach_response import CoachResponseCreate
+from models.coach_output import CoachingEvidence, MorningCoachOutput
 from models.daily_log import DailyLog, DailyLogUpdate
 from models.weekly_review import WeeklyReviewCreate
 from services.analytics_service import calculate_daily_scores
 from services.memory_service import MemoryService
 from services.mentor_briefing import build_mentor_briefing
+from services.settings_service import SettingsService
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +39,10 @@ class CoachService:
     self.log_repo = LogRepository()
     self.score_repo = ScoreRepository()
     self.coach_repo = CoachRepository()
+    self.weekly_repo = WeeklyReviewRepository()
     self.memory_service = MemoryService()
     self.llm = OpenRouterClient()
+    self.settings_service = SettingsService()
 
   def _get_user_vision(self) -> dict:
     with get_db() as conn:
@@ -60,6 +65,26 @@ class CoachService:
   def _refresh_llm(self) -> None:
     """Always pick up latest .env model/key before AI calls."""
     self.llm.refresh_config()
+
+  def _remote_ai_allowed(self) -> bool:
+    return bool(self.settings_service.remote_ai_allowed() and self.llm.api_key)
+
+  def _with_evidence(self, result: dict, context: dict) -> dict:
+    """Validate public output and attach bounded, non-journal evidence references."""
+    evidence: list[CoachingEvidence] = []
+    for goal in context.get("active_goals", [])[:3]:
+      evidence.append(CoachingEvidence(goal_id=goal.get("id"), goal_title=goal.get("title")))
+    for memory in context.get("relevant_memories", [])[:3]:
+      evidence.append(CoachingEvidence(memory_id=memory.get("id"), source_date=memory.get("source_date")))
+    result["evidence"] = [item.model_dump(mode="json") for item in evidence]
+    try:
+      return MorningCoachOutput.model_validate(result).model_dump(mode="json")
+    except Exception as exc:
+      logger.warning("coach_output_invalid event=morning reason=%s", type(exc).__name__)
+      from ai.pipelines._base import fallback_morning
+      fallback = fallback_morning(context)
+      fallback.update({"fallback_reason": "invalid_response", "fallback_detail": "The model response did not match the coach schema", "evidence": result["evidence"]})
+      return MorningCoachOutput.model_validate(fallback).model_dump(mode="json")
 
   def build_context(self, target_date: date, query: str = "") -> dict:
     """Assemble full context for AI calls."""
@@ -114,9 +139,17 @@ class CoachService:
       context["user_vision"],
       context["recent_coach_advice"],
     )
-    result = run_agent_morning_coach(context, self.llm)
-    if not (isinstance(result, dict) and result.get("mentor_rule")):
-      result = run_morning_coach(context, self.llm)
+    if self._remote_ai_allowed():
+      result = run_agent_morning_coach(context, self.llm)
+      if not (isinstance(result, dict) and result.get("mentor_rule")):
+        result = run_morning_coach(context, self.llm)
+    else:
+      from ai.pipelines._base import fallback_morning
+      result = fallback_morning(context)
+      result["fallback_reason"] = "remote_ai_consent_required" if self.llm.api_key else "no_api_key"
+      result["fallback_detail"] = "Enable remote AI consent in Settings to send journal context to OpenRouter."
+    result = self._with_evidence(result, context)
+    logger.info("coach_complete event=morning source=%s retrieval_count=%d fallback=%s", result["source"], len(context["relevant_memories"]), result.get("fallback_reason"))
 
     self.log_repo.update(log.id, DailyLogUpdate(
       morning_ai_output=json.dumps(result),
@@ -134,7 +167,12 @@ class CoachService:
     self._refresh_llm()
     context = self.build_context(target_date, log.journal_entry or "")
     context["today_log"] = self._serialize_log(log)
-    result = run_evening_coach(context, self.llm)
+    if self._remote_ai_allowed():
+      result = run_evening_coach(context, self.llm)
+    else:
+      from ai.pipelines._base import fallback_evening
+      result = fallback_evening(context)
+      result["fallback_reason"] = "remote_ai_consent_required" if self.llm.api_key else "no_api_key"
 
     for mem in result.get("memories_to_store", []):
       self.memory_service.store(
@@ -178,13 +216,18 @@ class CoachService:
     context = self.build_context(week_end)
     context["week_logs"] = [self._serialize_log(l) for l in week_logs]
     context["week_task_stats"] = week_task_stats(week_logs)
-    result = run_weekly_coach(context, self.llm)
+    if self._remote_ai_allowed():
+      result = run_weekly_coach(context, self.llm)
+    else:
+      from ai.pipelines._base import fallback_weekly
+      result = fallback_weekly(context)
+      result["fallback_reason"] = "remote_ai_consent_required" if self.llm.api_key else "no_api_key"
 
-    with get_db() as conn:
-      conn.execute(
-        "INSERT INTO weekly_reviews (week_start, week_end, ai_output) VALUES (?, ?, ?)",
-        (week_start.isoformat(), week_end.isoformat(), json.dumps(result)),
-      )
+    self.weekly_repo.upsert(WeeklyReviewCreate(
+      week_start=week_start,
+      week_end=week_end,
+      ai_output=json.dumps(result),
+    ))
     self.coach_repo.create(CoachResponseCreate(
       session_type="weekly",
       ai_response=json.dumps(result),
@@ -195,13 +238,20 @@ class CoachService:
   def get_goal_alignment(self) -> dict:
     self._refresh_llm()
     context = self.build_context(date.today())
-    return run_goal_alignment_coach(context, self.llm)
+    if self._remote_ai_allowed():
+      return run_goal_alignment_coach(context, self.llm)
+    from ai.pipelines._base import fallback_goal_alignment
+    return fallback_goal_alignment(context)
 
   def prefill_from_journal(self, journal_text: str) -> dict:
     """AI pre-fill win and lesson from journal."""
     self._refresh_llm()
     context = self.build_context(date.today())
-    result = run_reflection_coach(context, journal_text, self.llm)
+    if self._remote_ai_allowed():
+      result = run_reflection_coach(context, journal_text, self.llm)
+    else:
+      from ai.pipelines._base import fallback_reflection
+      result = fallback_reflection(context)
     return {
       "one_win": result.get("insights", [""])[0] if result.get("insights") else "",
       "one_lesson": result.get("patterns", [""])[0] if result.get("patterns") else "",
@@ -220,6 +270,8 @@ class CoachService:
     user_msg = f"Context:\n{json.dumps(context, default=str, indent=2)}\n\nHistory:\n{history_text}\n\nUser: {message}"
 
     try:
+      if not self._remote_ai_allowed():
+        raise RuntimeError("remote_ai_consent_required")
       response = self.llm.complete(system, user_msg, temperature=0.7)
       if isinstance(response, str):
         ai_text = response
@@ -248,7 +300,10 @@ class CoachService:
   def get_future_self(self) -> dict:
     self._refresh_llm()
     context = self.build_context(date.today())
-    return run_future_self_coach(context, self.llm)
+    if self._remote_ai_allowed():
+      return run_future_self_coach(context, self.llm)
+    from ai.pipelines._base import fallback_future_self
+    return fallback_future_self(context)
 
   def get_dashboard_recommendation(self) -> str:
     """Today's mentor rule for dashboard."""
@@ -263,7 +318,11 @@ class CoachService:
       except json.JSONDecodeError:
         pass
     context = self.build_context(today)
-    result = run_morning_coach(context, self.llm)
+    if not self._remote_ai_allowed():
+      from ai.pipelines._base import fallback_morning
+      result = fallback_morning(context)
+    else:
+      result = run_morning_coach(context, self.llm)
     return result.get("mentor_rule", "Complete your morning journal to receive today's rule.")
 
   def get_dashboard_interpretations(self, metrics: dict) -> dict:
@@ -272,6 +331,8 @@ class CoachService:
     system = "Generate one short interpretation sentence per metric. Return JSON with metric keys."
     user_msg = f"Metrics: {json.dumps(metrics)}\nReturn JSON like {{'streak': '...', 'growth': '...'}}"
     try:
+      if not self._remote_ai_allowed():
+        raise RuntimeError("remote_ai_consent_required")
       result = self.llm.complete(system, user_msg, response_format={"type": "json_object"}, temperature=0.5)
       if isinstance(result, dict) and "error" not in result:
         return result

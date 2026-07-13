@@ -33,6 +33,8 @@ class Settings:
   CHROMA_PATH: str = _get_setting("CHROMA_PATH", str(_BASE_DIR / "chroma_db"))
   LOG_LEVEL: str = _get_setting("LOG_LEVEL", "INFO")
   LOG_FILE: str = str(_BASE_DIR / "goalos.log")
+  GOALOS_API_TOKEN: str = _get_setting("GOALOS_API_TOKEN", "")
+  ENVIRONMENT: str = _get_setting("ENVIRONMENT", "development")
 
 
 settings = Settings()

@@ -1,0 +1,5 @@
+[
+  {"query": "I keep delaying important work because of messages", "expected_terms": ["important task", "messages", "morning block"]},
+  {"query": "How should I avoid skipping exercise after work", "expected_terms": ["exercise", "evening fatigue"]},
+  {"query": "What improves my focus in the morning", "expected_terms": ["morning", "important task"]}
+]

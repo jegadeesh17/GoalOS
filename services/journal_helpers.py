@@ -11,7 +11,7 @@ _SORT_SEP = "\u2060"  # reserved
 
 
 def ensure_task_ids(tasks: list[dict]) -> list[dict]:
-  """Assign stable ids for UI state (not persisted to DB)."""
+  """Assign stable ids used by the UI and persisted in the task JSON."""
   for t in tasks:
     if not t.get("id"):
       t["id"] = uuid.uuid4().hex[:8]
@@ -64,15 +64,39 @@ def normalize_tasks(tasks: list[dict]) -> list[dict]:
   for i, t in enumerate(tasks):
     if not t.get("text", "").strip():
       continue
-    normalized.append({
+    task = {
+      "id": str(t.get("id") or uuid.uuid4().hex[:8]),
       "text": t["text"].strip(),
       "completed": bool(t.get("completed")),
       "priority": int(t.get("priority") or i + 1),
-    })
+    }
+    if t.get("goal_id") is not None:
+      task["goal_id"] = int(t["goal_id"])
+    if t.get("milestone_id") is not None:
+      task["milestone_id"] = int(t["milestone_id"])
+    normalized.append(task)
   normalized.sort(key=lambda t: t["priority"])
   for i, t in enumerate(normalized, 1):
     t["priority"] = i
   return normalized
+
+
+def validate_task_links(tasks: list[dict]) -> None:
+  """Reject stale or cross-goal task references before they are persisted."""
+  from database.connection import get_db
+
+  with get_db() as conn:
+    for task in tasks:
+      goal_id = task.get("goal_id")
+      milestone_id = task.get("milestone_id")
+      if goal_id is not None and not conn.execute("SELECT 1 FROM goals WHERE id = ?", (goal_id,)).fetchone():
+        raise ValueError(f"Task goal {goal_id} does not exist")
+      if milestone_id is not None:
+        milestone = conn.execute("SELECT goal_id FROM milestones WHERE id = ?", (milestone_id,)).fetchone()
+        if not milestone:
+          raise ValueError(f"Task milestone {milestone_id} does not exist")
+        if goal_id is not None and milestone["goal_id"] != goal_id:
+          raise ValueError("Task goal and milestone must be linked")
 
 
 def load_tasks_from_log(log: DailyLog | None) -> list[dict]:
@@ -184,6 +208,7 @@ def serialize_journal_fields(
     task_list = parse_tasks(tasks)
   else:
     task_list = normalize_tasks(tasks)
+  validate_task_links(task_list)
   plans = parse_plans(plans_text)
   packed = pack_tasks(task_list)
   return {

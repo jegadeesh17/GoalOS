@@ -29,22 +29,33 @@ class MemoryRepository:
       row = conn.execute("SELECT * FROM memories WHERE id = ?", (memory_id,)).fetchone()
     return Memory(**row_to_dict(row)) if row else None
 
-  def get_all(self, memory_type: Optional[str] = None) -> list[Memory]:
+  def get_all(self, memory_type: Optional[str] = None, status: Optional[str] = None) -> list[Memory]:
     query = "SELECT * FROM memories WHERE 1=1"
     params: list = []
     if memory_type:
       query += " AND type = ?"
       params.append(memory_type)
+    if status:
+      query += " AND status = ?"
+      params.append(status)
     query += " ORDER BY importance DESC, created_at DESC"
     with get_db() as conn:
       rows = conn.execute(query, params).fetchall()
     return [Memory(**row_to_dict(r)) for r in rows]
 
-  def get_by_type(self, memory_type: str) -> list[Memory]:
-    return self.get_all(memory_type=memory_type)
+  def get_by_type(self, memory_type: str, status: Optional[str] = "active") -> list[Memory]:
+    return self.get_all(memory_type=memory_type, status=status)
+
+  def get_by_hash(self, content_hash: str, source_type: Optional[str], source_id: Optional[int]) -> Optional[Memory]:
+    with get_db() as conn:
+      row = conn.execute(
+        "SELECT * FROM memories WHERE content_hash = ? AND source_type IS ? AND source_id IS ? ORDER BY id DESC LIMIT 1",
+        (content_hash, source_type, source_id),
+      ).fetchone()
+    return Memory(**row_to_dict(row)) if row else None
 
   def get_commitments(self, pending_only: bool = True) -> list[Memory]:
-    commitments = self.get_by_type("commitment")
+    commitments = self.get_by_type("commitment", status="active")
     if not pending_only:
       return commitments
     return [m for m in commitments if m.access_count < 1]
@@ -66,20 +77,40 @@ class MemoryRepository:
       conn.execute(f"UPDATE memories SET {set_clause} WHERE id = ?", values)
     return self.get_by_id(memory_id)
 
+  def mark_index_status(self, memory_id: int, status: str, indexed: bool = False) -> Optional[Memory]:
+    values = {"index_status": status}
+    if indexed:
+      values["indexed_at"] = "CURRENT_TIMESTAMP"
+    with get_db() as conn:
+      if indexed:
+        conn.execute("UPDATE memories SET index_status = ?, indexed_at = CURRENT_TIMESTAMP WHERE id = ?", (status, memory_id))
+      else:
+        conn.execute("UPDATE memories SET index_status = ? WHERE id = ?", (status, memory_id))
+    return self.get_by_id(memory_id)
+
   def delete(self, memory_id: int) -> bool:
     with get_db() as conn:
       cursor = conn.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
     return cursor.rowcount > 0
 
-  def count(self) -> int:
+  def count(self, status: Optional[str] = None) -> int:
     with get_db() as conn:
-      row = conn.execute("SELECT COUNT(*) FROM memories").fetchone()
+      if status:
+        row = conn.execute("SELECT COUNT(*) FROM memories WHERE status = ?", (status,)).fetchone()
+      else:
+        row = conn.execute("SELECT COUNT(*) FROM memories").fetchone()
     return row[0]
 
   def search_text(self, query: str, limit: int = 20) -> list[Memory]:
     with get_db() as conn:
-      rows = conn.execute(
-        "SELECT * FROM memories WHERE text LIKE ? ORDER BY importance DESC LIMIT ?",
-        (f"%{query}%", limit),
-      ).fetchall()
+      tokens = [token for token in query.replace("'", " ").split() if token]
+      if tokens:
+        match = " OR ".join(f'"{token}"' for token in tokens[:12])
+        rows = conn.execute(
+          "SELECT m.* FROM memory_fts f JOIN memories m ON m.id = f.memory_id "
+          "WHERE memory_fts MATCH ? AND m.status = 'active' ORDER BY m.importance DESC LIMIT ?",
+          (match, limit),
+        ).fetchall()
+      else:
+        rows = []
     return [Memory(**row_to_dict(r)) for r in rows]

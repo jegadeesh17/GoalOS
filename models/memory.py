@@ -16,6 +16,11 @@ class MemoryBase(BaseModel):
   recency_score: Optional[float] = None
   access_count: int = 0
   last_accessed: Optional[datetime] = None
+  status: str = Field(default="active", pattern="^(active|completed|archived)$")
+  user_feedback: Optional[int] = Field(default=None, ge=-1, le=1)
+  content_hash: Optional[str] = None
+  index_status: str = "pending"
+  indexed_at: Optional[datetime] = None
 
 
 class MemoryCreate(MemoryBase):

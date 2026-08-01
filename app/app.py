@@ -1,96 +1,94 @@
-"""GoalOS dashboard with explainable progress evidence."""
+"""GoalOS dashboard with Life Calendar and Weekly Sync focus."""
 
-import json
 from datetime import date, timedelta
 
 import bootstrap  # noqa: F401
 import streamlit as st
 
-from components.layout import empty_state, hero_card, info_card, mentor_panel, page_header, section, stat_card
+from components.layout import hero_card, info_card, page_header, section, stat_card
+from database.connection import get_db
+from database.repositories._helpers import row_to_dict
 from database.repositories.goal_repository import GoalRepository
-from database.repositories.log_repository import LogRepository
-from database.repositories.memory_repository import MemoryRepository
-from database.repositories.score_repository import ScoreRepository
-from services.journal_helpers import log_task_stats
+from services.life_calendar_service import LifeCalendarService
+from services.weekly_sync_service import WeeklySyncService
 from utils import configure_page, init_app
 
 configure_page("GoalOS", "🎯")
 init_app()
 
 today = date.today()
-log_repo, goal_repo = LogRepository(), GoalRepository()
-memory_repo, score_repo = MemoryRepository(), ScoreRepository()
-today_log = log_repo.get_by_date(today)
-page_header("GoalOS", today.strftime("%A, %B %d"))
+goal_repo = GoalRepository()
+sync_service = WeeklySyncService()
 
-if not today_log or not today_log.morning_completed:
-  if st.button("Open today's journal", type="primary"):
-    st.switch_page("pages/3_Journal.py")
+# Load user profile
+with get_db() as conn:
+  user_row = conn.execute("SELECT * FROM user WHERE id = 1").fetchone()
+  user_data = row_to_dict(user_row) if user_row else {}
 
-section("Today's rule")
-mentor_rule = None
-if today_log and today_log.morning_ai_output:
-  try:
-    mentor = json.loads(today_log.morning_ai_output)
-    mentor_rule = mentor.get("mentor_rule")
-    if mentor_rule:
-      mentor_panel(mentor)
-      evidence = mentor.get("evidence", [])
-      if evidence:
-        labels = [item.get("goal_title") or f"Memory #{item.get('memory_id')}" for item in evidence if item.get("goal_title") or item.get("memory_id")]
-        if labels:
-          st.caption("Evidence: " + ", ".join(labels))
-  except json.JSONDecodeError:
-    pass
-if not mentor_rule:
-  empty_state("No rule yet", "Complete the morning journal to create a goal-linked coaching rule.")
+birth_date_str = user_data.get("birth_date") or "2002-06-17"
+target_age = int(user_data.get("target_age") or 70)
 
-section("Today")
-c1, c2, c3 = st.columns(3)
+try:
+  birth_date = date.fromisoformat(birth_date_str)
+except ValueError:
+  birth_date = date(2002, 6, 17)
+
+life_service = LifeCalendarService(birth_date=birth_date, target_age=target_age)
+life_summary = life_service.get_summary()
+
+page_header("GoalOS", today.strftime("%A, %B %d, %Y"))
+
+# Top Banner: Life Weeks
+section("⏳ Life Weeks Progress (70-Year Perspective)")
+c1, c2, c3, c4 = st.columns(4)
 with c1:
-  stat_card("Morning", "Complete" if today_log and today_log.morning_completed else "Not started")
+  stat_card("Age", f"{life_summary['age_years']} yrs")
 with c2:
-  stat_card("Evening", "Complete" if today_log and today_log.evening_completed else "Open")
+  stat_card("Weeks Lived", f"{life_summary['weeks_lived']:,}")
 with c3:
-  if today_log and today_log.planned_tasks:
-    tasks = log_task_stats(today_log)
-    stat_card("Tasks", f"{tasks['completed']}/{tasks['total']}")
-  else:
-    stat_card("Tasks", "No data")
-if today_log and today_log.morning_completed and not today_log.evening_completed:
-  if st.button("Close the day", use_container_width=True):
-    st.switch_page("pages/3_Journal.py")
+  stat_card("Weeks Remaining", f"{life_summary['weeks_remaining']:,}")
+with c4:
+  stat_card("Life Spent", f"{life_summary['percentage_lived']}%")
 
-section("Consistency")
-logs = log_repo.get_recent(60)
-streak, expected = 0, today
-for log in sorted(logs, key=lambda item: item.date, reverse=True):
-  if log.date == expected and (log.morning_completed or log.evening_completed):
-    streak += 1
-    expected -= timedelta(days=1)
-  else:
-    break
-stat_card("Day streak", streak)
+st.progress(min(1.0, life_summary["percentage_lived"] / 100.0))
 
-section("Progress evidence")
-scores = score_repo.get_recent(14)
-goals = goal_repo.get_active()
-commitments = memory_repo.get_by_type("commitment", status="active")
-c1, c2, c3 = st.columns(3)
-with c1:
-  stat_card("Active goals", len(goals))
-with c2:
-  stat_card("Open commitments", len(commitments))
-with c3:
-  closed = sum(1 for log in logs[:7] if log.evening_completed)
-  stat_card("Closed days (7d)", f"{closed}/{min(len(logs), 7)}" if logs else "No data")
-if scores:
-  st.caption("Overall growth score across calculated days")
-  st.line_chart({"overall growth": [score.overall_growth_score or 0 for score in reversed(scores)]})
+if st.button("Open Life Calendar (Interactive 70-Year Grid)", type="primary", use_container_width=True):
+  st.switch_page("pages/1_Life_Calendar.py")
+
+# Section: Weekly Journal Sync
+section("🔄 Weekly Journal Sync")
+logs = sync_service.get_recent_sync_logs(1)
+
+if logs:
+  last_log = logs[0]
+  hero_card(
+    f"Latest Weekly Sync ({last_log['week_start']})",
+    f"Alignment Score: {last_log['goal_alignment_score']}% · Source: {last_log['source_type'].upper()}",
+  )
+  st.markdown(f"**Next Week Focus:**\n{last_log['next_week_focus']}")
 else:
-  info_card("No calculated score trend yet. Close a day to establish a baseline.", "default")
+  info_card("No weekly batch upload recorded yet. Upload your weekly handwritten journal CSV to sync.", "info")
+
+if st.button("Upload Weekly Journal (CSV / Image)", use_container_width=True):
+  st.switch_page("pages/3_Weekly_Sync.py")
+
+# Section: Goal Horizons
+section("🎯 Active Goal Horizons")
+goals = goal_repo.get_active()
 if goals:
-  st.caption("Goal pace")
-  st.dataframe([{"goal": goal.title, "progress": f"{goal.progress * 100:.0f}%", "deadline": goal.deadline or "No deadline"} for goal in goals], hide_index=True, use_container_width=True)
-if today_log and today_log.mood_morning:
-  hero_card("Morning context", f"Sleep {today_log.sleep_hours or 'unknown'} hours · mood {today_log.mood_morning}/5")
+  st.caption("Active goals linked to your short-, mid-, and long-term milestones.")
+  st.dataframe(
+    [
+      {
+        "horizon": (goal.horizon or "medium").upper(),
+        "goal": goal.title,
+        "progress": f"{goal.progress * 100:.0f}%",
+        "deadline": goal.deadline or "No deadline",
+      }
+      for goal in goals
+    ],
+    hide_index=True,
+    use_container_width=True,
+  )
+else:
+  info_card("No active goals found. Set up goals in Vision & Goals.", "default")

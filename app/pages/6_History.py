@@ -46,6 +46,18 @@ with c2:
 with c3:
   stat_card("Coach Sessions", coach_repo.count())
 
+with st.expander("📝 Quick Daily Note (Optional Digital Entry)", expanded=False):
+  st.caption("Optional secondary digital log for quick daily notes.")
+  note_date = st.date_input("Note Date", value=date.today())
+  gratitude_text = st.text_input("Gratitude / Focus", key="hist_gratitude")
+  entry_text = st.text_area("Journal Note / Reflection", height=100, key="hist_entry")
+  if st.button("Save Daily Note", type="primary"):
+    from database.repositories.log_repository import LogRepository
+    from models.daily_log import DailyLogUpdate
+    log_repo.upsert_fields(note_date, DailyLogUpdate(morning_completed=True, evening_completed=True, gratitude=gratitude_text or None, journal_entry=entry_text or None))
+    st.toast("Daily note saved to history.", icon="✅")
+    st.rerun()
+
 with st.expander("Import Journal Data", expanded=False):
   tab1, tab2, tab3 = st.tabs(["Excel", "JSON", "Paste Text"])
   with tab1:

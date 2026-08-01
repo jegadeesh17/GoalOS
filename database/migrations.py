@@ -211,9 +211,30 @@ def _migration_2_memory_search(conn: sqlite3.Connection) -> None:
   conn.execute("INSERT INTO memory_fts(rowid, text, memory_id) SELECT id, text, id FROM memories")
 
 
+def _migration_3_weekly_sync_and_life_calendar(conn: sqlite3.Connection) -> None:
+  """Add user birth_date and target_age, plus weekly_sync_logs table."""
+  _add_column(conn, "user", "birth_date TEXT DEFAULT '2002-06-17'")
+  _add_column(conn, "user", "target_age INTEGER DEFAULT 70")
+  conn.execute("""CREATE TABLE IF NOT EXISTS weekly_sync_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      week_start DATE NOT NULL,
+      week_end DATE NOT NULL,
+      source_type TEXT NOT NULL DEFAULT 'csv',
+      raw_content TEXT,
+      summary TEXT,
+      wins TEXT,
+      lessons TEXT,
+      goal_alignment_score REAL,
+      next_week_focus TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )""")
+  conn.execute("CREATE INDEX IF NOT EXISTS ix_weekly_sync_logs_week ON weekly_sync_logs(week_start DESC)")
+
+
 MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
   (1, _migration_1_integrity),
   (2, _migration_2_memory_search),
+  (3, _migration_3_weekly_sync_and_life_calendar),
 ]
 
 

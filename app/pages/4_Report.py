@@ -57,8 +57,8 @@ if curr_key not in months_map:
     "logs": [],
   }
 
-# Order months by logs count desc, then date desc
-sorted_months = sorted(months_map.values(), key=lambda m: (len(m["logs"]), m["key"]), reverse=True)
+# Order months by date desc (newest first)
+sorted_months = sorted(months_map.values(), key=lambda m: m["key"], reverse=True)
 
 section("🗓️ Select Month Report")
 selected_month_name = st.selectbox(
@@ -80,31 +80,41 @@ monthly_report = sync_service.generate_monthly_report(raw_logs, month_name=month
 yearly_report = sync_service.generate_yearly_report([monthly_report], year_name=str(month_start.year), active_goals=active_goals)
 
 section(f"📈 {month_name} Overview")
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 with c1:
   stat_card("Days Logged", f"{progress['days_logged']} / {progress['days_in_month']}")
 with c2:
-  stat_card("Monthly Goal Alignment", f"{progress['monthly_completion_rate']}%")
+  stat_card("Logging Pacing", f"{progress.get('logging_consistency_rate', progress['monthly_completion_rate']):.1f}%")
 with c3:
-  stat_card("Pacing Verdict", progress["pacing_status"])
+  stat_card("Task Execution", f"{progress.get('avg_task_execution_rate', 0.0):.1f}%")
+with c4:
+  stat_card("Overall Goal Alignment", f"{progress['monthly_completion_rate']:.1f}%")
 
 st.progress(min(1.0, progress["monthly_completion_rate"] / 100.0))
+info_card(f"**Pacing Verdict:** {progress['pacing_status']} — {progress['coaching_takeaway']}", "accent")
 
-section("🎯 Month's Goal vs. Performance Breakdown")
-col_goal, col_perf = st.columns(2)
-with col_goal:
-  hero_card(f"Target 1-Month Goal ({month_name})", progress["primary_monthly_goal"])
-  info_card("**Short-Term Horizon Goals:**\n" + "\n".join(f"• {g}" for g in progress["short_term_goals"]), "default")
+section("🎯 Month's Strengths, Weaknesses & 3-Step Action Plan")
+col_str, col_weak = st.columns(2)
+with col_str:
+  hero_card("💪 Execution Strengths & Wins", f"Semantic Goal Alignment: {progress.get('semantic_goal_alignment', 50.0):.1f}%")
+  info_card(f"**Target 1-Month Goal:** {progress['primary_monthly_goal']}", "default")
+  info_card(f"**Key Strengths & Milestones:**\n{progress.get('strengths', progress['wins'])}", "success")
 
-with col_perf:
-  hero_card("Actual Journal Reflections & Wins", progress["coaching_takeaway"])
-  info_card(f"**Recorded Reflections ({len(raw_logs)} logs):**\n{progress['wins']}", "success")
+with col_weak:
+  hero_card("⚠️ Bottlenecks & Friction Areas", f"Average Task Execution: {progress.get('avg_task_execution_rate', 0.0):.1f}%")
+  info_card(f"**Distraction & Friction Patterns:**\n{progress.get('weaknesses', progress['takeaways'])}", "warning")
+
+section("📋 3-Step Standard Action Plan for Next Month")
+info_card(progress.get("takeaways_3step", "1. Focus on top priority task first\n2. Eliminate distractions during deep work\n3. Maintain daily consistency"), "info")
 
 section("🔮 Cascading Goal Impact (1-Month ➔ 1-Year ➔ 5-Year)")
 info_card(monthly_report.get("cascading_goal_impact", "High monthly consistency accelerates your long-term milestones."), "accent")
+
 
 section(f"📊 Annual {month_start.year} Performance Synthesis")
 with st.expander(f"Annual {yearly_report['year']} Execution Summary across Available Months", expanded=True):
   st.write(f"**Annual Alignment Score:** {yearly_report['annual_alignment_score']}%")
   st.write(f"**Annual Verdict:** {yearly_report['annual_verdict']}")
   st.write(f"**1-Year Target Goals:** " + ", ".join(yearly_report["one_year_goals"]))
+  st.write(f"**5-Year Vision Goals:** " + ", ".join(yearly_report["five_year_goals"]))
+

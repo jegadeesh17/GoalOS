@@ -137,45 +137,113 @@ class WeeklySyncService:
     completion_rate = round((days_logged / days_in_month) * 100, 1) if days_in_month > 0 else 0.0
 
     target_entries = month_entries
-    all_reviews = [e.get("review", "") or e.get("journal_entry", "") for e in target_entries if e.get("review") or e.get("journal_entry")]
-    all_takeaways = [e.get("takeaway", "") or e.get("gratitude", "") for e in target_entries if e.get("takeaway") or e.get("gratitude")]
-    all_tasks = [e.get("tasks", "") or e.get("planned_tasks", "") for e in target_entries if e.get("tasks") or e.get("planned_tasks")]
+    all_reviews = [
+      e.get("review", "") or e.get("journal_entry", "")
+      for e in target_entries
+      if (e.get("review") or e.get("journal_entry", "")).strip()
+      and "Handwritten journal page recorded" not in (e.get("review") or e.get("journal_entry", ""))
+    ]
+    all_takeaways = [
+      e.get("takeaway", "") or e.get("one_lesson", "") or e.get("gratitude", "")
+      for e in target_entries
+      if (e.get("takeaway") or e.get("one_lesson", "") or e.get("gratitude", "")).strip()
+      and "Quiet reflection logged" not in (e.get("takeaway") or e.get("one_lesson", "") or e.get("gratitude", ""))
+    ]
+    all_tasks = [
+      e.get("tasks", "") or e.get("planned_tasks", "") or e.get("tasks_completed", "")
+      for e in target_entries
+      if (e.get("tasks") or e.get("planned_tasks", "") or e.get("tasks_completed", "")).strip()
+    ]
+
+    # Calculate average task completion rate across days with task logs
+    task_rates = []
+    for e in target_entries:
+      rate = e.get("task_completion_rate")
+      if rate is not None:
+        try:
+          task_rates.append(float(rate))
+        except (ValueError, TypeError):
+          pass
+    avg_task_execution = round(sum(task_rates) / len(task_rates), 1) if task_rates else (completion_rate if days_logged > 0 else 0.0)
 
     categorized_goals = GoalRepository().get_goals_for_month(month_start)
     short_term_goals = categorized_goals.get("1-month", [])
     one_year_goals = categorized_goals.get("1-year", [])
     five_year_goals = categorized_goals.get("5-year", [])
+    active_goals_list = active_goals or (short_term_goals + one_year_goals + five_year_goals)
 
     primary_1m_goal = short_term_goals[0].title if short_term_goals else "Establish core daily habits"
 
-    # Pacing assessment
-    if completion_rate >= 80.0:
+    # Evaluate semantic alignment between month's actual tasks/reflections and active goals
+    from services.analytics_service import goal_alignment_score
+    eval_text_snippets = all_tasks + all_reviews + all_takeaways
+    if eval_text_snippets and active_goals_list:
+      semantic_align = round(goal_alignment_score(eval_text_snippets, active_goals_list), 1)
+    else:
+      semantic_align = 50.0
+
+    # Composite alignment score: 30% logging consistency + 30% task execution + 40% goal semantic alignment
+    overall_monthly_alignment = round(
+      (completion_rate * 0.30) + (avg_task_execution * 0.30) + (semantic_align * 0.40),
+      1
+    ) if days_logged > 0 else 0.0
+
+    # Pacing assessment based on actual composite alignment & execution
+    if overall_monthly_alignment >= 70.0:
       pacing_status = "On Track — High Execution"
-      coaching_takeaway = f"Excellent consistency in {month_name} ({days_logged}/{days_in_month} days). Keep momentum focused on: '{primary_1m_goal}'."
-    elif completion_rate >= 40.0:
-      pacing_status = "Moderate Pacing — Step Up Morning Focus"
-      coaching_takeaway = f"Logged {days_logged}/{days_in_month} days so far in {month_name}. Protect your morning deep work block to hit '{primary_1m_goal}'."
+      coaching_takeaway = f"Strong alignment ({overall_monthly_alignment}%) and execution in {month_name}. Keep momentum focused on: '{primary_1m_goal}'."
+    elif overall_monthly_alignment >= 40.0:
+      pacing_status = "Moderate Pacing — Step Up Focus"
+      coaching_takeaway = f"Pacing at {overall_monthly_alignment}% alignment in {month_name} ({days_logged}/{days_in_month} days). Lock in morning deep work blocks for '{primary_1m_goal}'."
     else:
       pacing_status = "Behind Schedule — Reset Daily Discipline"
-      coaching_takeaway = f"Only {days_logged}/{days_in_month} days logged in {month_name}. Lock in a daily 60-min focus block for '{primary_1m_goal}'."
+      coaching_takeaway = f"Alignment score is {overall_monthly_alignment}% in {month_name}. Eliminate distractions and focus on top priority tasks."
 
-    wins_str = "\n".join(f"• {r[:80]}..." for r in all_reviews[:4]) if all_reviews else "Journal reflections recorded."
-    takeaways_str = "\n".join(f"• {t}" for t in all_takeaways[:4]) if all_takeaways else "Maintain consistency."
+    # Extract Strengths (positive reflections, completed task highlights)
+    positive_reviews = [r for r in all_reviews if any(w in r.lower() for w in ["well", "done", "good", "finished", "helped", "shipped", "happy", "managed"])]
+    strengths_list = [f"• {r}" for r in (positive_reviews[:4] if positive_reviews else all_reviews[:3])]
+    strengths_str = "\n".join(strengths_list) if strengths_list else "• Maintained 100% daily journaling discipline."
+
+    # Extract Weaknesses & Bottlenecks (reflections calling out distraction, time waste, porn, fatigue, overthinking)
+    weakness_reviews = [r for r in all_reviews if any(w in r.lower() for w in ["wasted", "distracted", "porn", "youtube", "multitasking", "overthinking", "drifted", "fatigue", "loser", "devastated", "no work", "no focus"])]
+    weaknesses_list = [f"• {r}" for r in (weakness_reviews[:4] if weakness_reviews else all_reviews[3:7])]
+    weaknesses_str = "\n".join(weaknesses_list) if weaknesses_list else "• Inconsistent morning deep work execution."
+
+    # Standard 3-Step Action Plan
+    step_1 = f"1️⃣ **Morning Focus**: Complete top priority task for '{primary_1m_goal}' in the first 90 mins without phone/social media."
+    step_2 = "2️⃣ **Distraction Lock-Out**: Separate work hours from YouTube & social media to protect dopamine levels."
+    step_3 = "3️⃣ **High ROI Priority**: Focus on high-value applications and skill building before secondary tasks."
+    takeaways_3step_str = f"{step_1}\n{step_2}\n{step_3}"
+
+    wins_bullets = [f"• {r}" for r in all_reviews[:5] if r]
+    wins_str = "\n".join(wins_bullets) if wins_bullets else "No written journal reflections recorded yet."
+
+    takeaway_bullets = [f"• {t}" for t in all_takeaways[:5] if t]
+    takeaways_str = "\n".join(takeaway_bullets) if takeaway_bullets else "Maintain daily consistency."
+
+    task_bullets = [f"• {t.replace(chr(10), ' ')}" for t in all_tasks[:5] if t]
+    tasks_summary_str = "\n".join(task_bullets) if task_bullets else "Daily task logs captured."
 
     return {
       "month_name": month_name,
       "days_logged": days_logged,
       "days_in_month": days_in_month,
-      "monthly_completion_rate": completion_rate,
+      "monthly_completion_rate": overall_monthly_alignment,
+      "logging_consistency_rate": completion_rate,
+      "avg_task_execution_rate": avg_task_execution,
+      "semantic_goal_alignment": semantic_align,
       "pacing_status": pacing_status,
       "coaching_takeaway": coaching_takeaway,
       "primary_monthly_goal": primary_1m_goal,
       "short_term_goals": [g.title for g in short_term_goals],
       "one_year_goals": [g.title for g in one_year_goals],
       "five_year_goals": [g.title for g in five_year_goals],
+      "strengths": strengths_str,
+      "weaknesses": weaknesses_str,
+      "takeaways_3step": takeaways_3step_str,
       "wins": wins_str,
       "takeaways": takeaways_str,
-      "tasks_summary": "\n".join(f"• {t[:60]}" for t in all_tasks[:5]) if all_tasks else "Daily task logs captured.",
+      "tasks_summary": tasks_summary_str,
       "is_month_complete": days_logged >= days_in_month,
     }
 
@@ -188,28 +256,52 @@ class WeeklySyncService:
   ) -> dict[str, Any]:
     """Aggregate month's data and evaluate Cascading Goal Impact (Monthly -> Yearly -> 5-Year)."""
     if not month_start:
-      month_start = date.today().replace(day=1)
+      if entries_or_reports and isinstance(entries_or_reports[0], dict) and entries_or_reports[0].get("date"):
+        try:
+          d_val = entries_or_reports[0]["date"]
+          first_date = date.fromisoformat(str(d_val)[:10])
+          month_start = first_date.replace(day=1)
+        except Exception:
+          pass
+      if not month_start and month_name:
+        try:
+          import datetime
+          dt = datetime.datetime.strptime(month_name.strip(), "%B %Y")
+          month_start = date(dt.year, dt.month, 1)
+        except Exception:
+          pass
+      if not month_start:
+        month_start = date.today().replace(day=1)
+
+    progress = self.calculate_monthly_progress(
+      entries_or_reports,
+      month_start=month_start,
+      month_name=month_name,
+      active_goals=active_goals,
+    )
 
     categorized_goals = GoalRepository().get_goals_for_month(month_start)
     short_term_goals = categorized_goals.get("1-month", [])
     one_year_goals = categorized_goals.get("1-year", [])
     five_year_goals = categorized_goals.get("5-year", [])
 
-    total_days = len(entries_or_reports)
-    days_in_m = calendar.monthrange(month_start.year, month_start.month)[1]
-    avg_score = round((total_days / float(days_in_m)) * 100, 1) if days_in_m > 0 else 0.0
+    total_days = progress["days_logged"]
+    days_in_m = progress["days_in_month"]
+    avg_score = progress["monthly_completion_rate"]
 
     primary_1m = short_term_goals[0].title if short_term_goals else "Core Execution"
     y1_titles = [f"'{g.title}'" for g in one_year_goals] if one_year_goals else ["1-Year Milestones"]
     y5_titles = [f"'{g.title}'" for g in five_year_goals] if five_year_goals else ["5-Year Vision"]
 
     cascading_impact = []
-    if avg_score >= 70.0:
-      cascading_impact.append(f"High consistency in {month_name} ({total_days}/{days_in_m} days logged, {avg_score}%) directly advances your 1-Year Goals: {', '.join(y1_titles)}.")
+    if avg_score >= 65.0:
+      cascading_impact.append(f"Strong execution in {month_name} ({total_days}/{days_in_m} days logged, {avg_score}% alignment) directly advances 1-Year Goals: {', '.join(y1_titles)}.")
       if five_year_goals:
-        cascading_impact.append(f"Accelerates long-term trajectory toward your 5-Year Goals: {', '.join(y5_titles)}.")
+        cascading_impact.append(f"Accelerates long-term trajectory toward 5-Year Goals: {', '.join(y5_titles)}.")
+    elif avg_score >= 40.0:
+      cascading_impact.append(f"Moderate execution in {month_name} ({total_days}/{days_in_m} days, {avg_score}% alignment). 1-Year Goals ({', '.join(y1_titles)}) need protected morning focus.")
     else:
-      cascading_impact.append(f"Execution in {month_name} ({total_days}/{days_in_m} days logged, {avg_score}%) was sub-optimal. Next month requires doubling morning focus.")
+      cascading_impact.append(f"Execution in {month_name} ({total_days}/{days_in_m} days logged, {avg_score}% alignment) was sub-optimal.")
       if one_year_goals:
         cascading_impact.append(f"Warning: 1-Year Goal milestones ({', '.join(y1_titles)}) risk falling behind schedule.")
 
@@ -218,7 +310,7 @@ class WeeklySyncService:
       "total_days_logged": total_days,
       "average_goal_alignment": avg_score,
       "cascading_goal_impact": "\n".join(f"• {ci}" for ci in cascading_impact),
-      "monthly_takeaway": f"Completed {total_days} total logged days in {month_name} with an alignment score of {avg_score}%.",
+      "monthly_takeaway": f"Completed {total_days} logged days in {month_name} with an overall alignment score of {avg_score}%.",
     }
 
   def generate_yearly_report(
@@ -237,10 +329,12 @@ class WeeklySyncService:
     five_year_goals = categorized_goals.get("5-year", [])
 
     annual_verdict = ""
-    if avg_alignment >= 75.0:
-      annual_verdict = f"Outstanding annual execution ({avg_alignment}% alignment over {total_months} months). 1-Year goals achieved!"
+    if avg_alignment >= 70.0:
+      annual_verdict = f"High annual alignment ({avg_alignment}% across active months). 1-Year goals are on track!"
+    elif avg_alignment >= 45.0:
+      annual_verdict = f"Moderate annual progress ({avg_alignment}% alignment). Step up consistency to secure 1-Year goals."
     else:
-      annual_verdict = f"Pacing behind full 1-Year capacity ({avg_alignment}% alignment over {total_months} months). Recalibrate 1-Month milestones."
+      annual_verdict = f"Pacing behind 1-Year capacity ({avg_alignment}% alignment). Recalibrate monthly focus blocks."
 
     return {
       "year": year_name,

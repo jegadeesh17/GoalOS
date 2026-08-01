@@ -10,7 +10,8 @@ from models.score import Score
 
 LEARNING_KEYWORDS = [
   "read", "studied", "learned", "practiced", "course", "book",
-  "research", "codekata", "coding",
+  "research", "codekata", "coding", "leetcode", "study", "prep",
+  "nlp", "rag", "docker", "ml", "ds", "project", "algorithm",
 ]
 
 
@@ -46,16 +47,32 @@ def goal_alignment_score(
   goals: list[Goal],
   embedding_fn=None,
 ) -> float:
-  """Keyword + embedding overlap between tasks and goals."""
+  """Semantic embedding + keyword overlap between tasks/reflections and goals."""
   if not tasks or not goals:
     return 0.0
   tasks_text = " ".join(tasks)
   goals_text = " ".join(f"{g.title} {g.description or ''} {g.reason or ''}" for g in goals)
+  
+  if embedding_fn is None:
+    try:
+      from services.embedding_service import EmbeddingService
+      embedder = EmbeddingService()
+      embedding_fn = embedder.similarity
+    except Exception:
+      embedding_fn = None
+
   if embedding_fn:
-    similarity = embedding_fn(tasks_text, goals_text)
+    try:
+      similarity = embedding_fn(tasks_text, goals_text)
+    except Exception:
+      similarity = _text_similarity(tasks_text, goals_text)
   else:
     similarity = _text_similarity(tasks_text, goals_text)
-  return min(max(similarity * 100, 0.0), 100.0)
+  
+  # Boost with keyword overlap so both semantic & exact keyword hits count
+  kw_sim = _text_similarity(tasks_text, goals_text)
+  combined_sim = max(similarity, kw_sim * 1.2)
+  return min(max(combined_sim * 100, 0.0), 100.0)
 
 
 def consistency_score(logs_30d: list[DailyLog]) -> float:
@@ -201,6 +218,10 @@ def calculate_daily_scores(
     tasks.append(log.supporting_task_2)
   if log.tasks_completed:
     tasks.append(log.tasks_completed)
+  if log.journal_entry:
+    tasks.append(log.journal_entry)
+  if log.takeaway:
+    tasks.append(log.takeaway)
 
   alignment = goal_alignment_score(tasks, goals)
   consistency = consistency_score(logs_30d)

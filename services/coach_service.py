@@ -103,10 +103,31 @@ class CoachService:
       r.model_dump(mode="json") for r in self.coach_repo.get_recent(5)
     ]
 
+    # Construct a clean narrative digest of recent text reflections (noise-free)
+    journal_digest = []
+    for l in recent_logs:
+      if not l:
+        continue
+      entry_text = (l.journal_entry or "").strip()
+      takeaway_text = (l.takeaway or l.one_lesson or "").strip()
+      gratitude_text = (l.gratitude or "").strip()
+      tasks_text = (l.planned_tasks or l.tasks_completed or "").strip()
+      
+      if entry_text or takeaway_text or gratitude_text or tasks_text:
+        journal_digest.append({
+          "date": l.date.isoformat(),
+          "reflection": entry_text,
+          "takeaway": takeaway_text,
+          "gratitude": gratitude_text,
+          "tasks": tasks_text,
+          "task_completion_rate": l.task_completion_rate,
+        })
+
     ctx = {
       "date": target_date.isoformat(),
       "user_vision": self._get_user_vision(),
       "active_goals": [self._serialize_goal(g) for g in goals],
+      "journal_text_digest": journal_digest,
       "recent_logs": [self._serialize_log(l) for l in recent_logs],
       "current_scores": scores.model_dump(mode="json") if scores else {},
       "recent_weekly_review": weekly,

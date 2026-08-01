@@ -1,4 +1,4 @@
-"""Weekly Journal Batch Sync and Goal Reflection."""
+"""Weekly Journal Batch Sync and Goal Reflection with Folder Image Scan."""
 
 import os
 import sys
@@ -10,6 +10,7 @@ if _APP_DIR not in sys.path:
 import bootstrap  # noqa: F401
 
 import streamlit as st
+from PIL import Image
 
 from components.layout import hero_card, info_card, page_header, section, stat_card
 from database.repositories.goal_repository import GoalRepository
@@ -28,126 +29,144 @@ sync_service = WeeklySyncService()
 goal_repo = GoalRepository()
 active_goals = goal_repo.get_active()
 
-page_header("Weekly Sync", f"Week of {week_start.strftime('%b %d')} - {week_end.strftime('%b %d, %Y')}")
+page_header("Weekly & Monthly Sync", "Handwritten Journal Batch Processing & Goal Alignment")
 
-upload_tab, review_tab, history_tab = st.tabs(["Batch Upload", "Weekly Report & Focus", "Sync History"])
+upload_tab, gallery_tab, report_tab, history_tab = st.tabs([
+  "Batch Upload & Folder Scan",
+  "Journal Page Gallery",
+  "Weekly & Monthly Reports",
+  "Sync History",
+])
 
 with upload_tab:
-  section("Upload Weekly Handwritten Journal")
-  st.caption("Upload your weekly handwritten journal data as a CSV file or scan page images using local offline OCR (zero external API calls).")
+  section("Select Import Mode")
+  import_mode = st.radio(
+    "Import Source",
+    ["July Journal Folder (Preset)", "Custom Local Folder Path", "CSV File Upload", "Single Image Scan"],
+    horizontal=True,
+  )
 
-  col_left, col_right = st.columns([2, 1])
+  if import_mode == "July Journal Folder (Preset)":
+    july_folder = r"c:\Users\jegad\projects\GoalOS\data\July Journal"
+    st.info(f"Preset Directory: `{july_folder}` (31 Journal `.jpg` Images)")
 
-  with col_left:
-    file_type = st.radio("Import Type", ["CSV File (Recommended)", "Image Scan (Local OCR)"], horizontal=True)
+    if st.button("Scan & Group July Journal (31 Days → 4 Weeks + Monthly)", type="primary", use_container_width=True):
+      with st.spinner("Scanning 31 daily journal pages for July 2026..."):
+        raw_entries = sync_service.scan_journal_folder(july_folder, start_date=date(2026, 7, 1))
+        weeks = sync_service.group_entries_into_weeks(raw_entries)
+        st.session_state["july_raw_entries"] = raw_entries
+        st.session_state["july_weeks"] = weeks
 
-    if file_type == "CSV File (Recommended)":
-      uploaded_file = st.file_uploader("Upload Weekly Journal CSV", type=["csv"])
-      if uploaded_file is not None:
-        content = uploaded_file.getvalue()
-        entries = sync_service.parse_csv(content)
-        st.session_state["parsed_weekly_entries"] = entries
-        st.success(f"Parsed {len(entries)} daily entries from CSV.")
+        # Generate reports for all weeks
+        weekly_reports = []
+        for week in weeks:
+          rep = sync_service.generate_weekly_report(week["entries"], active_goals)
+          rep["week_start"] = week["week_start"]
+          rep["week_end"] = week["week_end"]
+          weekly_reports.append(rep)
+          # Save each week to database
+          sync_service.save_sync_log(
+            week_start=week["week_start"],
+            week_end=week["week_end"],
+            source_type="folder_scan",
+            raw_content=f"July Journal Week {week['week_index']} ({len(week['entries'])} pages)",
+            summary=rep["summary"],
+            wins=rep["wins"],
+            lessons=rep["lessons"],
+            alignment_score=rep["goal_alignment_score"],
+            next_week_focus=rep["next_week_focus"],
+          )
 
-    else:
-      uploaded_image = st.file_uploader("Upload Journal Page Image", type=["png", "jpg", "jpeg"])
-      if uploaded_image is not None:
-        img_bytes = uploaded_image.getvalue()
-        with st.spinner("Extracting text locally via Tesseract OCR..."):
-          ocr_result = extract_text_from_image(img_bytes)
+        monthly_summary = sync_service.generate_monthly_summary(weekly_reports, "July 2026")
+        st.session_state["july_weekly_reports"] = weekly_reports
+        st.session_state["july_monthly_summary"] = monthly_summary
+        st.toast("Successfully processed July 2026 Journal (4 Weeks + Monthly Summary)!", icon="🎉")
 
-        if ocr_result["success"]:
-          st.text_area("Extracted Raw Text", ocr_result["text"], height=200)
-          st.session_state["raw_ocr_text"] = ocr_result["text"]
-          # Create single entry fallback
-          st.session_state["parsed_weekly_entries"] = [{
-            "date": today.isoformat(),
-            "gratitude": "",
-            "tasks": "",
-            "wins": "",
-            "review": ocr_result["text"],
-            "takeaway": "",
-          }]
-        else:
-          info_card(ocr_result["error"], "warning")
+  elif import_mode == "Custom Local Folder Path":
+    folder_input = st.text_input("Local Folder Path", value=r"c:\Users\jegad\projects\GoalOS\data\July Journal")
+    if folder_input and st.button("Scan Custom Folder"):
+      entries = sync_service.scan_journal_folder(folder_input)
+      weeks = sync_service.group_entries_into_weeks(entries)
+      st.session_state["custom_entries"] = entries
+      st.session_state["custom_weeks"] = weeks
+      st.success(f"Scanned {len(entries)} journal pages across {len(weeks)} calendar weeks.")
 
-  with col_right:
-    section("CSV Format Helper")
-    st.markdown("""
-    **Expected CSV Headers:**
-    `date`, `gratitude`, `tasks`, `wins`, `review`, `takeaway`
+  elif import_mode == "CSV File Upload":
+    uploaded_file = st.file_uploader("Upload Weekly Journal CSV", type=["csv"])
+    if uploaded_file is not None:
+      entries = sync_service.parse_csv(uploaded_file.getvalue())
+      st.session_state["parsed_weekly_entries"] = entries
+      st.success(f"Parsed {len(entries)} daily entries from CSV.")
 
-    **Sample Row:**
-    `2026-07-28`, `Quiet morning`, `Build feature`, `Finished API`, `Felt focused`, `Plan before code`
-    """)
+  elif import_mode == "Single Image Scan":
+    uploaded_image = st.file_uploader("Upload Single Page Image", type=["png", "jpg", "jpeg"])
+    if uploaded_image is not None:
+      ocr_res = extract_text_from_image(uploaded_image.getvalue())
+      if ocr_res["success"]:
+        st.text_area("Extracted Raw Text", ocr_res["text"], height=200)
+      else:
+        info_card(ocr_res["error"], "warning")
 
-    sample_csv = """date,gratitude,tasks,wins,review,takeaway
-2026-07-27,Quiet morning,Study SQL,Finished review,Productive block,Schedule exercise early
-2026-07-28,Good sleep,Build portfolio,Completed demo,High focus,Protect morning hours
-"""
-    st.download_button(
-      "Download Sample CSV Template",
-      data=sample_csv,
-      file_name="weekly_journal_template.csv",
-      mime="text/csv",
-      use_container_width=True,
-    )
-
-with review_tab:
-  entries = st.session_state.get("parsed_weekly_entries", [])
+with gallery_tab:
+  entries = st.session_state.get("july_raw_entries") or st.session_state.get("custom_entries") or []
   if not entries:
-    info_card("No weekly journal entries uploaded yet. Upload a CSV on the Batch Upload tab to generate your report.", "info")
+    info_card("No folder scan active yet. Click 'Scan & Group July Journal' on the Batch Upload tab.", "info")
   else:
-    section("Parsed Journal Entries")
-    st.dataframe(entries, use_container_width=True)
+    section(f"Journal Page Gallery ({len(entries)} Pages Scanned)")
+    page_num = st.slider("Select Day Page", 1, len(entries), 1)
+    selected_entry = entries[page_num - 1]
 
-    if st.button("Generate Weekly Synthesis & Goal Alignment Report", type="primary", use_container_width=True):
-      report = sync_service.generate_weekly_report(entries, active_goals)
-      st.session_state["last_weekly_report"] = report
+    col_img, col_details = st.columns([1, 1])
+    with col_img:
+      st.markdown(f"**Filename:** `{selected_entry['filename']}`")
+      if os.path.exists(selected_entry["file_path"]):
+        try:
+          img = Image.open(selected_entry["file_path"])
+          st.image(img, use_container_width=True, caption=f"Day {selected_entry['day_number']} — {selected_entry['date']}")
+        except Exception:
+          st.warning("Could not render image preview.")
+    with col_details:
+      st.markdown(f"### Day {selected_entry['day_number']} Overview")
+      st.write(f"**Date:** {selected_entry['date']}")
+      st.write(f"**Gratitude / Focus:** {selected_entry['gratitude']}")
+      st.write(f"**Reflection:** {selected_entry['review']}")
+      st.write(f"**Takeaway:** {selected_entry['takeaway']}")
 
-      # Save to database
-      sync_service.save_sync_log(
-        week_start=week_start,
-        week_end=week_end,
-        source_type="csv" if file_type.startswith("CSV") else "ocr_image",
-        raw_content=str(entries),
-        summary=report["summary"],
-        wins=report["wins"],
-        lessons=report["lessons"],
-        alignment_score=report["goal_alignment_score"],
-        next_week_focus=report["next_week_focus"],
-      )
-      st.toast("Weekly Sync Report saved!", icon="✅")
+with report_tab:
+  monthly_summary = st.session_state.get("july_monthly_summary")
+  weekly_reports = st.session_state.get("july_weekly_reports")
 
-  report = st.session_state.get("last_weekly_report")
-  if report:
-    section("Weekly Synthesis & Goal Alignment")
+  if monthly_summary and weekly_reports:
+    section(f"📅 {monthly_summary['month']} Monthly Overview")
 
     c1, c2, c3 = st.columns(3)
     with c1:
-      stat_card("Days Logged", f"{report['total_days_logged']} days")
+      stat_card("Total Days Logged", f"{monthly_summary['total_days_logged']} / 31")
     with c2:
-      stat_card("Goal Alignment", f"{report['goal_alignment_score']}%")
+      stat_card("Avg Goal Alignment", f"{monthly_summary['average_goal_alignment']}%")
     with c3:
-      stat_card("Active Goals Linked", report["active_goals_count"])
+      stat_card("Weekly Syncs Created", monthly_summary["total_weeks"])
 
-    st.markdown("### Summary")
-    st.info(report["summary"])
+    hero_card("Monthly Key Takeaway", monthly_summary["monthly_takeaway"])
 
-    col1, col2 = st.columns(2)
-    with col1:
-      st.markdown("### 🏆 Key Wins")
-      st.write(report["wins"])
-    with col2:
-      st.markdown("### 💡 Key Lessons")
-      st.write(report["lessons"])
-
-    section("🎯 Next Week Focus Areas")
-    hero_card("Priority Focus Items", report["next_week_focus"])
+    section("4 Weekly Sync Reports (July 2026)")
+    for idx, rep in enumerate(weekly_reports):
+      with st.expander(f"Week {idx + 1} ({rep['week_start']} to {rep['week_end']}) — Alignment: {rep['goal_alignment_score']}%", expanded=(idx == 0)):
+        st.write(f"**Summary:**\n{rep['summary']}")
+        col_w, col_l = st.columns(2)
+        with col_w:
+          st.markdown("**Key Wins:**")
+          st.write(rep["wins"])
+        with col_l:
+          st.markdown("**Lessons:**")
+          st.write(rep["lessons"])
+        st.markdown(f"**Next Week Focus:**\n{rep['next_week_focus']}")
+  else:
+    info_card("No weekly/monthly reports generated yet. Run the July Journal Scan on the Batch Upload tab.", "info")
 
 with history_tab:
-  section("Previous Weekly Sync Logs")
-  logs = sync_service.get_recent_sync_logs(10)
+  section("Historical Weekly Sync Logs")
+  logs = sync_service.get_recent_sync_logs(15)
   if logs:
     for log in logs:
       with st.expander(f"Week of {log['week_start']} (Alignment: {log['goal_alignment_score']}%)"):

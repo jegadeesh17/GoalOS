@@ -1,16 +1,16 @@
 """Reusable layout helpers for GoalOS pages."""
 
 import html
-
 import plotly.graph_objects as go
 import streamlit as st
 
 from components.theme import COLORS, PLOTLY_LAYOUT
 
 NAV_ITEMS = [
-  ("pages/3_Journal.py", "Journal"),
+  ("pages/1_Life_Calendar.py", "Life Calendar"),
+  ("pages/3_Weekly_Sync.py", "Weekly Sync"),
   ("pages/2_Vision_Goals.py", "Goals"),
-  ("pages/5_Weekly_Review.py", "Weekly"),
+  ("pages/5_Weekly_Review.py", "Weekly Review"),
   ("pages/6_History.py", "History"),
   ("pages/8_Settings.py", "Settings"),
 ]
@@ -158,5 +158,3 @@ def style_chart(fig: go.Figure, height: int = 260, y_range: tuple | None = (0, 1
     fig.update_yaxes(range=list(y_range))
   fig.update_traces(marker_line_width=0)
   return fig
-
-

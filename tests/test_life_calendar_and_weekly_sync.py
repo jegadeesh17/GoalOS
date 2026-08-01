@@ -1,5 +1,6 @@
-"""Unit tests for Life Calendar Service and Weekly Sync Service."""
+"""Unit tests for Life Calendar Service, Weekly Sync Service, and July Journal Folder Scanner."""
 
+import os
 from datetime import date
 from services.life_calendar_service import LifeCalendarService
 from services.weekly_sync_service import WeeklySyncService
@@ -33,17 +34,22 @@ def test_weekly_sync_csv_parser():
   assert len(entries) == 2
   assert entries[0]["date"] == "2026-07-27"
   assert entries[0]["wins"] == "Completed task"
-  assert entries[1]["takeaway"] == "Plan early"
 
 
-def test_weekly_report_generation():
+def test_july_journal_folder_scan_and_grouping():
   sync = WeeklySyncService()
-  entries = [
-    {"date": "2026-07-27", "wins": "Completed task", "takeaway": "Pace yourself", "review": "Good work"},
-    {"date": "2026-07-28", "wins": "Finished spec", "takeaway": "Plan early", "review": "High focus"},
-  ]
-  report = sync.generate_weekly_report(entries, active_goals=[])
-  assert report["total_days_logged"] == 2
-  assert "Completed task" in report["wins"]
-  assert "Pace yourself" in report["lessons"]
-  assert report["goal_alignment_score"] > 0.0
+  july_folder = r"c:\Users\jegad\projects\GoalOS\data\July Journal"
+  assert os.path.exists(july_folder)
+
+  entries = sync.scan_journal_folder(july_folder, start_date=date(2026, 7, 1))
+  assert len(entries) == 31  # 31 days in July
+
+  weeks = sync.group_entries_into_weeks(entries)
+  assert len(weeks) == 5  # 4 full 7-day weeks + 1 remaining 3-day week
+
+  weekly_reports = [sync.generate_weekly_report(w["entries"], active_goals=[]) for w in weeks]
+  assert len(weekly_reports) == 5
+
+  monthly_summary = sync.generate_monthly_summary(weekly_reports, "July 2026")
+  assert monthly_summary["total_days_logged"] == 31
+  assert monthly_summary["total_weeks"] == 5

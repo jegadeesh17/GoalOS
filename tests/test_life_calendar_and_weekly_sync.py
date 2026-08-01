@@ -38,7 +38,7 @@ def test_weekly_sync_csv_parser():
 
 def test_july_journal_folder_scan_and_grouping():
   sync = WeeklySyncService()
-  july_folder = r"c:\Users\jegad\projects\GoalOS\data\July Journal"
+  july_folder = r"c:\Users\jegad\projects\GoalOS\data\Journal"
   assert os.path.exists(july_folder)
 
   entries = sync.scan_journal_folder(july_folder, start_date=date(2026, 7, 1))

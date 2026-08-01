@@ -14,13 +14,18 @@ def _get_setting(name: str, default: str = "") -> str:
   value = os.getenv(name)
   if value:
     return value
-  try:
-    import streamlit as st
-    secret_value = st.secrets.get(name)
-    if secret_value is not None:
-      return str(secret_value)
-  except Exception:
-    pass
+  secrets_paths = [
+    Path.home() / ".streamlit" / "secrets.toml",
+    _BASE_DIR / ".streamlit" / "secrets.toml",
+  ]
+  if any(p.exists() for p in secrets_paths):
+    try:
+      import streamlit as st
+      secret_value = st.secrets.get(name)
+      if secret_value is not None:
+        return str(secret_value)
+    except Exception:
+      pass
   return default
 
 

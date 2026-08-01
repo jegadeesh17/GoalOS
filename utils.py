@@ -26,12 +26,15 @@ def apply_theme():
 
 def configure_page(title: str, icon: str = "🎯", layout: str = "wide"):
   """Set page config then apply theme (must be first Streamlit calls)."""
-  st.set_page_config(
-    page_title=title,
-    page_icon=icon,
-    layout=layout,
-    initial_sidebar_state="collapsed",
-  )
+  try:
+    st.set_page_config(
+      page_title=title,
+      page_icon=icon,
+      layout=layout,
+      initial_sidebar_state="collapsed",
+    )
+  except Exception:
+    pass
   apply_theme()
   top_nav()
 

@@ -9,11 +9,12 @@ from components.theme import COLORS, PLOTLY_LAYOUT
 
 NAV_ITEMS = [
   ("pages/1_Life_Calendar.py", "Life Calendar"),
-  ("pages/3_Weekly_Sync.py", "Weekly Sync"),
-  ("pages/2_Vision_Goals.py", "Goals"),
-  ("pages/5_Weekly_Review.py", "Weekly Review"),
+  ("pages/2_Journal.py", "Journal"),
+  ("pages/3_AI_Coach.py", "AI Coach"),
+  ("pages/4_Report.py", "Report"),
+  ("pages/5_Goals.py", "Goals"),
   ("pages/6_History.py", "History"),
-  ("pages/8_Settings.py", "Settings"),
+  ("pages/7_Settings.py", "Settings"),
 ]
 
 

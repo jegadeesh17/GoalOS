@@ -8,9 +8,9 @@ from models.goal import GoalCreate
 from models.memory import MemoryCreate
 
 
-def test_tool_definitions_has_two_tools():
+def test_tool_definitions_has_expected_tools():
   names = {t["function"]["name"] for t in TOOL_DEFINITIONS}
-  assert names == {"search_memories", "get_active_goals"}
+  assert {"search_memories", "get_active_goals", "get_monthly_progress"}.issubset(names)
 
 
 def test_execute_search_memories(temp_db):

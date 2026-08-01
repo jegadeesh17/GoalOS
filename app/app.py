@@ -55,22 +55,22 @@ st.progress(min(1.0, life_summary["percentage_lived"] / 100.0))
 if st.button("Open Life Calendar (Interactive 70-Year Grid)", type="primary", use_container_width=True):
   st.switch_page("pages/1_Life_Calendar.py")
 
-# Section: Weekly Journal Sync
-section("🔄 Weekly Journal Sync")
+# Section: Journal Sync & Monthly Progress
+section("🔄 Journal Sync & Monthly Progress")
 logs = sync_service.get_recent_sync_logs(1)
 
 if logs:
   last_log = logs[0]
   hero_card(
-    f"Latest Weekly Sync ({last_log['week_start']})",
-    f"Alignment Score: {last_log['goal_alignment_score']}% · Source: {last_log['source_type'].upper()}",
+    f"Latest Progress Sync ({last_log['week_start']})",
+    f"Monthly Alignment Score: {last_log['goal_alignment_score']}% · Source: {last_log['source_type'].upper()}",
   )
-  st.markdown(f"**Next Week Focus:**\n{last_log['next_week_focus']}")
+  st.markdown(f"**Monthly Pacing Focus:**\n{last_log['next_week_focus']}")
 else:
-  info_card("No weekly batch upload recorded yet. Upload your weekly handwritten journal CSV to sync.", "info")
+  info_card("No journal folder scan recorded yet. Import your handwritten journal images or CSV to sync progress.", "info")
 
-if st.button("Upload Weekly Journal (CSV / Image)", use_container_width=True):
-  st.switch_page("pages/3_Weekly_Sync.py")
+if st.button("Open Journal Page (Batch / Image Upload)", use_container_width=True):
+  st.switch_page("pages/2_Journal.py")
 
 # Section: Goal Horizons
 section("🎯 Active Goal Horizons")

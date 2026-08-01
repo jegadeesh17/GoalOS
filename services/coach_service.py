@@ -10,6 +10,7 @@ from ai.pipelines.evening_coach import run_evening_coach
 from ai.pipelines.future_self_coach import run_future_self_coach
 from ai.pipelines.goal_alignment_coach import run_goal_alignment_coach
 from ai.pipelines.morning_coach import run_morning_coach
+from ai.pipelines.progress_coach import run_progress_coach
 from ai.pipelines.reflection_coach import run_reflection_coach
 from ai.pipelines.weekly_coach import run_weekly_coach
 from database.connection import get_db
@@ -241,6 +242,57 @@ class CoachService:
       return run_goal_alignment_coach(context, self.llm)
     from ai.pipelines._base import fallback_goal_alignment
     return fallback_goal_alignment(context)
+
+  def get_progress_coaching(self, target_date: date = None) -> dict:
+    import calendar
+    from services.weekly_sync_service import WeeklySyncService
+
+    self._refresh_llm()
+    if not target_date:
+      target_date = date.today()
+
+    month_start = target_date.replace(day=1)
+    days_in_month = calendar.monthrange(target_date.year, target_date.month)[1]
+    month_end = target_date.replace(day=days_in_month)
+    month_name = month_start.strftime("%B %Y")
+
+    month_logs_objs = self.log_repo.get_range(month_start, month_end)
+    month_logs = [self._serialize_log(l) for l in month_logs_objs]
+
+    context = self.build_context(target_date, f"monthly progress goals alignment for {month_name}")
+
+    sync = WeeklySyncService()
+    active_goals = self.goal_repo.get_active()
+    monthly_progress = sync.calculate_monthly_progress(
+      month_logs,
+      month_start=month_start,
+      month_name=month_name,
+      active_goals=active_goals,
+    )
+
+    # Pass past logs (e.g. previous month) as historical baseline context for coaching insights
+    prev_logs_objs = self.log_repo.get_recent(31)
+    context["historical_baseline_logs"] = [self._serialize_log(l) for l in prev_logs_objs if l.date < month_start]
+
+    context["monthly_progress"] = monthly_progress
+    context["month_name"] = month_name
+    context["target_date"] = target_date.isoformat()
+
+    if self._remote_ai_allowed():
+      result = run_progress_coach(context, self.llm)
+    else:
+      from ai.pipelines._base import fallback_progress
+      result = fallback_progress(context)
+      result["fallback_reason"] = "remote_ai_consent_required" if self.llm.api_key else "no_api_key"
+
+    self.coach_repo.create(
+      CoachResponseCreate(
+        session_type="progress",
+        ai_response=json.dumps(result),
+        date=target_date,
+      )
+    )
+    return result
 
   def prefill_from_journal(self, journal_text: str) -> dict:
     """AI pre-fill win and lesson from journal."""

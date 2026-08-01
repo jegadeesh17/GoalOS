@@ -327,25 +327,36 @@ THEME_CSS = f"""
 
 
   .stButton > button[kind="primary"],
-
-  .stButton > button[data-testid="stBaseButton-primary"] {{
-
-    background: linear-gradient(135deg, var(--accent-2), #4338ca);
-
-    border: none;
-
-    color: white;
-
+  .stButton > button[data-testid="stBaseButton-primary"],
+  button[kind="primary"],
+  button[data-testid="stBaseButton-primary"],
+  button[kind="primaryFormSubmit"],
+  button[data-testid="stFormSubmitButton"] > button,
+  [data-testid="stFormSubmitButton"] button {{
+    background: linear-gradient(135deg, #4f46e5, #3730a3) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
   }}
 
+  .stButton > button[kind="primary"] *,
+  .stButton > button[data-testid="stBaseButton-primary"] *,
+  button[kind="primary"] *,
+  button[data-testid="stBaseButton-primary"] *,
+  button[kind="primaryFormSubmit"] *,
+  button[data-testid="stFormSubmitButton"] > button *,
+  [data-testid="stFormSubmitButton"] button * {{
+    color: #ffffff !important;
+    font-weight: 700 !important;
+  }}
 
-
-  .stButton > button[kind="primary"]:hover {{
-
-    color: white;
-
-    filter: brightness(1.05);
-
+  .stButton > button[kind="primary"]:hover,
+  .stButton > button[data-testid="stBaseButton-primary"]:hover,
+  [data-testid="stFormSubmitButton"] button:hover {{
+    color: #ffffff !important;
+    filter: brightness(1.15) !important;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4) !important;
   }}
 
 

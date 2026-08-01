@@ -35,6 +35,14 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
       "parameters": {"type": "object", "properties": {}},
     },
   },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_monthly_progress",
+      "description": "Get current month's journal logging progress, completion rate, and goal alignment pacing.",
+      "parameters": {"type": "object", "properties": {}},
+    },
+  },
 ]
 
 
@@ -80,6 +88,17 @@ def execute_tool(
         for g in goals
       ],
       "count": len(goals),
+    }
+
+  if name == "get_monthly_progress":
+    from database.repositories.log_repository import LogRepository
+    from services.weekly_sync_service import WeeklySyncService
+    logs = LogRepository().get_recent(31)
+    sync = WeeklySyncService()
+    raw_logs = [l.model_dump(mode="json") for l in logs]
+    progress = sync.calculate_monthly_progress(raw_logs)
+    return {
+      "monthly_progress": progress,
     }
 
   return {"error": f"unknown_tool:{name}"}

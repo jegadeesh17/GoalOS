@@ -1,3 +1,4 @@
+import calendar
 import csv
 import io
 import os
@@ -72,6 +73,7 @@ class WeeklySyncService:
       entry_data = {
         "day_number": index + 1,
         "filename": filename,
+        "file_path": file_path,
         "date": entry_date.isoformat(),
         "gratitude": structured["gratitude"],
         "tasks": structured["tasks"],
@@ -101,20 +103,167 @@ class WeeklySyncService:
       entries.append(entry_data)
     return entries
 
+  def calculate_monthly_progress(
+    self,
+    entries: list[dict[str, Any]],
+    month_start: date = None,
+    month_name: str = "",
+    active_goals: list[Any] = None,
+  ) -> dict[str, Any]:
+    """Calculate progress continuously based on logged entries in the month vs total days in month."""
+    if not month_start:
+      month_start = date.today().replace(day=1)
+    if not month_name:
+      month_name = month_start.strftime("%B %Y")
+
+    days_in_month = calendar.monthrange(month_start.year, month_start.month)[1]
+
+    # Filter entries that belong to target month/year
+    month_entries = []
+    for e in entries:
+      edate = e.get("date")
+      if isinstance(edate, str):
+        try:
+          edate = date.fromisoformat(edate[:10])
+        except Exception:
+          edate = None
+      if isinstance(edate, date):
+        if edate.year == month_start.year and edate.month == month_start.month:
+          month_entries.append(e)
+      else:
+        month_entries.append(e)
+
+    days_logged = len(month_entries)
+    completion_rate = round((days_logged / days_in_month) * 100, 1) if days_in_month > 0 else 0.0
+
+    target_entries = month_entries
+    all_reviews = [e.get("review", "") or e.get("journal_entry", "") for e in target_entries if e.get("review") or e.get("journal_entry")]
+    all_takeaways = [e.get("takeaway", "") or e.get("gratitude", "") for e in target_entries if e.get("takeaway") or e.get("gratitude")]
+    all_tasks = [e.get("tasks", "") or e.get("planned_tasks", "") for e in target_entries if e.get("tasks") or e.get("planned_tasks")]
+
+    categorized_goals = GoalRepository().get_goals_for_month(month_start)
+    short_term_goals = categorized_goals.get("1-month", [])
+    one_year_goals = categorized_goals.get("1-year", [])
+    five_year_goals = categorized_goals.get("5-year", [])
+
+    primary_1m_goal = short_term_goals[0].title if short_term_goals else "Establish core daily habits"
+
+    # Pacing assessment
+    if completion_rate >= 80.0:
+      pacing_status = "On Track — High Execution"
+      coaching_takeaway = f"Excellent consistency in {month_name} ({days_logged}/{days_in_month} days). Keep momentum focused on: '{primary_1m_goal}'."
+    elif completion_rate >= 40.0:
+      pacing_status = "Moderate Pacing — Step Up Morning Focus"
+      coaching_takeaway = f"Logged {days_logged}/{days_in_month} days so far in {month_name}. Protect your morning deep work block to hit '{primary_1m_goal}'."
+    else:
+      pacing_status = "Behind Schedule — Reset Daily Discipline"
+      coaching_takeaway = f"Only {days_logged}/{days_in_month} days logged in {month_name}. Lock in a daily 60-min focus block for '{primary_1m_goal}'."
+
+    wins_str = "\n".join(f"• {r[:80]}..." for r in all_reviews[:4]) if all_reviews else "Journal reflections recorded."
+    takeaways_str = "\n".join(f"• {t}" for t in all_takeaways[:4]) if all_takeaways else "Maintain consistency."
+
+    return {
+      "month_name": month_name,
+      "days_logged": days_logged,
+      "days_in_month": days_in_month,
+      "monthly_completion_rate": completion_rate,
+      "pacing_status": pacing_status,
+      "coaching_takeaway": coaching_takeaway,
+      "primary_monthly_goal": primary_1m_goal,
+      "short_term_goals": [g.title for g in short_term_goals],
+      "one_year_goals": [g.title for g in one_year_goals],
+      "five_year_goals": [g.title for g in five_year_goals],
+      "wins": wins_str,
+      "takeaways": takeaways_str,
+      "tasks_summary": "\n".join(f"• {t[:60]}" for t in all_tasks[:5]) if all_tasks else "Daily task logs captured.",
+      "is_month_complete": days_logged >= days_in_month,
+    }
+
+  def generate_monthly_report(
+    self,
+    entries_or_reports: list[dict[str, Any]],
+    month_name: str = "July 2026",
+    active_goals: list[Any] = None,
+    month_start: date = None,
+  ) -> dict[str, Any]:
+    """Aggregate month's data and evaluate Cascading Goal Impact (Monthly -> Yearly -> 5-Year)."""
+    if not month_start:
+      month_start = date.today().replace(day=1)
+
+    categorized_goals = GoalRepository().get_goals_for_month(month_start)
+    short_term_goals = categorized_goals.get("1-month", [])
+    one_year_goals = categorized_goals.get("1-year", [])
+    five_year_goals = categorized_goals.get("5-year", [])
+
+    total_days = len(entries_or_reports)
+    days_in_m = calendar.monthrange(month_start.year, month_start.month)[1]
+    avg_score = round((total_days / float(days_in_m)) * 100, 1) if days_in_m > 0 else 0.0
+
+    primary_1m = short_term_goals[0].title if short_term_goals else "Core Execution"
+    y1_titles = [f"'{g.title}'" for g in one_year_goals] if one_year_goals else ["1-Year Milestones"]
+    y5_titles = [f"'{g.title}'" for g in five_year_goals] if five_year_goals else ["5-Year Vision"]
+
+    cascading_impact = []
+    if avg_score >= 70.0:
+      cascading_impact.append(f"High consistency in {month_name} ({total_days}/{days_in_m} days logged, {avg_score}%) directly advances your 1-Year Goals: {', '.join(y1_titles)}.")
+      if five_year_goals:
+        cascading_impact.append(f"Accelerates long-term trajectory toward your 5-Year Goals: {', '.join(y5_titles)}.")
+    else:
+      cascading_impact.append(f"Execution in {month_name} ({total_days}/{days_in_m} days logged, {avg_score}%) was sub-optimal. Next month requires doubling morning focus.")
+      if one_year_goals:
+        cascading_impact.append(f"Warning: 1-Year Goal milestones ({', '.join(y1_titles)}) risk falling behind schedule.")
+
+    return {
+      "month": month_name,
+      "total_days_logged": total_days,
+      "average_goal_alignment": avg_score,
+      "cascading_goal_impact": "\n".join(f"• {ci}" for ci in cascading_impact),
+      "monthly_takeaway": f"Completed {total_days} total logged days in {month_name} with an alignment score of {avg_score}%.",
+    }
+
+  def generate_yearly_report(
+    self,
+    monthly_reports: list[dict[str, Any]],
+    year_name: str = "2026",
+    active_goals: list[Any] = None,
+  ) -> dict[str, Any]:
+    """Aggregate monthly reports into an annual 1-Year Goal impact report."""
+    total_months = len(monthly_reports)
+    total_days = sum(m.get("total_days_logged", 0) for m in monthly_reports)
+    avg_alignment = round(sum(m.get("average_goal_alignment", 0.0) for m in monthly_reports) / max(1, total_months), 1)
+
+    categorized_goals = GoalRepository().get_by_horizons()
+    one_year_goals = categorized_goals.get("1-year", [])
+    five_year_goals = categorized_goals.get("5-year", [])
+
+    annual_verdict = ""
+    if avg_alignment >= 75.0:
+      annual_verdict = f"Outstanding annual execution ({avg_alignment}% alignment over {total_months} months). 1-Year goals achieved!"
+    else:
+      annual_verdict = f"Pacing behind full 1-Year capacity ({avg_alignment}% alignment over {total_months} months). Recalibrate 1-Month milestones."
+
+    return {
+      "year": year_name,
+      "total_months": total_months,
+      "total_days_logged": total_days,
+      "annual_alignment_score": avg_alignment,
+      "annual_verdict": annual_verdict,
+      "one_year_goals": [g.title for g in one_year_goals],
+      "five_year_goals": [g.title for g in five_year_goals],
+    }
+
+  # Backward compatibility aliases
   def group_entries_into_weeks(self, entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Group entries into 7-day calendar weeks."""
+    """Legacy helper: group entries into chunks for backwards compatibility."""
     if not entries:
       return []
-
     sorted_entries = sorted(entries, key=lambda x: x.get("date", ""))
     chunks = []
     chunk_size = 7
-
     for i in range(0, len(sorted_entries), chunk_size):
       week_entries = sorted_entries[i : i + chunk_size]
       first_date = date.fromisoformat(week_entries[0]["date"]) if week_entries[0].get("date") else date.today()
       last_date = date.fromisoformat(week_entries[-1]["date"]) if week_entries[-1].get("date") else first_date
-
       chunks.append(
         {
           "week_index": (i // chunk_size) + 1,
@@ -133,92 +282,25 @@ class WeeklySyncService:
     week_index: int = 1,
     total_weeks_in_month: int = 4,
   ) -> dict[str, Any]:
-    """Generate a structured weekly synthesis, 1-Month goal pacing report, and urgent takeaways."""
-    if active_goals is None:
-      active_goals = GoalRepository().get_active()
-
-    total_days = len(entries)
-    all_reviews = [e.get("review", "") for e in entries if e.get("review")]
-    all_takeaways = [e.get("takeaway", "") for e in entries if e.get("takeaway")]
-
-    base_score = min(1.0, total_days / 7.0) if total_days > 0 else 0.0
-    alignment_score = round(base_score * 100, 1)
-
-    # Categorize goals by horizon
-    categorized_goals = GoalRepository().get_by_horizons()
-    short_term_goals = categorized_goals.get("1-month", [])
-    one_year_goals = categorized_goals.get("1-year", [])
-    five_year_goals = categorized_goals.get("5-year", [])
-
-    weeks_remaining = max(0, total_weeks_in_month - week_index)
-
-    # Urgent coaching takeaway calculation
-    urgent_takeaway = ""
-    if total_days < 5:
-      urgent_takeaway = f"You logged only {total_days}/7 days this week. You have {weeks_remaining} weeks remaining in the month. Focus on completing deep work first thing in the morning."
-    elif short_term_goals:
-      primary_goal = short_term_goals[0].title
-      urgent_takeaway = f"Week {week_index} of {total_weeks_in_month} complete ({weeks_remaining} weeks remaining). Lock in morning deep work blocks to achieve: '{primary_goal}'."
-    else:
-      urgent_takeaway = f"Week {week_index} complete. Define your 1-Month short-term goals to maximize your weekly ROI."
-
-    # Task to Goal mapping narrative
-    mapped_tasks = []
-    for goal in short_term_goals[:2]:
-      mapped_tasks.append(f"Short-Term Goal (1-Month): '{goal.title}' ➔ Daily planned tasks aligned.")
-    for goal in one_year_goals[:2]:
-      mapped_tasks.append(f"Mid-Term Goal (1-Year): '{goal.title}' ➔ Weekly momentum required.")
-
+    """Legacy wrapper for weekly report formatting."""
+    progress = self.calculate_monthly_progress(entries, active_goals=active_goals)
     return {
       "week_index": week_index,
-      "weeks_remaining_in_month": weeks_remaining,
-      "total_days_logged": total_days,
-      "goal_alignment_score": alignment_score,
-      "urgent_coaching_takeaway": urgent_takeaway,
-      "task_goal_mapping": "\n".join(f"• {m}" for m in mapped_tasks) if mapped_tasks else "No active 1-Month or 1-Year goals mapped.",
-      "summary": f"Logged {total_days}/7 days in Week {week_index}. " + (f"Key takeaway: {all_takeaways[0]}" if all_takeaways else ""),
-      "wins": "\n".join(f"• {r[:80]}..." for r in all_reviews[:3]) if all_reviews else "Journal reflections recorded.",
-      "takeaways": "\n".join(f"• {t}" for t in all_takeaways[:3]) if all_takeaways else "Maintain consistency.",
-      "short_term_goals": [g.title for g in short_term_goals],
-      "one_year_goals": [g.title for g in one_year_goals],
-      "five_year_goals": [g.title for g in five_year_goals],
+      "weeks_remaining_in_month": 4 - week_index,
+      "total_days_logged": len(entries),
+      "goal_alignment_score": progress["monthly_completion_rate"],
+      "urgent_coaching_takeaway": progress["coaching_takeaway"],
+      "next_week_focus": progress["coaching_takeaway"],
+      "task_goal_mapping": f"1-Month Goal: '{progress['primary_monthly_goal']}'",
+      "summary": f"Logged {len(entries)} days in month chunk.",
+      "wins": progress["wins"],
+      "takeaways": progress["takeaways"],
+      "lessons": progress["takeaways"],
+      "short_term_goals": progress["short_term_goals"],
+      "one_year_goals": progress["one_year_goals"],
+      "five_year_goals": progress["five_year_goals"],
     }
 
-  def generate_monthly_report(
-    self,
-    weekly_reports: list[dict[str, Any]],
-    month_name: str = "July 2026",
-  ) -> dict[str, Any]:
-    """Aggregate weekly reports and evaluate Cascading Goal Impact (Monthly -> Yearly -> 5-Year)."""
-    total_days = sum(r.get("total_days_logged", 0) for r in weekly_reports)
-    avg_score = round(sum(r.get("goal_alignment_score", 0.0) for r in weekly_reports) / max(1, len(weekly_reports)), 1)
-
-    categorized_goals = GoalRepository().get_by_horizons()
-    one_year_goals = categorized_goals.get("1-year", [])
-    five_year_goals = categorized_goals.get("5-year", [])
-
-    # Calculate cascading impact
-    cascading_impact = []
-    if avg_score >= 80.0:
-      cascading_impact.append(f"High monthly consistency ({avg_score}%) accelerates your 1-Year goal milestones.")
-      if five_year_goals:
-        cascading_impact.append(f"On track to achieve 5-Year Vision: '{five_year_goals[0].title}'.")
-    else:
-      cascading_impact.append(f"Monthly execution score ({avg_score}%) was sub-optimal. Next month requires doubling deep work focus.")
-      if one_year_goals:
-        cascading_impact.append(f"Warning: Progress toward 1-Year Goal '{one_year_goals[0].title}' is at risk of falling behind schedule.")
-
-    return {
-      "month": month_name,
-      "total_weeks": len(weekly_reports),
-      "total_days_logged": total_days,
-      "average_goal_alignment": avg_score,
-      "cascading_goal_impact": "\n".join(f"• {ci}" for ci in cascading_impact),
-      "monthly_takeaway": f"Completed {total_days} total logged days in {month_name} with an average alignment score of {avg_score}%.",
-      "weekly_summaries": [r.get("summary") for r in weekly_reports if r.get("summary")],
-    }
-
-  # Backward compatibility alias
   generate_monthly_summary = generate_monthly_report
 
   def save_sync_log(

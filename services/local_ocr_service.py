@@ -46,15 +46,15 @@ def extract_text_from_image(image_bytes: bytes) -> dict[str, Any]:
 
 
 def parse_ocr_text_to_standard_fields(raw_text: str, day_label: str = "") -> dict[str, str]:
-  """Parse raw OCR text into the standard 5 July journal fields: gratitude, tasks, plan, review, takeaway."""
+  """Parse raw OCR text into standard journal fields: gratitude, tasks, plan, review, takeaway. Returns empty fields if no text."""
   text = raw_text.strip()
   if not text:
     return {
-      "gratitude": f"Quiet reflection logged for {day_label}" if day_label else "Quiet reflection.",
-      "tasks": "Complete core deep work tasks.",
-      "plan": "Morning priority execution block.",
-      "review": f"Handwritten journal page recorded for {day_label}" if day_label else "Handwritten page recorded.",
-      "takeaway": "Maintain daily focus and consistency.",
+      "gratitude": "",
+      "tasks": "",
+      "plan": "",
+      "review": "",
+      "takeaway": "",
     }
 
   lines = [line.strip() for line in text.splitlines() if line.strip()]
@@ -103,16 +103,8 @@ def parse_ocr_text_to_standard_fields(raw_text: str, day_label: str = "") -> dic
   for k in fields:
     fields[k] = " ".join(bucket_content[k]).strip()
 
-  # Ensure default fallbacks if specific sections were empty
-  if not fields["review"]:
+  if not fields["review"] and text:
     fields["review"] = text
-  if not fields["gratitude"]:
-    fields["gratitude"] = f"Journal reflection recorded for {day_label}" if day_label else "Logged daily reflection."
-  if not fields["tasks"]:
-    fields["tasks"] = "Daily focus execution."
-  if not fields["plan"]:
-    fields["plan"] = "Morning deep work block."
-  if not fields["takeaway"]:
-    fields["takeaway"] = "Protect core focus hours."
 
   return fields
+

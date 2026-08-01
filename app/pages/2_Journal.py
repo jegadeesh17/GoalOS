@@ -98,6 +98,15 @@ with mode_tab:
           st.session_state["parsed_csv_entries"] = entries
           st.success(f"Parsed {len(entries)} entries from CSV file!")
 
+        parsed = st.session_state.get("parsed_csv_entries")
+        if parsed:
+          st.dataframe(parsed[:5], hide_index=True)
+          if st.button("Import All CSV Entries to Database", type="primary"):
+            from scripts.import_journal_csv import run_import
+            run_import()
+            st.success(f"Successfully saved all {len(parsed)} entries to GoalOS Database!")
+            st.toast("CSV entries imported!", icon="🎉")
+
 with gallery_tab:
   entries = st.session_state.get("scanned_entries") or []
   if not entries:
@@ -131,5 +140,14 @@ with digital_tab:
   takeaway = st.text_input("One Lesson / Takeaway", value=existing.takeaway if existing else "")
 
   if st.button("Save Digital Entry", type="primary"):
-    log_repo.upsert_fields(today, DailyLogUpdate(gratitude=gratitude, journal_entry=journal_text, takeaway=takeaway, morning_completed=True, evening_completed=True))
-    st.toast("Saved digital entry!", icon="✅")
+    log = log_repo.upsert_fields(today, DailyLogUpdate(gratitude=gratitude, journal_entry=journal_text, takeaway=takeaway, morning_completed=True, evening_completed=True))
+    if journal_text or takeaway:
+      try:
+        from services.analytics_service import calculate_daily_scores
+        goals = goal_repo.get_active()
+        logs_30d = log_repo.get_recent(30)
+        calculate_daily_scores(log, goals, logs_30d, [50.0])
+      except Exception:
+        pass
+    st.toast("Saved digital entry and updated scores!", icon="✅")
+

@@ -6,13 +6,12 @@ import sys
 _APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _APP_DIR not in sys.path:
   sys.path.insert(0, _APP_DIR)
-import bootstrap  # noqa: F401
-
 import json
 import tempfile
 from datetime import date
 from pathlib import Path
 
+import bootstrap  # noqa: F401
 import streamlit as st
 
 from components.layout import empty_state, page_header, section, stat_card

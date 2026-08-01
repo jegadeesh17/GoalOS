@@ -11,7 +11,6 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from config.settings import settings
 from database.connection import get_db
 
-
 EXPORT_TABLES = (
   "user", "goals", "milestones", "daily_logs", "weekly_reviews",
   "scores", "memories", "coach_responses", "settings",

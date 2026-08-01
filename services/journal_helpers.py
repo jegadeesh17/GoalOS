@@ -3,7 +3,6 @@
 import json
 import re
 import uuid
-from datetime import date
 
 from models.daily_log import DailyLog
 

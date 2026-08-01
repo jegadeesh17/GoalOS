@@ -2,13 +2,11 @@
 
 import os
 import sys
-from datetime import date
 
 _APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _APP_DIR not in sys.path:
   sys.path.insert(0, _APP_DIR)
 import bootstrap  # noqa: F401
-
 import streamlit as st
 
 from components.goal_card import render_goal_card
@@ -45,7 +43,7 @@ with st.form("new_goal", clear_on_submit=True):
   with c1:
     category = st.selectbox("Category", ["career", "health", "learning", "personal", "financial"])
   with c2:
-    horizon = st.selectbox("Horizon", ["quarterly", "yearly", "five_year", "ten_year"])
+    horizon = st.selectbox("Horizon", ["1-month", "1-year", "5-year", "quarterly", "ten_year"])
   with c3:
     priority = st.slider("Priority", 1, 5, 3)
   deadline = st.date_input("Deadline", value=None)

@@ -32,7 +32,9 @@ class OpenRouterClient:
   def refresh_config(self) -> None:
     """Reload API key and model from .env (after Settings save)."""
     import os
+
     from dotenv import load_dotenv
+
     from config.settings import _BASE_DIR
     load_dotenv(_BASE_DIR / ".env", override=True)
     self.api_key = os.getenv("OPENROUTER_API_KEY", "") or ""

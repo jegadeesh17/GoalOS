@@ -10,7 +10,6 @@ _APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _APP_DIR not in sys.path:
   sys.path.insert(0, _APP_DIR)
 import bootstrap  # noqa: F401
-
 import streamlit as st
 
 from components.layout import hero_card, info_card, mentor_panel, page_header, section
@@ -19,7 +18,14 @@ from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from database.repositories.milestone_repository import MilestoneRepository
 from models.daily_log import DailyLogUpdate
-from services.journal_helpers import ensure_task_ids, load_tasks_from_log, log_task_stats, normalize_tasks, pack_tasks, serialize_journal_fields
+from services.journal_helpers import (
+  ensure_task_ids,
+  load_tasks_from_log,
+  log_task_stats,
+  normalize_tasks,
+  pack_tasks,
+  serialize_journal_fields,
+)
 from services.settings_service import SettingsService
 from utils import configure_page, get_coach_service, init_app
 

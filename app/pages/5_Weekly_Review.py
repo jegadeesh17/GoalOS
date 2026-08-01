@@ -6,11 +6,10 @@ import sys
 _APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _APP_DIR not in sys.path:
   sys.path.insert(0, _APP_DIR)
-import bootstrap  # noqa: F401
-
 import json
 from datetime import date, timedelta
 
+import bootstrap  # noqa: F401
 import streamlit as st
 
 from components.layout import coaching_block, empty_state, hero_card, info_card, page_header, section, stat_card

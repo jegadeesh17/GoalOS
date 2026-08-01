@@ -1,6 +1,5 @@
 """Memory repository."""
 
-from datetime import date
 from typing import Optional
 
 from database.connection import get_db

@@ -1,6 +1,6 @@
 """GoalOS dashboard with Life Calendar and Weekly Sync focus."""
 
-from datetime import date, timedelta
+from datetime import date
 
 import bootstrap  # noqa: F401
 import streamlit as st

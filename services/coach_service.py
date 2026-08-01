@@ -3,13 +3,12 @@
 import json
 import logging
 from datetime import date, timedelta
-from typing import Optional
 
 from ai.openrouter_client import OpenRouterClient
+from ai.pipelines.agent_morning_coach import run_agent_morning_coach
 from ai.pipelines.evening_coach import run_evening_coach
 from ai.pipelines.future_self_coach import run_future_self_coach
 from ai.pipelines.goal_alignment_coach import run_goal_alignment_coach
-from ai.pipelines.agent_morning_coach import run_agent_morning_coach
 from ai.pipelines.morning_coach import run_morning_coach
 from ai.pipelines.reflection_coach import run_reflection_coach
 from ai.pipelines.weekly_coach import run_weekly_coach
@@ -19,8 +18,8 @@ from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from database.repositories.score_repository import ScoreRepository
 from database.repositories.weekly_review_repository import WeeklyReviewRepository
-from models.coach_response import CoachResponseCreate
 from models.coach_output import CoachingEvidence, MorningCoachOutput
+from models.coach_response import CoachResponseCreate
 from models.daily_log import DailyLog, DailyLogUpdate
 from models.weekly_review import WeeklyReviewCreate
 from services.analytics_service import calculate_daily_scores

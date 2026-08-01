@@ -9,7 +9,6 @@ _APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _APP_DIR not in sys.path:
   sys.path.insert(0, _APP_DIR)
 import bootstrap  # noqa: F401
-
 import streamlit as st
 from PIL import Image
 
@@ -168,7 +167,7 @@ with report_tab:
   weekly_reports = st.session_state.get("scan_weekly_reports")
 
   if monthly_summary and weekly_reports:
-    section(f"📅 {monthly_summary['month']} Monthly Overview")
+    section(f"📅 {monthly_summary['month']} Monthly Review & Cascading Goal Impact")
 
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -176,22 +175,31 @@ with report_tab:
     with c2:
       stat_card("Avg Goal Alignment", f"{monthly_summary['average_goal_alignment']}%")
     with c3:
-      stat_card("Weekly Syncs Created", monthly_summary["total_weeks"])
+      stat_card("Weekly Syncs", f"{monthly_summary['total_weeks']}")
 
     hero_card("Monthly Key Takeaway", monthly_summary["monthly_takeaway"])
 
+    if "cascading_goal_impact" in monthly_summary:
+      info_card(f"🎯 **Cascading Goal Impact (1-Month ➔ 1-Year ➔ 5-Year):**\n\n{monthly_summary['cascading_goal_impact']}", "info")
+
     section(f"Weekly Sync Reports ({monthly_summary['month']})")
     for idx, rep in enumerate(weekly_reports):
-      with st.expander(f"Week {idx + 1} ({rep['week_start']} to {rep['week_end']}) — Alignment: {rep['goal_alignment_score']}%", expanded=(idx == 0)):
-        st.write(f"**Summary:**\n{rep['summary']}")
+      with st.expander(f"Week {idx + 1} ({rep.get('week_start', '')} to {rep.get('week_end', '')}) — Alignment: {rep.get('goal_alignment_score', 0.0)}%", expanded=(idx == 0)):
+        if "urgent_coaching_takeaway" in rep:
+          st.error(f"⚡ **Urgent Weekly Takeaway:** {rep['urgent_coaching_takeaway']}")
+        
+        st.markdown(f"**Weekly Summary:**\n{rep['summary']}")
+        
+        if "task_goal_mapping" in rep:
+          st.markdown(f"**Task ➔ Goal Mapping:**\n{rep['task_goal_mapping']}")
+
         col_w, col_l = st.columns(2)
         with col_w:
-          st.markdown("**Key Wins:**")
-          st.write(rep["wins"])
+          st.markdown("**Key Reflections / Wins:**")
+          st.write(rep.get("wins", "N/A"))
         with col_l:
-          st.markdown("**Lessons:**")
-          st.write(rep["lessons"])
-        st.markdown(f"**Next Week Focus:**\n{rep['next_week_focus']}")
+          st.markdown("**Takeaways:**")
+          st.write(rep.get("takeaways", rep.get("lessons", "N/A")))
   else:
     info_card("No weekly/monthly reports generated yet. Run a folder scan on the Batch Upload tab.", "info")
 
@@ -203,6 +211,6 @@ with history_tab:
       with st.expander(f"Week of {log['week_start']} (Alignment: {log['goal_alignment_score']}%)"):
         st.write(f"**Source:** {log['source_type'].upper()}")
         st.write(f"**Summary:**\n{log['summary']}")
-        st.write(f"**Next Week Focus:**\n{log['next_week_focus']}")
+        st.write(f"**Next Week Focus:**\n{log.get('next_week_focus', 'N/A')}")
   else:
     info_card("No previous weekly sync logs stored.", "default")

@@ -1,6 +1,5 @@
 """Goal repository."""
 
-from datetime import date
 from typing import Optional
 
 from database.connection import get_db
@@ -53,6 +52,27 @@ class GoalRepository:
 
   def get_active(self) -> list[Goal]:
     return self.get_all(status="active")
+
+  def get_by_horizons(self) -> dict[str, list[Goal]]:
+    """Return active goals grouped into short-term (1-month), mid-term (1-year), long-term (5-year)."""
+    active = self.get_active()
+    categorized: dict[str, list[Goal]] = {
+      "1-month": [],
+      "1-year": [],
+      "5-year": [],
+      "other": [],
+    }
+    for goal in active:
+      h = (goal.horizon or "").lower().strip()
+      if h in ("1-month", "1_month", "short", "weekly", "monthly"):
+        categorized["1-month"].append(goal)
+      elif h in ("1-year", "1_year", "medium", "yearly", "annual"):
+        categorized["1-year"].append(goal)
+      elif h in ("5-year", "5_year", "long", "vision", "5-years"):
+        categorized["5-year"].append(goal)
+      else:
+        categorized["other"].append(goal)
+    return categorized
 
   def update(self, goal_id: int, goal: GoalUpdate) -> Optional[Goal]:
     data = goal.model_dump(exclude_unset=True)

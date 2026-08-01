@@ -102,3 +102,42 @@ def fallback_future_self(context: dict) -> dict:
     "key_things_referenced": ["consistency", "growth"],
     "confidence": 0.3,
   }
+
+
+def fallback_progress(context: dict) -> dict:
+  goals = context.get("active_goals", [])
+  short_term = [g.get("title", "") for g in goals if (g.get("horizon") or "").lower().strip() in ("1-month", "1_month", "short", "monthly")]
+  primary_goal = short_term[0] if short_term else (goals[0].get("title", "") if goals else "Establish daily deep work discipline")
+  progress = context.get("monthly_progress", {})
+  days_logged = progress.get("days_logged", 0)
+  days_in_month = progress.get("days_in_month", 31)
+  month_name = context.get("month_name") or progress.get("month_name") or "Current Month"
+
+  if days_logged > 0:
+    narrative = f"You logged {days_logged}/{days_in_month} days in {month_name}. Execution is directly moving you toward '{primary_goal}'."
+    wins = progress.get("wins") or "Journal logs recorded."
+    pacing = progress.get("pacing_status", "On Track")
+    bottleneck = "Multitasking or delaying morning focus blocks."
+    advice = f"Lock in your top 90-minute morning deep work block specifically targeted at: '{primary_goal}'."
+  else:
+    narrative = f"Current Month Tracking ({month_name}): 0 of {days_in_month} days logged so far. Evaluate Day 1 pacing toward '{primary_goal}'."
+    hist_logs = context.get("historical_baseline_logs", [])
+    if hist_logs:
+      past_wins = [l.get("takeaway") or l.get("journal_entry") for l in hist_logs if l.get("takeaway") or l.get("journal_entry")]
+      wins = f"No entries for {month_name} yet. Baseline momentum from previous month:\n" + "\n".join(f"• {w[:80]}..." for w in past_wins[:3])
+    else:
+      wins = f"No journal entries logged yet for {month_name}."
+    pacing = "Day 1 Pacing — Start Daily Log"
+    bottleneck = f"No daily logs recorded yet for {month_name}."
+    advice = f"Upload your daily handwritten journal pages or complete a digital entry to start pacing toward '{primary_goal}'."
+
+  return {
+    "pacing_status": pacing,
+    "monthly_goal_evaluated": primary_goal,
+    "progress_narrative": narrative,
+    "key_wins_aligned": wins,
+    "critical_bottleneck": bottleneck,
+    "actionable_coaching_advice": advice,
+    "source": "heuristic_fallback",
+    "confidence": 0.5,
+  }

@@ -25,12 +25,12 @@ from utils import configure_page, init_app
 
 configure_page("Settings | GoalOS", "⚙️")
 init_app()
-page_header("Settings", "Configure AI, privacy, and local data.")
+page_header("Settings", "Configure AI, privacy, and local data controls.")
 
 settings_service = SettingsService()
 portability = DataPortabilityService()
 
-section("OpenRouter")
+section("OpenRouter Settings")
 with st.container(border=True):
   model_options = [
     "anthropic/claude-sonnet-4", "meta-llama/llama-3.3-70b-instruct",
@@ -68,7 +68,7 @@ with st.container(border=True):
     else:
       st.error(f"Failed — {result.get('error')}: {result.get('detail', '')}")
 
-section("Privacy")
+section("Privacy Preferences")
 with st.container(border=True):
   remote_ai_consent = st.checkbox(
     "Allow remote AI coaching", value=settings_service.remote_ai_allowed(),
@@ -78,12 +78,8 @@ with st.container(border=True):
     settings_service.set_remote_ai_allowed(remote_ai_consent)
     st.toast("Privacy preference saved.", icon="✅")
     st.rerun()
-  if remote_ai_consent:
-    st.warning("Remote AI may process selected journal context. Do not include credentials or highly sensitive information.")
-  else:
-    st.caption("Remote AI is disabled. Coaching remains local and deterministic.")
 
-section("Database")
+section("Database & Export")
 log_repo, goal_repo = LogRepository(), GoalRepository()
 memory_repo, coach_repo = MemoryRepository(), CoachRepository()
 c1, c2, c3, c4 = st.columns(4)
@@ -96,17 +92,5 @@ with c3:
 with c4:
   stat_card("Coach Sessions", coach_repo.count())
 
-section("Data export and reset")
 with st.container(border=True):
-  st.download_button("Download data export", data=portability.export_json(), file_name="goalos-export.json", mime="application/json", use_container_width=True)
-  st.caption("Clearing creates a timestamped local backup first.")
-  confirm = st.checkbox("I understand this clears active local data after creating a backup")
-  if st.button("Clear All Data", type="primary", disabled=not confirm, use_container_width=True):
-    try:
-      backup = portability.clear_all_data()
-      clear_collection_cache(settings.CHROMA_PATH)
-      run_migrations()
-      st.toast(f"All data cleared. Backup: {backup.name}", icon="✅")
-      st.rerun()
-    except Exception as exc:
-      st.error(f"Data was not cleared because backup failed: {exc}")
+  st.download_button("Download Data Export (JSON)", data=portability.export_json(), file_name="goalos-export.json", mime="application/json", use_container_width=True)

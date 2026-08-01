@@ -74,6 +74,39 @@ class GoalRepository:
         categorized["other"].append(goal)
     return categorized
 
+  def get_goals_for_month(self, month_date) -> dict[str, list[Goal]]:
+    """Return active goals specifically aligned with the given month's year and month."""
+    categorized = self.get_by_horizons()
+    month_year = (month_date.year, month_date.month)
+
+    matching_1m = []
+    seen_titles = set()
+    for g in categorized.get("1-month", []):
+      if g.deadline:
+        if (g.deadline.year, g.deadline.month) == month_year:
+          title_key = g.title.strip().lower()
+          if title_key not in seen_titles:
+            seen_titles.add(title_key)
+            matching_1m.append(g)
+      else:
+        title_key = g.title.strip().lower()
+        if title_key not in seen_titles:
+          seen_titles.add(title_key)
+          matching_1m.append(g)
+
+    if not matching_1m and categorized.get("1-month"):
+      for g in categorized["1-month"]:
+        title_key = g.title.strip().lower()
+        if title_key not in seen_titles:
+          seen_titles.add(title_key)
+          matching_1m.append(g)
+
+    return {
+      "1-month": matching_1m,
+      "1-year": categorized.get("1-year", []),
+      "5-year": categorized.get("5-year", []),
+    }
+
   def update(self, goal_id: int, goal: GoalUpdate) -> Optional[Goal]:
     data = goal.model_dump(exclude_unset=True)
     if not data:

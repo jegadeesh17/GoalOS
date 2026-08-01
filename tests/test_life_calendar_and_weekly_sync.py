@@ -1,4 +1,4 @@
-"""Unit tests for Life Calendar Service, Weekly Sync Service, and July Journal Folder Scanner."""
+"""Unit tests for Life Calendar Service, Monthly Progress Service, and July Journal Folder Scanner."""
 
 import os
 from datetime import date
@@ -37,7 +37,7 @@ def test_weekly_sync_csv_parser():
   assert entries[0]["wins"] == "Completed task"
 
 
-def test_july_journal_folder_scan_and_grouping():
+def test_july_journal_folder_scan_and_monthly_progress():
   sync = WeeklySyncService()
   july_folder = r"c:\Users\jegad\projects\GoalOS\data\Journal"
   assert os.path.exists(july_folder)
@@ -45,12 +45,16 @@ def test_july_journal_folder_scan_and_grouping():
   entries = sync.scan_journal_folder(july_folder, start_date=date(2026, 7, 1))
   assert len(entries) == 31  # 31 days in July
 
-  weeks = sync.group_entries_into_weeks(entries)
-  assert len(weeks) == 5  # 4 full 7-day weeks + 1 remaining 3-day week
+  progress = sync.calculate_monthly_progress(entries, month_start=date(2026, 7, 1), month_name="July 2026")
+  assert progress["days_logged"] == 31
+  assert progress["days_in_month"] == 31
+  assert progress["monthly_completion_rate"] == 100.0
+  assert progress["is_month_complete"] is True
 
-  weekly_reports = [sync.generate_weekly_report(w["entries"], active_goals=[]) for w in weeks]
-  assert len(weekly_reports) == 5
-
-  monthly_summary = sync.generate_monthly_summary(weekly_reports, "July 2026")
+  monthly_summary = sync.generate_monthly_report(entries, "July 2026")
   assert monthly_summary["total_days_logged"] == 31
-  assert monthly_summary["total_weeks"] == 5
+  assert monthly_summary["average_goal_alignment"] == 100.0
+
+  yearly_report = sync.generate_yearly_report([monthly_summary], "2026")
+  assert yearly_report["total_months"] == 1
+  assert yearly_report["total_days_logged"] == 31

@@ -23,7 +23,6 @@ init_app()
 
 page_header("Life Calendar", "70-Year Perspective (Weeks Visualizer)")
 
-# Load user profile birth date & target age
 with get_db() as conn:
   user_row = conn.execute("SELECT * FROM user WHERE id = 1").fetchone()
   user_data = row_to_dict(user_row) if user_row else {}
@@ -39,7 +38,6 @@ except ValueError:
 life_service = LifeCalendarService(birth_date=birth_date, target_age=target_age)
 summary = life_service.get_summary()
 
-# Top Metrics Row
 c1, c2, c3, c4 = st.columns(4)
 with c1:
   stat_card("Age", f"{summary['age_years']} yrs")
@@ -52,57 +50,80 @@ with c4:
 
 st.progress(min(1.0, summary["percentage_lived"] / 100.0))
 
-section("Life Grid (70 Years × 52 Weeks)")
-st.caption("Each row represents one year of life. Each box is 1 week. Green = Lived, Pulsing Gold = Current Week, Muted Gray = Future.")
+section("70-Year Visual Life Grid (52 Weeks / Row)")
+st.caption("Hover over any box to see the exact age and week index. Green = Lived, Glowing Gold = Current Week, Gray = Future.")
 
 grid_data = life_service.get_grid_data()
 
-# Custom CSS for rendering lightweight responsive grid
 st.markdown("""
 <style>
+.life-grid-container {
+    background: #ffffff;
+    border: 1px solid #e4e4e7;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
 .life-grid {
     display: flex;
     flex-direction: column;
     gap: 3px;
-    margin-top: 15px;
-    font-family: monospace;
+    margin-top: 10px;
+    font-family: 'Inter', system-ui, sans-serif;
 }
 .year-row {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
+}
+.year-row.decade-row {
+    margin-top: 6px;
+    padding-top: 4px;
+    border-top: 1px dashed #e4e4e7;
 }
 .year-label {
     width: 55px;
     font-size: 11px;
-    color: #888;
+    font-weight: 600;
+    color: #71717a;
     text-align: right;
-    padding-right: 6px;
+    padding-right: 8px;
+}
+.decade-label {
+    color: #4f46e5 !important;
+    font-weight: 700 !important;
 }
 .week-box {
     width: 9px;
     height: 9px;
     border-radius: 2px;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+.week-box:hover {
+    transform: scale(1.6);
+    z-index: 10;
+    cursor: pointer;
 }
 .week-past {
-    background-color: #2e7d32;
+    background-color: #059669;
     opacity: 0.85;
 }
 .week-current {
-    background-color: #ffb300;
-    box-shadow: 0 0 6px #ffb300;
-    transform: scale(1.3);
-    z-index: 2;
+    background-color: #f59e0b;
+    box-shadow: 0 0 8px #f59e0b;
+    transform: scale(1.4);
+    z-index: 5;
 }
 .week-future {
-    background-color: #333333;
-    opacity: 0.35;
+    background-color: #e4e4e7;
+    opacity: 0.6;
 }
 .grid-legend {
     display: flex;
-    gap: 15px;
-    margin-bottom: 10px;
+    gap: 20px;
+    margin-bottom: 12px;
     font-size: 13px;
+    font-weight: 500;
 }
 .legend-item {
     display: flex;
@@ -120,36 +141,38 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Render compact grid container
 html_rows = []
 for row in grid_data:
+  is_decade = (row["age"] % 10 == 0) and (row["age"] > 0)
+  decade_cls = "decade-row" if is_decade else ""
+  label_cls = "decade-label" if is_decade or row["age"] == 0 else ""
+
   boxes = []
   for w in row["weeks"]:
     cls = f"week-{w['status']}"
     title = f"Age {w['year']}, Week {w['week_of_year']} (Week #{w['global_week']})"
     boxes.append(f'<div class="week-box {cls}" title="{title}"></div>')
-  
+
   html_rows.append(f"""
-  <div class="year-row">
-    <div class="year-label">Age {row['age']:02d}</div>
+  <div class="year-row {decade_cls}">
+    <div class="year-label {label_cls}">Age {row['age']:02d}</div>
     {''.join(boxes)}
   </div>
   """)
 
-st.markdown(f'<div class="life-grid">{"".join(html_rows)}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="life-grid-container"><div class="life-grid">{"".join(html_rows)}</div></div>', unsafe_allow_html=True)
 
 section("Goal Horizons Alignment")
 goal_repo = GoalRepository()
 active_goals = goal_repo.get_active()
 
 if active_goals:
-  st.caption("Active goals mapped against your life horizon")
+  st.caption("Active goals mapped against your 70-year life horizon")
   for goal in active_goals:
     hero_card(f"[{goal.horizon.upper()}] {goal.title}", f"Category: {goal.category} · Priority: {goal.priority} · Deadline: {goal.deadline or 'Open'}")
 else:
   info_card("No active goals set. Define 5-year and 1-year goals on the Vision & Goals page.", "info")
 
-# Settings Expander
 with st.expander("⚙️ Adjust Birth Date & Life Expectancy"):
   with st.form("life_calendar_settings"):
     new_birth = st.date_input("Birth Date", value=birth_date)

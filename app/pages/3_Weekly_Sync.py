@@ -1,5 +1,6 @@
 """Weekly Journal Batch Sync and Goal Reflection with Folder Image Scan."""
 
+import calendar
 import os
 import sys
 from datetime import date, timedelta
@@ -25,6 +26,9 @@ today = date.today()
 week_start = today - timedelta(days=today.weekday())
 week_end = week_start + timedelta(days=6)
 
+# Journal folder lives at data/Journal — reused every month
+JOURNAL_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "Journal"))
+
 sync_service = WeeklySyncService()
 goal_repo = GoalRepository()
 active_goals = goal_repo.get_active()
@@ -38,38 +42,65 @@ upload_tab, gallery_tab, report_tab, history_tab = st.tabs([
   "Sync History",
 ])
 
+
+def _detect_month_from_folder(folder_path: str) -> tuple[str, date]:
+  """Count images and guess the month start date. Defaults to previous month."""
+  valid_exts = (".jpg", ".jpeg", ".png")
+  if os.path.isdir(folder_path):
+    count = len([f for f in os.listdir(folder_path) if f.lower().endswith(valid_exts)])
+  else:
+    count = 0
+
+  # Default to the previous month (most common use case: syncing last month's journal)
+  prev_month_end = today.replace(day=1) - timedelta(days=1)
+  month_start = prev_month_end.replace(day=1)
+  month_name = month_start.strftime("%B %Y")
+  days_in_month = calendar.monthrange(month_start.year, month_start.month)[1]
+  return month_name, month_start, days_in_month, count
+
+
 with upload_tab:
   section("Select Import Mode")
   import_mode = st.radio(
     "Import Source",
-    ["July Journal Folder (Preset)", "Custom Local Folder Path", "CSV File Upload", "Single Image Scan"],
+    ["Journal Folder (Preset)", "Custom Local Folder Path", "CSV File Upload", "Single Image Scan"],
     horizontal=True,
   )
 
-  if import_mode == "July Journal Folder (Preset)":
-    july_folder = r"c:\Users\jegad\projects\GoalOS\data\July Journal"
-    st.info(f"Preset Directory: `{july_folder}` (31 Journal `.jpg` Images)")
+  if import_mode == "Journal Folder (Preset)":
+    month_name, month_start, days_in_month, image_count = _detect_month_from_folder(JOURNAL_FOLDER)
 
-    if st.button("Scan & Group July Journal (31 Days → 4 Weeks + Monthly)", type="primary", use_container_width=True):
-      with st.spinner("Scanning 31 daily journal pages for July 2026..."):
-        raw_entries = sync_service.scan_journal_folder(july_folder, start_date=date(2026, 7, 1))
+    st.info(f"📂 Preset Directory: `{JOURNAL_FOLDER}`\n\n**Detected:** {image_count} journal images · **Assumed Month:** {month_name} (starts {month_start.isoformat()})")
+
+    with st.expander("⚙️ Adjust Month Settings", expanded=False):
+      col_m, col_d = st.columns(2)
+      with col_m:
+        override_start = st.date_input("Month Start Date", value=month_start)
+      with col_d:
+        override_month_name = st.text_input("Month Label", value=month_name)
+      if override_start:
+        month_start = override_start
+        month_name = override_month_name or month_start.strftime("%B %Y")
+        days_in_month = calendar.monthrange(month_start.year, month_start.month)[1]
+
+    if st.button(f"Scan & Group Journal ({image_count} Pages → Weekly + Monthly)", type="primary", use_container_width=True):
+      with st.spinner(f"Scanning {image_count} daily journal pages for {month_name}..."):
+        raw_entries = sync_service.scan_journal_folder(JOURNAL_FOLDER, start_date=month_start)
         weeks = sync_service.group_entries_into_weeks(raw_entries)
-        st.session_state["july_raw_entries"] = raw_entries
-        st.session_state["july_weeks"] = weeks
+        st.session_state["scan_raw_entries"] = raw_entries
+        st.session_state["scan_weeks"] = weeks
 
-        # Generate reports for all weeks
         weekly_reports = []
         for week in weeks:
           rep = sync_service.generate_weekly_report(week["entries"], active_goals)
           rep["week_start"] = week["week_start"]
           rep["week_end"] = week["week_end"]
           weekly_reports.append(rep)
-          # Save each week to database
           sync_service.save_sync_log(
             week_start=week["week_start"],
             week_end=week["week_end"],
             source_type="folder_scan",
-            raw_content=f"July Journal Week {week['week_index']} ({len(week['entries'])} pages)",
+            raw_content=f"{month_name} Week {week['week_index']} ({len(week['entries'])} pages)",
             summary=rep["summary"],
             wins=rep["wins"],
             lessons=rep["lessons"],
@@ -77,13 +108,13 @@ with upload_tab:
             next_week_focus=rep["next_week_focus"],
           )
 
-        monthly_summary = sync_service.generate_monthly_summary(weekly_reports, "July 2026")
-        st.session_state["july_weekly_reports"] = weekly_reports
-        st.session_state["july_monthly_summary"] = monthly_summary
-        st.toast("Successfully processed July 2026 Journal (4 Weeks + Monthly Summary)!", icon="🎉")
+        monthly_summary = sync_service.generate_monthly_summary(weekly_reports, month_name)
+        st.session_state["scan_weekly_reports"] = weekly_reports
+        st.session_state["scan_monthly_summary"] = monthly_summary
+        st.toast(f"Processed {month_name} Journal ({len(weeks)} Weeks + Monthly Summary)!", icon="🎉")
 
   elif import_mode == "Custom Local Folder Path":
-    folder_input = st.text_input("Local Folder Path", value=r"c:\Users\jegad\projects\GoalOS\data\July Journal")
+    folder_input = st.text_input("Local Folder Path", value=JOURNAL_FOLDER)
     if folder_input and st.button("Scan Custom Folder"):
       entries = sync_service.scan_journal_folder(folder_input)
       weeks = sync_service.group_entries_into_weeks(entries)
@@ -108,9 +139,9 @@ with upload_tab:
         info_card(ocr_res["error"], "warning")
 
 with gallery_tab:
-  entries = st.session_state.get("july_raw_entries") or st.session_state.get("custom_entries") or []
+  entries = st.session_state.get("scan_raw_entries") or st.session_state.get("custom_entries") or []
   if not entries:
-    info_card("No folder scan active yet. Click 'Scan & Group July Journal' on the Batch Upload tab.", "info")
+    info_card("No folder scan active yet. Run a scan from the Batch Upload tab.", "info")
   else:
     section(f"Journal Page Gallery ({len(entries)} Pages Scanned)")
     page_num = st.slider("Select Day Page", 1, len(entries), 1)
@@ -133,15 +164,15 @@ with gallery_tab:
       st.write(f"**Takeaway:** {selected_entry['takeaway']}")
 
 with report_tab:
-  monthly_summary = st.session_state.get("july_monthly_summary")
-  weekly_reports = st.session_state.get("july_weekly_reports")
+  monthly_summary = st.session_state.get("scan_monthly_summary")
+  weekly_reports = st.session_state.get("scan_weekly_reports")
 
   if monthly_summary and weekly_reports:
     section(f"📅 {monthly_summary['month']} Monthly Overview")
 
     c1, c2, c3 = st.columns(3)
     with c1:
-      stat_card("Total Days Logged", f"{monthly_summary['total_days_logged']} / 31")
+      stat_card("Total Days Logged", f"{monthly_summary['total_days_logged']}")
     with c2:
       stat_card("Avg Goal Alignment", f"{monthly_summary['average_goal_alignment']}%")
     with c3:
@@ -149,7 +180,7 @@ with report_tab:
 
     hero_card("Monthly Key Takeaway", monthly_summary["monthly_takeaway"])
 
-    section("4 Weekly Sync Reports (July 2026)")
+    section(f"Weekly Sync Reports ({monthly_summary['month']})")
     for idx, rep in enumerate(weekly_reports):
       with st.expander(f"Week {idx + 1} ({rep['week_start']} to {rep['week_end']}) — Alignment: {rep['goal_alignment_score']}%", expanded=(idx == 0)):
         st.write(f"**Summary:**\n{rep['summary']}")
@@ -162,7 +193,7 @@ with report_tab:
           st.write(rep["lessons"])
         st.markdown(f"**Next Week Focus:**\n{rep['next_week_focus']}")
   else:
-    info_card("No weekly/monthly reports generated yet. Run the July Journal Scan on the Batch Upload tab.", "info")
+    info_card("No weekly/monthly reports generated yet. Run a folder scan on the Batch Upload tab.", "info")
 
 with history_tab:
   section("Historical Weekly Sync Logs")

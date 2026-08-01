@@ -7,7 +7,6 @@ from collections.abc import Callable
 
 from database.connection import get_connection
 
-
 BASE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS schema_migrations (
     version INTEGER PRIMARY KEY,

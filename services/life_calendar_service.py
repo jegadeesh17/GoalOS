@@ -1,6 +1,6 @@
 """Life Calendar Service: Calculate weeks lived, remaining, and grid visualization for GoalOS."""
 
-from datetime import date, timedelta
+from datetime import date
 from typing import Any
 
 

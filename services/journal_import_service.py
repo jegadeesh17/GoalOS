@@ -14,7 +14,6 @@ from models.daily_log import DailyLogCreate
 from models.import_result import ImportResult, ParsedEntry, ParsedTask, ParsedTimeBlock
 from services.memory_service import MemoryService
 
-
 VERBS = re.compile(
   r"^(focus|lock|start|finish|complete|do|run|study|learn|practice|build|write|read|solve)",
   re.IGNORECASE,
@@ -241,12 +240,12 @@ class JournalImportService:
     date_range = f"{min(dates)} to {max(dates)}"
 
     lines = [
-      f"## Onboarding Summary",
-      f"",
+      "## Onboarding Summary",
+      "",
       f"**{total} days** imported ({date_range})",
-      f"",
+      "",
       f"**Task completion rate:** {avg_rate:.0f}%",
-      f"",
+      "",
       f"**Common gratitude themes:** {', '.join(gratitude_themes) or 'None detected'}",
       f"**Common task categories:** {', '.join(task_themes) or 'None detected'}",
       f"**Common takeaway themes:** {', '.join(takeaway_themes) or 'None detected'}",

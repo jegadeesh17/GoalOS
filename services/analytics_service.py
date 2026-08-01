@@ -1,6 +1,5 @@
 """Deterministic score calculations — no AI."""
 
-import math
 import re
 from datetime import date, timedelta
 from typing import Optional
@@ -8,7 +7,6 @@ from typing import Optional
 from models.daily_log import DailyLog
 from models.goal import Goal
 from models.score import Score
-
 
 LEARNING_KEYWORDS = [
   "read", "studied", "learned", "practiced", "course", "book",
@@ -217,8 +215,8 @@ def calculate_daily_scores(
   gap = gap_score(goals, logs_30d, log.date)
   overall = overall_growth_score(alignment, consistency, health, productivity, learning, momentum)
 
-  from models.score import ScoreCreate
   from database.repositories.score_repository import ScoreRepository
+  from models.score import ScoreCreate
 
   score_data = ScoreCreate(
     date=log.date,

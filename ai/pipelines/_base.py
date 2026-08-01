@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
 
@@ -56,18 +55,21 @@ def fallback_weekly(context: dict) -> dict:
   stats = context.get("week_task_stats", {})
   rate = stats.get("week_completion_rate")
   rate_text = f"{rate}%" if rate is not None else "unknown"
+  weeks_left = context.get("weeks_remaining_in_month", 3)
+  
   return {
-    "week_summary": "You logged days but execution needs work.",
-    "task_stats_commentary": f"Task completion: {rate_text}. Plans without follow-through.",
-    "wins": ["You showed up and journaled"],
-    "failures": ["Tasks left incomplete", "Plans not followed"],
-    "recurring_mistakes": ["Gliding instead of deep work", "Cheap dopamine"],
-    "most_productive_day": "Unknown",
-    "least_productive_day": "Unknown",
-    "weekly_score": 50.0,
-    "mentor_rule_for_next_week": "You will complete your first 3 tasks before any entertainment. No exceptions.",
-    "one_percent_focus": "Lock in one deep work block daily before phone.",
-    "confidence": 0.3,
+    "week_summary": "You logged days this week but deep work execution needs aggressive focus.",
+    "task_stats_commentary": f"Task completion rate: {rate_text}. You must finish high-ROI deep work first thing in the morning.",
+    "urgent_takeaway": f"You have {weeks_left} weeks remaining in the month. Lock in uninterrupted deep work blocks every morning to meet your 1-Month goal.",
+    "one_month_progress": "Progress pacing is moderate. Ensure daily tasks directly map to your 1-Month goal.",
+    "cascading_year_impact": "Consistently completing 1-Month goals safeguards your 1-Year milestone and 5-Year vision.",
+    "wins": ["Maintained consistent journaling discipline"],
+    "failures": ["Deep work delayed by secondary tasks", "Incomplete priority execution"],
+    "recurring_mistakes": ["Postponing hard tasks past noon", "Distraction during focus blocks"],
+    "weekly_score": 60.0,
+    "mentor_rule_for_next_week": "Complete your core deep work task in the first 2 hours of the morning. No exceptions.",
+    "one_percent_focus": "Protect your morning deep work block from all interruptions.",
+    "confidence": 0.5,
   }
 
 

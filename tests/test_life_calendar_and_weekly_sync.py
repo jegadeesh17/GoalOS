@@ -2,6 +2,7 @@
 
 import os
 from datetime import date
+
 from services.life_calendar_service import LifeCalendarService
 from services.weekly_sync_service import WeeklySyncService
 

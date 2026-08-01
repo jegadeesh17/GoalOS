@@ -1,6 +1,7 @@
 """Reusable layout helpers for GoalOS pages."""
 
 import html
+
 import plotly.graph_objects as go
 import streamlit as st
 

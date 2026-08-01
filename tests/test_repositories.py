@@ -9,7 +9,7 @@ from database.repositories.memory_repository import MemoryRepository
 from database.repositories.score_repository import ScoreRepository
 from models.coach_response import CoachResponseCreate
 from models.daily_log import DailyLogCreate, DailyLogUpdate
-from models.goal import GoalCreate, GoalUpdate
+from models.goal import GoalUpdate
 from models.memory import MemoryCreate
 from models.score import ScoreCreate
 

@@ -3,8 +3,6 @@
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from ai.tools import TOOL_DEFINITIONS, execute_tool, make_tool_executor
 from models.goal import GoalCreate
 from models.memory import MemoryCreate

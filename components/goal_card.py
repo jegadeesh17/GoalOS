@@ -6,7 +6,6 @@ import streamlit as st
 
 from components.theme import COLORS
 
-
 _CATEGORY_BADGE = {
   "career": "goalos-badge-career",
   "health": "goalos-badge-health",
@@ -47,4 +46,4 @@ def render_goal_card(goal, show_actions: bool = False):
     unsafe_allow_html=True,
   )
   if show_actions:
-    return st.button(f"Edit", key=f"edit_goal_{goal.id}", use_container_width=True)
+    return st.button("Edit", key=f"edit_goal_{goal.id}", use_container_width=True)

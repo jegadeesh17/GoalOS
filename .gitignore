@@ -8,8 +8,8 @@ goalos.db
 goalos.log
 chroma_db/
 backups/
-data/*.jpg
-data/*/*.jpg
+data/**/*.jpg
+*.jpg
 
 # Portfolio FastAPI package (was previously fully ignored)
 !api/

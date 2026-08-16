@@ -26,6 +26,7 @@ from models.weekly_review import WeeklyReviewCreate
 from services.analytics_service import calculate_daily_scores
 from services.memory_service import MemoryService
 from services.mentor_briefing import build_mentor_briefing
+from services.pattern_service import PatternService
 from services.settings_service import SettingsService
 
 logger = logging.getLogger(__name__)
@@ -123,6 +124,9 @@ class CoachService:
           "task_completion_rate": l.task_completion_rate,
         })
 
+    # Extract multi-day behavioral patterns
+    pattern_report = PatternService().analyze_patterns(recent_logs, goals, target_date=target_date)
+
     ctx = {
       "date": target_date.isoformat(),
       "user_vision": self._get_user_vision(),
@@ -131,6 +135,7 @@ class CoachService:
       "recent_logs": [self._serialize_log(l) for l in recent_logs],
       "current_scores": scores.model_dump(mode="json") if scores else {},
       "recent_weekly_review": weekly,
+      "pattern_analysis": pattern_report,
       "relevant_memories": [
         m.model_dump(mode="json") for m in self.memory_service.retrieve(query or "mistakes patterns lessons", 8)
       ],
@@ -203,6 +208,13 @@ class CoachService:
         target_date,
         "evening",
         log.id,
+      )
+
+    # Automatically store detected repeating pattern as high-importance pattern memory
+    pattern_detected = result.get("pattern_detected")
+    if pattern_detected and "unable to detect" not in pattern_detected.lower() and len(pattern_detected.strip()) > 5:
+      self.memory_service.store(
+        pattern_detected, "pattern", 0.8, target_date, "evening", log.id
       )
 
     if result.get("commitment_extracted"):
@@ -335,7 +347,10 @@ class CoachService:
     context = self.build_context(date.today(), message)
     system = (
       "You are the Mentor — a strict personal guide shaping the user into who they want to become. "
-      "Answer based on their journals, goals, and patterns. Be direct. Issue rules, not suggestions. "
+      "Answer based on their journals, goals, and detected behavioral patterns. Be direct. Issue rules, not suggestions. "
+      "CRITICAL PRINCIPLE: Distinguish isolated 1-day friction (noise) from repeating unhealthy patterns (signal). "
+      "Repeating behavioral loops affect goal achievement far more than a heavy single-day slip. Always call out "
+      "the repeating pattern, its root trigger, and provide an actionable pattern-breaking protocol. "
       "1-year, 5-year, and 10-year goals have equal priority — daily work must advance all three."
     )
     history_text = "\n".join(f"{m['role']}: {m['content']}" for m in history[-10:])

@@ -6,6 +6,7 @@ from collections import Counter
 from datetime import date
 
 from models.daily_log import DailyLog
+from services.pattern_service import PatternService
 
 
 def _clip(text: str | None, max_len: int = 220) -> str:
@@ -132,6 +133,10 @@ def build_mentor_briefing(
   visions = user_vision or {}
   top_task = today_tasks[0]["text"] if today_tasks else None
 
+  # Behavioral Pattern Recognition
+  pattern_service = PatternService()
+  pattern_report = pattern_service.analyze_patterns(log_dicts, target_date=target_date)
+
   return {
     "date": target_date.isoformat(),
     "one_year_goal": visions.get("one_year_vision") or "",
@@ -149,6 +154,11 @@ def build_mentor_briefing(
     "recent_sleep_mood": sleep_mood[:5],
     "prior_mentor_rules": prior_rules,
     "days_of_history": len(log_dicts),
+    "pattern_report": pattern_report,
+    "recognized_patterns": pattern_report.get("repeating_unhealthy_patterns", []),
+    "primary_unhealthy_loop": pattern_report.get("primary_unhealthy_loop"),
+    "isolated_friction_events": pattern_report.get("isolated_friction_events", []),
+    "compounding_healthy_patterns": pattern_report.get("compounding_healthy_patterns", []),
   }
 
 
@@ -174,6 +184,23 @@ def format_briefing_for_prompt(briefing: dict) -> str:
     lines.append("TODAY'S TASKS (priority order, #1 first):")
     for i, t in enumerate(tasks, 1):
       lines.append(f"  #{i}: {t}")
+    lines.append("")
+
+  # Highlight Recognized Repeating Patterns vs Isolated Friction
+  patterns = briefing.get("recognized_patterns") or []
+  primary_loop = briefing.get("primary_unhealthy_loop")
+  if primary_loop:
+    lines.append("🚨 ACTIVE REPEATING UNHEALTHY PATTERNS (CHRONIC THREATS):")
+    for p in patterns[:3]:
+      dates_str = ", ".join(p.get("dates_observed", [])[:3])
+      lines.append(f"  - [{p.get('severity', 'warning').upper()}] {p.get('pattern_name')}: {p.get('occurrences_count')}x observed ({dates_str})")
+      lines.append(f"    Root Trigger: {p.get('root_trigger')}")
+      lines.append(f"    Recommended Countermeasure: {p.get('actionable_countermeasure')}")
+    lines.append("")
+  elif briefing.get("isolated_friction_events"):
+    iso = briefing["isolated_friction_events"][0]
+    lines.append(f"ℹ️ ISOLATED 1-DAY FRICTION (NOISE, NOT A REPEATING PATTERN):")
+    lines.append(f"  - {iso.get('event_name')} on {iso.get('date_observed')}. Do not overreact; keep baseline focus.")
     lines.append("")
 
   if briefing.get("most_recent_review"):
@@ -213,16 +240,17 @@ def format_briefing_for_prompt(briefing: dict) -> str:
     lines.append("")
 
   lines.append(
-    "INSTRUCTION: Quote or reference at least ONE specific review, takeaway, or failed task above. "
-    "Tie today's rule to their #1 task and connect it to their long-term goals — "
-    "1-year, 5-year, and 10-year are equal priority; emphasize the 10-year identity when relevant."
+    "CORE INSTRUCTION: Prioritize breaking the REPEATING UNHEALTHY PATTERN above. "
+    "A single bad day is just noise, but repeating behavioral loops destroy long-term progress. "
+    "Issue ONE non-negotiable actionable rule tailored specifically to break their recognized loop and protect their #1 task today."
   )
   return "\n".join(lines)
 
 
 def personalized_fallback_rule(briefing: dict) -> dict:
-  """Data-driven rule when LLM is unavailable — still uses their journal."""
+  """Data-driven rule when LLM is unavailable — focuses on recognized pattern."""
   top_task = briefing.get("top_priority_task") or "your #1 task today"
+  primary_loop = briefing.get("primary_unhealthy_loop")
   review = briefing.get("most_recent_review")
   takeaway = briefing.get("most_recent_takeaway") or ""
   repeated = briefing.get("repeated_incomplete_tasks") or []
@@ -231,7 +259,16 @@ def personalized_fallback_rule(briefing: dict) -> dict:
   ten_year = briefing.get("ten_year_goal") or ""
   avg = briefing.get("avg_task_completion_7d")
 
-  if repeated:
+  if primary_loop:
+    p_name = primary_loop.get("pattern_name", "Repeating friction")
+    p_count = primary_loop.get("occurrences_count", 2)
+    p_dates = ", ".join(primary_loop.get("dates_observed", [])[:2])
+    p_counter = primary_loop.get("actionable_countermeasure", f"Complete '{top_task}' in the first 90 minutes without distraction.")
+    
+    mistake = f"Repeating pattern: {p_name} ({p_count}x recorded across {p_dates})."
+    rule = f"You will break this loop today: {p_counter}"
+    why = f"Observed {p_count} times ({p_dates}). A single bad day is noise, but this repeating pattern is actively threatening your goals."
+  elif repeated:
     failed = repeated[0]["task"]
     mistake = f'You planned "{failed}" multiple times and did not finish it.'
     rule = f'You will complete "{top_task}" before touching your phone or YouTube. No exceptions.'
@@ -269,6 +306,6 @@ def personalized_fallback_rule(briefing: dict) -> dict:
     "past_mistake_called_out": mistake,
     "goal_connection": goal_connection,
     "if_you_ignore_this": consequence,
-    "confidence": 0.5,
+    "confidence": 0.6 if primary_loop else 0.5,
     "source": "personalized_fallback",
   }

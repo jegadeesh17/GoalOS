@@ -11,10 +11,11 @@ if _APP_DIR not in sys.path:
 import bootstrap  # noqa: F401
 import streamlit as st
 
-from components.layout import coaching_block, hero_card, info_card, mentor_panel, page_header, section, stat_card
+from components.layout import coaching_block, hero_card, info_card, mentor_panel, page_header, pattern_block, section, stat_card
 from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from services.coach_service import CoachService
+from services.pattern_service import PatternService
 from services.weekly_sync_service import WeeklySyncService
 from utils import configure_page, get_coach_service, init_app
 
@@ -26,7 +27,7 @@ coach = get_coach_service()
 goal_repo = GoalRepository()
 log_repo = LogRepository()
 
-page_header("AI Coach", "Personalized Coaching Based on Current Progress & Active Goals")
+page_header("AI Coach", "Pattern-Focused Coaching & Goal Pacing Evaluation")
 
 tab_progress, tab_rule, tab_chat = st.tabs([
   "🎯 Goal & Progress Coaching",
@@ -35,11 +36,11 @@ tab_progress, tab_rule, tab_chat = st.tabs([
 ])
 
 with tab_progress:
-  section("Month-to-Date Progress Coaching")
-  st.caption("AI evaluates your current month logged days, task execution, and 1-Month / 1-Year goals.")
+  section("Month-to-Date Progress & Pattern Coaching")
+  st.caption("AI prioritizes repeating behavioral patterns over 1-day noise to safeguard your 1-Month and 1-Year goals.")
 
   if st.button("Generate Goal & Progress Coaching", type="primary", use_container_width=True):
-    with st.spinner("Analyzing progress, goal horizons, and vector memory..."):
+    with st.spinner("Analyzing multi-day patterns, goal horizons, and vector memory..."):
       res = coach.get_progress_coaching(today)
       st.session_state["latest_ai_coach_res"] = res
       st.toast("Coaching generated!", icon="🔥")
@@ -55,17 +56,49 @@ with tab_progress:
 
     hero_card("Execution Trajectory", coaching.get("progress_narrative", ""))
 
+    # Pattern Recognition vs 1-Day Noise Block
+    pattern_text = coaching.get("recognized_pattern_analysis")
+    if pattern_text:
+      pattern_block("Recognized Behavioral Pattern Analysis (Chronic vs 1-Day Noise)", pattern_text, "warning")
+
+    protocol_text = coaching.get("actionable_pattern_breaking_protocol")
+    if protocol_text:
+      pattern_block("Actionable Pattern-Breaking Protocol", protocol_text, "accent")
+
     c_a, c_b = st.columns(2)
     with c_a:
-      section("Aligned Wins")
+      section("Aligned Wins & Compounding Habits")
       st.write(coaching.get("key_wins_aligned", "N/A"))
     with c_b:
       section("Critical Bottleneck")
       st.write(coaching.get("critical_bottleneck", "N/A"))
 
     coaching_block("Actionable Coaching Advice", coaching.get("actionable_coaching_advice", ""))
+
+    # Multi-day pattern telemetry expander
+    recent_logs = log_repo.get_recent(21)
+    if recent_logs:
+      p_report = PatternService().analyze_patterns(recent_logs, target_date=today)
+      with st.expander("🔍 Multi-Day Pattern Recognition Telemetry", expanded=False):
+        st.caption(f"Analyzed {p_report['total_logs_analyzed']} daily logs for repeating behavioral loops.")
+        repeating = p_report.get("repeating_unhealthy_patterns", [])
+        if repeating:
+          st.markdown("#### 🚨 Repeating Unhealthy Patterns (2+ Occurrences)")
+          for p in repeating:
+            dates = ", ".join(p.get("dates_observed", []))
+            st.markdown(f"- **{p['pattern_name']}** ({p['occurrences_count']}x — Dates: `{dates}`)")
+            st.markdown(f"  *Root Trigger:* {p['root_trigger']}")
+            st.markdown(f"  *Protocol:* {p['actionable_countermeasure']}")
+        else:
+          st.success("No repeating unhealthy patterns detected in recent logs!")
+        
+        isolated = p_report.get("isolated_friction_events", [])
+        if isolated:
+          st.markdown("#### ℹ️ Isolated 1-Day Events (Noise, Not Chronic)")
+          for iso in isolated:
+            st.markdown(f"- **{iso['event_name']}** on `{iso['date_observed']}` — *{iso['reset_advice']}*")
   else:
-    info_card("Click 'Generate Goal & Progress Coaching' above to evaluate your month-to-date trajectory against your goals.", "default")
+    info_card("Click 'Generate Goal & Progress Coaching' above to evaluate your multi-day patterns and goal trajectory.", "default")
 
 with tab_rule:
   section("Today's Non-Negotiable Rule")

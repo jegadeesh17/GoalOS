@@ -116,6 +116,24 @@ def coaching_block(label: str, text: str):
   )
 
 
+def pattern_block(label: str, text: str, variant: str = "warning"):
+  if not text:
+    return
+  accent_border = {
+    "warning": "#eab308",
+    "danger": "#ef4444",
+    "success": "#22c55e",
+    "accent": "#38bdf8",
+  }.get(variant, "#38bdf8")
+  st.markdown(
+    f'<div style="background:#18181b;border-left:4px solid {accent_border};padding:14px 16px;border-radius:6px;margin:10px 0;">'
+    f'<div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;color:#a1a1aa;margin-bottom:4px;font-weight:600;">{html.escape(label)}</div>'
+    f'<div style="color:#f4f4f5;font-size:0.95rem;line-height:1.5;">{html.escape(text)}</div>'
+    f"</div>",
+    unsafe_allow_html=True,
+  )
+
+
 def mentor_panel(mentor: dict, show_goal: bool = True):
   """Render mentor rule with clear AI vs fallback status."""
   if not mentor.get("mentor_rule"):

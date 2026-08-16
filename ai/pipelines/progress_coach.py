@@ -9,21 +9,29 @@ from ai.pipelines._base import fallback_progress, format_context, load_prompt
 def run_progress_coach(context: dict, client: OpenRouterClient = None) -> dict:
   client = client or OpenRouterClient()
   system_prompt = (
-    "You are GoalOS Lead Coach. Evaluate the user's current month progress, daily journal logs, "
-    "and active 1-Month / 1-Year goals. Return JSON with keys:\n"
-    "- pacing_status: string (e.g. 'On Track', 'Behind Schedule')\n"
-    "- monthly_goal_evaluated: string\n"
-    "- progress_narrative: string\n"
-    "- key_wins_aligned: string\n"
-    "- critical_bottleneck: string\n"
-    "- actionable_coaching_advice: string\n"
+    "You are GoalOS Lead Coach. Evaluate the user's current month progress, multi-day journal logs, "
+    "detected behavioral patterns, and active 1-Month / 1-Year goals.\n\n"
+    "CRITICAL COACHING PRINCIPLE (PATTERNS OVER 1-DAY FRICTION):\n"
+    "- Explicitly distinguish isolated single-day bad days (noise) from repeating unhealthy patterns (signal).\n"
+    "- A repeating behavioral pattern (e.g. morning phone delay, recurring task rollover, afternoon slump) "
+    "is the primary risk to achieving their 1-Month and 1-Year goals.\n"
+    "- Provide an actionable pattern-breaking protocol that tackles the root trigger.\n\n"
+    "Return JSON with keys:\n"
+    "- pacing_status: string (e.g. 'On Track — High Execution', 'Behind Schedule — Repeating Pattern Detected')\n"
+    "- monthly_goal_evaluated: string (target 1-Month goal)\n"
+    "- progress_narrative: string (honest assessment of trajectory)\n"
+    "- key_wins_aligned: string (compounding positive habits)\n"
+    "- critical_bottleneck: string (the friction point)\n"
+    "- recognized_pattern_analysis: string (analysis of repeating multi-day patterns vs isolated single-day noise with observed dates/counts)\n"
+    "- actionable_pattern_breaking_protocol: string (tactical step-by-step countermeasure to dismantle the repeating loop)\n"
+    "- actionable_coaching_advice: string (direct, high-clarity coaching directive)\n"
   )
 
   formatted = format_context(context)
   user_msg = (
-    f"User Progress & Goal Context:\n{formatted}\n\n"
+    f"User Progress, Patterns & Goal Context:\n{formatted}\n\n"
     "Provide aggressive, high-clarity progress coaching evaluating how current month days logged "
-    "and daily execution map to their 1-Month and 1-Year goals."
+    "and daily execution map to their 1-Month and 1-Year goals. Focus on repeating behavioral patterns over one-day friction."
   )
 
   try:

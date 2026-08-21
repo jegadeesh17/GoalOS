@@ -199,7 +199,7 @@ def format_briefing_for_prompt(briefing: dict) -> str:
     lines.append("")
   elif briefing.get("isolated_friction_events"):
     iso = briefing["isolated_friction_events"][0]
-    lines.append(f"ℹ️ ISOLATED 1-DAY FRICTION (NOISE, NOT A REPEATING PATTERN):")
+    lines.append("ℹ️ ISOLATED 1-DAY FRICTION (NOISE, NOT A REPEATING PATTERN):")
     lines.append(f"  - {iso.get('event_name')} on {iso.get('date_observed')}. Do not overreact; keep baseline focus.")
     lines.append("")
 

@@ -13,13 +13,11 @@ import streamlit as st
 from ai.openrouter_client import OpenRouterClient
 from components.layout import page_header, section, stat_card
 from config.settings import settings
-from database.migrations import run_migrations
 from database.repositories.coach_repository import CoachRepository
 from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from database.repositories.memory_repository import MemoryRepository
 from services.data_portability_service import DataPortabilityService
-from services.memory_service import clear_collection_cache
 from services.settings_service import SettingsService
 from utils import configure_page, init_app
 

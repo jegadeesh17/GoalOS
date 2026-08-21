@@ -9,7 +9,7 @@ if _APP_DIR not in sys.path:
 import bootstrap  # noqa: F401
 import streamlit as st
 
-from components.layout import hero_card, info_card, page_header, section, stat_card
+from components.layout import info_card, page_header, section
 from database.connection import get_db
 from database.repositories.goal_repository import GoalRepository
 from models.goal import GoalCreate, GoalUpdate

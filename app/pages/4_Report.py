@@ -1,9 +1,8 @@
 """Report Page — Month-wise Goal vs. Performance Evaluation."""
 
-import calendar
 import os
 import sys
-from datetime import date, timedelta
+from datetime import date
 
 _APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _APP_DIR not in sys.path:
@@ -115,6 +114,6 @@ section(f"📊 Annual {month_start.year} Performance Synthesis")
 with st.expander(f"Annual {yearly_report['year']} Execution Summary across Available Months", expanded=True):
   st.write(f"**Annual Alignment Score:** {yearly_report['annual_alignment_score']}%")
   st.write(f"**Annual Verdict:** {yearly_report['annual_verdict']}")
-  st.write(f"**1-Year Target Goals:** " + ", ".join(yearly_report["one_year_goals"]))
-  st.write(f"**5-Year Vision Goals:** " + ", ".join(yearly_report["five_year_goals"]))
+  st.write("**1-Year Target Goals:** " + ", ".join(yearly_report["one_year_goals"]))
+  st.write("**5-Year Vision Goals:** " + ", ".join(yearly_report["five_year_goals"]))
 

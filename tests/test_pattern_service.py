@@ -1,9 +1,7 @@
 """Unit tests for PatternService and pattern-focused AI coaching."""
 
-import json
 from datetime import date
 
-from models.daily_log import DailyLogCreate
 from services.mentor_briefing import build_mentor_briefing, personalized_fallback_rule
 from services.pattern_service import PatternService
 

@@ -1,6 +1,5 @@
 """AI Coach Page — Goal & Progress Pacing AI Coaching."""
 
-import json
 import os
 import sys
 from datetime import date
@@ -11,12 +10,18 @@ if _APP_DIR not in sys.path:
 import bootstrap  # noqa: F401
 import streamlit as st
 
-from components.layout import coaching_block, hero_card, info_card, mentor_panel, page_header, pattern_block, section, stat_card
+from components.layout import (
+  coaching_block,
+  hero_card,
+  info_card,
+  mentor_panel,
+  page_header,
+  pattern_block,
+  section,
+)
 from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
-from services.coach_service import CoachService
 from services.pattern_service import PatternService
-from services.weekly_sync_service import WeeklySyncService
 from utils import configure_page, get_coach_service, init_app
 
 configure_page("AI Coach | GoalOS", "🤖")

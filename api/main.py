@@ -113,4 +113,4 @@ def coach_morning(req: MorningCoachRequest) -> dict:
     raise HTTPException(status_code=422, detail=str(exc)) from exc
   except Exception:
     logger.exception("morning_coach_failed event=api")
-    raise HTTPException(status_code=500, detail="Unable to generate coaching right now")
+    raise HTTPException(status_code=500, detail="Unable to generate coaching right now") from None

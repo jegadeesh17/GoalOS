@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import json
 import re
-from collections import Counter, defaultdict
-from datetime import date, timedelta
-from typing import Any, Optional
-
+from collections import defaultdict
+from datetime import date
+from typing import Any
 
 DISTRACTION_KEYWORDS = {
   "phone": ["phone", "scrolling", "instagram", "reels", "shorts", "twitter", "x.com", "reddit"],

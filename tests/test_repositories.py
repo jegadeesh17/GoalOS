@@ -86,6 +86,7 @@ class TestScoreRepository:
       consistency_score=80.0,
     )
     created = repo.create(score)
+    assert created.id is not None
     fetched = repo.get_by_date(date(2026, 6, 23))
     assert fetched is not None
     assert fetched.overall_growth_score == 75.0

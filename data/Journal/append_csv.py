@@ -1,6 +1,7 @@
 import csv
-import sys
 import json
+import sys
+
 
 def append_to_csv(csv_path, json_path):
     with open(json_path, 'r', encoding='utf-8') as jf:

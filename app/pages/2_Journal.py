@@ -1,11 +1,8 @@
 """Journal Import & Daily Log Page with Image Scan Options."""
 
-import calendar
-import json
 import os
 import sys
-import uuid
-from datetime import date, timedelta
+from datetime import date
 
 _APP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _APP_DIR not in sys.path:
@@ -14,19 +11,10 @@ import bootstrap  # noqa: F401
 import streamlit as st
 from PIL import Image
 
-from components.layout import hero_card, info_card, mentor_panel, page_header, section
+from components.layout import info_card, page_header, section
 from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
-from database.repositories.milestone_repository import MilestoneRepository
 from models.daily_log import DailyLogUpdate
-from services.journal_helpers import (
-  ensure_task_ids,
-  load_tasks_from_log,
-  log_task_stats,
-  normalize_tasks,
-  pack_tasks,
-  serialize_journal_fields,
-)
 from services.local_ocr_service import extract_text_from_image
 from services.weekly_sync_service import WeeklySyncService
 from utils import configure_page, get_coach_service, init_app

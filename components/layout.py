@@ -27,7 +27,7 @@ def top_nav():
   _, nav, _ = st.columns([0.2, 11.6, 0.2])
   with nav:
     cols = st.columns(len(NAV_ITEMS))
-    for col, (path, label) in zip(cols, NAV_ITEMS):
+    for col, (path, label) in zip(cols, NAV_ITEMS, strict=False):
       with col:
         st.page_link(path, label=label, use_container_width=True)
   st.markdown("</div>", unsafe_allow_html=True)

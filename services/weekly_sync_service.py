@@ -84,14 +84,16 @@ class WeeklySyncService:
       }
 
       # Persist structured textual content directly into SQLite daily_logs table (No images saved in DB)
-      if persist_to_db:
+      if persist_to_db and raw_ocr_text.strip():
         try:
+          existing_log = log_repo.get_by_date(entry_date)
           changes = DailyLogUpdate(
-            gratitude=structured["gratitude"],
-            planned_tasks=structured["tasks"],
-            time_blocks=structured["plan"],
-            journal_entry=structured["review"],
-            takeaway=structured["takeaway"],
+            gratitude=structured["gratitude"] or (existing_log.gratitude if existing_log else None),
+            planned_tasks=structured["tasks"] or (existing_log.planned_tasks if existing_log else None),
+            time_blocks=structured["plan"] or (existing_log.time_blocks if existing_log else None),
+            journal_entry=structured["review"] or (existing_log.journal_entry if existing_log else None),
+            takeaway=structured["takeaway"] or (existing_log.takeaway if existing_log else None),
+            one_lesson=structured["takeaway"] or (existing_log.one_lesson if existing_log else None),
             evening_completed=True,
             imported=True,
             import_source=f"batch_ocr:{filename}",
@@ -281,7 +283,6 @@ class WeeklySyncService:
     )
 
     categorized_goals = GoalRepository().get_goals_for_month(month_start)
-    short_term_goals = categorized_goals.get("1-month", [])
     one_year_goals = categorized_goals.get("1-year", [])
     five_year_goals = categorized_goals.get("5-year", [])
 
@@ -289,7 +290,6 @@ class WeeklySyncService:
     days_in_m = progress["days_in_month"]
     avg_score = progress["monthly_completion_rate"]
 
-    primary_1m = short_term_goals[0].title if short_term_goals else "Core Execution"
     y1_titles = [f"'{g.title}'" for g in one_year_goals] if one_year_goals else ["1-Year Milestones"]
     y5_titles = [f"'{g.title}'" for g in five_year_goals] if five_year_goals else ["5-Year Vision"]
 

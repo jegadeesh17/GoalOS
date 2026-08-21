@@ -9,7 +9,7 @@ extend-exclude = ["chroma_db", "backups"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B"]
-ignore = ["E111", "E114", "E117"]
+ignore = ["E111", "E114", "E117", "E402", "E501", "E741"]
 
 [tool.mypy]
 python_version = "3.11"

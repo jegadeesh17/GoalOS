@@ -18,9 +18,11 @@ _CATEGORY_BADGE = {
 def render_goal_card(goal, show_actions: bool = False):
   badge = _CATEGORY_BADGE.get(goal.category, "goalos-badge-default")
   progress_pct = max(0, min(100, goal.progress * 100))
+  text_color = COLORS["text"]
+  muted_color = COLORS["muted"]
   reason_html = (
-    f'<p style="margin:0.75rem 0 0;color:{COLORS["muted"]};font-size:0.88rem;">'
-    f"<strong style='color:{COLORS["text"]};'>Why:</strong> {html.escape(goal.reason)}</p>"
+    f'<p style="margin:0.75rem 0 0;color:{muted_color};font-size:0.88rem;">'
+    f"<strong style='color:{text_color};'>Why:</strong> {html.escape(goal.reason)}</p>"
     if goal.reason
     else ""
   )

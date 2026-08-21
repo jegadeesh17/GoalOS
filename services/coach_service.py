@@ -278,6 +278,7 @@ class CoachService:
 
   def get_progress_coaching(self, target_date: date = None) -> dict:
     import calendar
+
     from services.weekly_sync_service import WeeklySyncService
 
     self._refresh_llm()

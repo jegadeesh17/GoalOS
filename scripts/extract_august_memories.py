@@ -5,8 +5,10 @@ import sys
 sys.path.insert(0, os.path.abspath("."))
 
 import json
-from services.journal_import_service import JournalImportService
+
 from database.connection import get_db
+from services.journal_import_service import JournalImportService
+
 
 def run_extraction():
     service = JournalImportService()

@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 
 from ai.openrouter_client import OpenRouterClient
-from ai.pipelines._base import fallback_progress, format_context, load_prompt
+from ai.pipelines._base import fallback_progress, format_context
 
 
 def run_progress_coach(context: dict, client: OpenRouterClient = None) -> dict:

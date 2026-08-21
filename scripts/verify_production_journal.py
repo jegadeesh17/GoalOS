@@ -1,12 +1,13 @@
 """Verify August 2026 production readiness in GoalOS."""
-import os
-import sys
 import json
+import os
 import sqlite3
+import sys
 
 sys.path.insert(0, os.path.abspath("."))
 
 from services.memory_service import MemoryService
+
 
 def verify_sqlite():
     conn = sqlite3.connect("goalos.db")
@@ -16,7 +17,7 @@ def verify_sqlite():
         "FROM daily_logs WHERE date LIKE '2026-08-%' ORDER BY date ASC"
     ).fetchall()
     
-    print(f"=== SQLite daily_logs Verification ===")
+    print("=== SQLite daily_logs Verification ===")
     print(f"Total August 2026 logs found: {len(rows)}")
     assert len(rows) == 15, f"Expected 15 rows for August 2026, found {len(rows)}"
     

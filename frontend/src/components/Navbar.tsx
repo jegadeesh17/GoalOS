@@ -42,21 +42,23 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
   return (
     <header className="sticky top-3 z-50 px-4 sm:px-6 max-w-7xl mx-auto w-full">
       <div className="bg-white/90 backdrop-blur-2xl rounded-full px-5 py-2 shadow-[0_8px_30px_rgb(79,70,229,0.08)] border border-indigo-100/80 transition-all">
-        <div className="flex items-center justify-between gap-3 sm:gap-6">
-          {/* Brand Logo */}
-          <div 
-            className="flex items-center space-x-2 cursor-pointer group flex-shrink-0" 
-            onClick={() => setActiveTab('calendar')}
-          >
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-all flex-shrink-0">
-              <Compass className="w-4 h-4" />
+        <div className="flex items-center justify-between gap-4">
+          {/* Left Cluster: Brand Logo (flex-1) */}
+          <div className="flex items-center flex-1 min-w-0">
+            <div 
+              className="flex items-center space-x-2.5 cursor-pointer group" 
+              onClick={() => setActiveTab('calendar')}
+            >
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-all flex-shrink-0">
+                <Compass className="w-4 h-4" />
+              </div>
+              <span className="font-bold text-lg text-slate-900 tracking-tight">
+                GoalOS
+              </span>
             </div>
-            <span className="font-bold text-lg text-slate-900 tracking-tight">
-              GoalOS
-            </span>
           </div>
 
-          {/* Navigation */}
+          {/* Center Cluster: Symmetrically Centered Navigation */}
           <nav className="hidden lg:flex items-center space-x-1 bg-slate-100/80 p-1 rounded-full border border-slate-200/70 shadow-inner flex-shrink-0">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -78,10 +80,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             })}
           </nav>
 
-          {/* Date Indicator (Clean & Non-redundant) */}
-          <div className="hidden sm:flex items-center space-x-2 text-xs font-medium text-slate-700 bg-indigo-50/70 px-3.5 py-1.5 rounded-full border border-indigo-100 shadow-sm flex-shrink-0 whitespace-nowrap">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-100 animate-pulse flex-shrink-0"></span>
-            <span className="font-semibold text-slate-800">{todayFormatted}</span>
+          {/* Right Cluster: Date Indicator (flex-1 justify-end) */}
+          <div className="hidden sm:flex items-center justify-end flex-1 min-w-0">
+            <div className="flex items-center space-x-2 text-xs font-medium text-slate-700 bg-indigo-50/70 px-3.5 py-1.5 rounded-full border border-indigo-100 shadow-sm whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-100 animate-pulse flex-shrink-0"></span>
+              <span className="font-semibold text-slate-800">{todayFormatted}</span>
+            </div>
           </div>
         </div>
 

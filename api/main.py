@@ -150,8 +150,10 @@ def startup() -> None:
 
 
 @app.get("/health")
+@app.get("/api/health")
 def health() -> dict:
   return {"status": "ok"}
+
 
 
 @app.get("/health/details", dependencies=[Depends(require_api_token)])

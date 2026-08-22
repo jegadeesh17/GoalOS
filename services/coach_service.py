@@ -386,12 +386,25 @@ class CoachService:
     }
 
   def get_future_self(self) -> dict:
+    return self.get_future_self_coaching(date.today())
+
+  def get_future_self_coaching(self, target_date: date | None = None) -> dict:
     self._refresh_llm()
-    context = self.build_context(date.today())
+    context = self.build_context(target_date or date.today())
     if self._remote_ai_allowed():
       return run_future_self_coach(context, self.llm)
     from ai.pipelines._base import fallback_future_self
     return fallback_future_self(context)
+
+  def get_goal_alignment_coaching(self, goal) -> dict:
+    self._refresh_llm()
+    context = self.build_context(date.today())
+    context["target_goal"] = self._serialize_goal(goal)
+    if self._remote_ai_allowed():
+      return run_goal_alignment_coach(context, self.llm)
+    from ai.pipelines._base import fallback_goal_alignment
+    return fallback_goal_alignment(context)
+
 
   def get_dashboard_recommendation(self) -> str:
     """Today's mentor rule for dashboard."""

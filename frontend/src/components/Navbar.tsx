@@ -43,25 +43,17 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, lifeSum
     <header className="sticky top-3 z-50 px-4 sm:px-6 max-w-7xl mx-auto w-full">
       <div className="bg-white/90 backdrop-blur-2xl rounded-full px-5 py-3 shadow-[0_8px_30px_rgb(79,70,229,0.12)] border border-indigo-100/80 transition-all">
         <div className="flex items-center justify-between">
-          {/* Luminous Logo & Brand */}
+          {/* Logo & Brand */}
           <div 
-            className="flex items-center space-x-3 cursor-pointer group" 
+            className="flex items-center space-x-2.5 cursor-pointer group" 
             onClick={() => setActiveTab('calendar')}
           >
-            <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/30 group-hover:scale-105 transition-all">
+            <div className="w-9 h-9 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/30 group-hover:scale-105 transition-all">
               <Compass className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-black text-lg text-slate-900 tracking-tight">
-                  GoalOS
-                </span>
-                <span className="text-[10px] uppercase font-extrabold tracking-widest bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-200 shadow-sm">
-                  Personal OS
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 hidden sm:block font-medium">Life Horizon Operating System</p>
-            </div>
+            <span className="font-black text-xl text-slate-900 tracking-tight">
+              GoalOS
+            </span>
           </div>
 
           {/* Floating Pill Navigation */}

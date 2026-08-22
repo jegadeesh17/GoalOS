@@ -66,32 +66,34 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
         <div className="flex items-center space-x-1.5 bg-slate-100/80 p-1 rounded-full border border-slate-200/60 backdrop-blur-md">
           <button
             onClick={() => setViewMode('full')}
-            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${viewMode === 'full'
+            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${
+              viewMode === 'full'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-              }`}
+            }`}
           >
             Full Lifespan (70 Years)
           </button>
           <button
             onClick={() => setViewMode('currentDecade')}
-            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${viewMode === 'currentDecade'
+            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${
+              viewMode === 'currentDecade'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-              }`}
+            }`}
           >
             Current Decade (Age {currentDecadeStart}-{currentDecadeStart + 9})
           </button>
         </div>
       </div>
 
-      {/* Interactive Legend & Inspector */}
+      {/* Interactive Legend & Inspector (Clean & Non-redundant) */}
       <div className="my-4 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-white via-indigo-50/30 to-purple-50/20 p-3.5 rounded-2xl border border-indigo-100/70 text-xs shadow-sm">
         {/* Legend */}
         <div className="flex items-center space-x-5">
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-slate-400 to-indigo-300 shadow-sm"></span>
-            <span className="text-slate-700 font-medium">Weeks Lived ({summary?.weeks_lived})</span>
+            <span className="text-slate-700 font-medium">Weeks Lived</span>
           </div>
           <div className="flex items-center space-x-2">
             <span className="w-3 h-3 rounded-full bg-amber-400 ring-4 ring-amber-200/80 animate-star-pulse"></span>
@@ -99,7 +101,7 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
           </div>
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-white border border-indigo-200 shadow-sm"></span>
-            <span className="text-slate-600 font-medium">Remaining Weeks ({summary?.weeks_remaining})</span>
+            <span className="text-slate-600 font-medium">Remaining Weeks</span>
           </div>
         </div>
 
@@ -141,21 +143,23 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
               return (
                 <div
                   key={row.age}
-                  className={`grid grid-cols-[48px_repeat(52,1fr)] gap-1 items-center p-0.5 rounded-xl transition-all ${isCurrentAge
+                  className={`grid grid-cols-[48px_repeat(52,1fr)] gap-1 items-center p-0.5 rounded-xl transition-all ${
+                    isCurrentAge
                       ? 'bg-amber-50/70 ring-1 ring-amber-300 shadow-sm'
                       : isDecadeMarker
-                        ? 'bg-indigo-50/40 border border-indigo-100/50'
-                        : ''
-                    }`}
+                      ? 'bg-indigo-50/40 border border-indigo-100/50'
+                      : ''
+                  }`}
                 >
                   {/* Age Label */}
                   <div
-                    className={`text-xs font-mono text-right pr-2 ${isCurrentAge
+                    className={`text-xs font-mono text-right pr-2 ${
+                      isCurrentAge
                         ? 'text-amber-800 font-bold'
                         : isDecadeMarker
-                          ? 'text-indigo-700 font-bold'
-                          : 'text-slate-400 font-normal'
-                      }`}
+                        ? 'text-indigo-700 font-bold'
+                        : 'text-slate-400 font-normal'
+                    }`}
                   >
                     {row.age}
                   </div>

@@ -39,8 +39,7 @@ export const LifeProgressBanner: React.FC<LifeProgressBannerProps> = ({ summary,
           </h1>
 
           <p className="text-sm text-slate-600 font-normal pt-0.5">
-            You are <strong className="text-slate-900 font-semibold">{summary.age_years} years old</strong>. You have lived{' '}
-            <strong className="text-indigo-700 font-semibold">{summary.percentage_lived}%</strong> of your 70-year calendar.
+            Age <strong className="text-slate-900 font-semibold">{summary.age_years}</strong> &middot; Target Horizon: <strong className="text-slate-900 font-semibold">{summary.target_age} Years</strong>
           </p>
         </div>
 

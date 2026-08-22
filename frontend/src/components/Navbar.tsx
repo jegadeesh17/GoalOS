@@ -1,11 +1,11 @@
 import React from 'react';
-import { 
-  Calendar, 
-  BookOpen, 
-  Target, 
-  Sparkles, 
-  BarChart3, 
-  Brain, 
+import {
+  Calendar,
+  BookOpen,
+  Target,
+  Sparkles,
+  BarChart3,
+  Brain,
   Settings as SettingsIcon,
   Compass
 } from 'lucide-react';
@@ -33,10 +33,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, lifeSum
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ] as const;
 
-  const todayFormatted = new Intl.DateTimeFormat('en-US', { 
-    weekday: 'short', 
-    month: 'short', 
-    day: 'numeric' 
+  const todayFormatted = new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
   }).format(new Date());
 
   return (
@@ -44,8 +44,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, lifeSum
       <div className="bg-white/90 backdrop-blur-2xl rounded-full px-5 py-2 shadow-[0_8px_30px_rgb(79,70,229,0.08)] border border-indigo-100/80 transition-all">
         <div className="flex items-center justify-between gap-3 sm:gap-6">
           {/* Brand Logo */}
-          <div 
-            className="flex items-center space-x-2 cursor-pointer group flex-shrink-0" 
+          <div
+            className="flex items-center space-x-2 cursor-pointer group flex-shrink-0"
             onClick={() => setActiveTab('calendar')}
           >
             <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-all flex-shrink-0">
@@ -65,11 +65,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, lifeSum
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 ${
-                    isActive
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white'
-                  }`}
+                  className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 ${isActive
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`}
                 >
                   <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                   <span>{item.label}</span>
@@ -99,11 +98,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, lifeSum
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                    : 'text-slate-600 hover:bg-white bg-slate-100/60'
-                }`}
+                className={`flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${isActive
+                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                  : 'text-slate-600 hover:bg-white bg-slate-100/60'
+                  }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span>{item.label}</span>

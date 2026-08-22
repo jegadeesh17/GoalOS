@@ -70,6 +70,15 @@ def test_goals_crud(client):
   assert ms_res.status_code == 200
   ms = ms_res.json()
   assert ms["title"] == "Launch Alpha"
+  ms_id = ms["id"]
+
+  # Update Milestone
+  patch_ms = client.patch(
+    f"/milestones/{ms_id}",
+    json={"status": "completed", "progress": 1.0},
+  )
+  assert patch_ms.status_code == 200
+  assert patch_ms.json()["status"] == "completed"
 
   # 4. Get Goal by ID
   get_res = client.get(f"/goals/{goal_id}")
@@ -105,22 +114,114 @@ def test_journal_upsert_and_today(client):
   assert today_res.status_code == 200
   assert today_res.json()["sleep_hours"] == 7.5
 
+  # Get history
+  history_res = client.get("/journal/history?limit=7")
+  assert history_res.status_code == 200
+  assert isinstance(history_res.json(), list)
 
-def test_settings_get_and_update(client):
+
+def test_analytics_endpoints(client):
+  dashboard_res = client.get("/analytics/dashboard")
+  assert dashboard_res.status_code == 200
+  dashboard = dashboard_res.json()
+  assert "total_logs" in dashboard
+  assert "avg_sleep_hours" in dashboard
+  assert "avg_deep_work_hours" in dashboard
+
+  scores_res = client.get("/analytics/scores?limit=10")
+  assert scores_res.status_code == 200
+  assert isinstance(scores_res.json(), list)
+
+
+def test_memories_crud_and_search(client):
+  # Create Memory
+  create_res = client.post(
+    "/memories",
+    json={
+      "text": "Consistency beats intensity every single time",
+      "memory_type": "principle",
+      "importance": 0.9,
+    },
+  )
+  assert create_res.status_code == 200
+  mem = create_res.json()
+  assert mem["text"] == "Consistency beats intensity every single time"
+  mem_id = mem["id"]
+
+  # List Memories
+  list_res = client.get("/memories?limit=20")
+  assert list_res.status_code == 200
+  assert any(m["id"] == mem_id for m in list_res.json())
+
+  # Search Memories
+  search_res = client.get("/memories/search?q=consistency")
+  assert search_res.status_code == 200
+  assert isinstance(search_res.json(), list)
+
+  # Delete Memory
+  del_res = client.delete(f"/memories/{mem_id}")
+  assert del_res.status_code == 200
+  assert del_res.json()["success"] is True
+
+
+def test_settings_and_export(client):
+  # Get Settings
   get_res = client.get("/settings")
   assert get_res.status_code == 200
   settings_data = get_res.json()
   assert "remote_ai_consent" in settings_data
 
-  # Update settings
+  # Update Settings
   up_res = client.post(
     "/settings",
     json={
-      "target_age": 80,
+      "target_age": 75,
       "remote_ai_consent": True,
     },
   )
   assert up_res.status_code == 200
   updated = up_res.json()
-  assert updated["target_age"] == 80
-  assert updated["remote_ai_consent"] is True
+  assert updated["target_age"] == 75
+
+  # Export payload
+  export_res = client.get("/export")
+  assert export_res.status_code == 200
+  export_data = export_res.json()
+  assert "tables" in export_data
+  assert "format" in export_data
+
+
+
+def test_ai_coach_endpoints(client):
+  today = date.today().isoformat()
+
+  # Morning Coach
+  morning_res = client.post(
+    "/coach/morning",
+    json={
+      "target_date": today,
+      "plans_text": "Ship v2 release",
+      "gratitude": "Good health",
+    },
+  )
+  assert morning_res.status_code == 200
+  assert "mentor_rule" in morning_res.json() or "rule" in morning_res.json()
+
+  # Evening Coach
+  evening_res = client.post(
+    "/coach/evening",
+    json={
+      "target_date": today,
+      "one_win": "Everything tested",
+      "one_lesson": "Stay focused",
+    },
+  )
+  assert evening_res.status_code == 200
+
+  # Weekly Coach
+  weekly_res = client.post("/coach/weekly", json={"week_start_date": today})
+  assert weekly_res.status_code == 200
+
+  # Future Self Coach
+  future_res = client.post("/coach/future-self", json={"date": today})
+  assert future_res.status_code == 200

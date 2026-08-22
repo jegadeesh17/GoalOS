@@ -319,6 +319,7 @@ def create_milestone(goal_id: int, milestone_in: MilestoneCreate) -> dict:
 
 
 @app.put("/milestones/{milestone_id}", dependencies=[Depends(require_api_token)])
+@app.patch("/milestones/{milestone_id}", dependencies=[Depends(require_api_token)])
 def update_milestone(milestone_id: int, milestone_in: MilestoneUpdate) -> dict:
   updated = MilestoneRepository().update(milestone_id, milestone_in)
   if not updated:
@@ -458,7 +459,8 @@ def memories_create(req: MemoryStoreRequest) -> dict:
     memory_type=req.memory_type,
     importance=req.importance,
     source_date=req.source_date,
-    goal_id=req.goal_id,
+    source_type="goal" if req.goal_id else None,
+    source_id=req.goal_id,
   )
   return mem.model_dump(mode="json")
 

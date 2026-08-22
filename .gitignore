@@ -11,6 +11,14 @@ backups/
 data/**/*.jpg
 *.jpg
 
+# Frontend build & dependencies
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.vite/
+frontend/.vite/
+
 # Portfolio FastAPI package (was previously fully ignored)
 !api/
 !api/**

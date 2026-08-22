@@ -85,21 +85,21 @@ export const MemoriesView: React.FC = () => {
     <div className="space-y-6">
       {/* Header Banner */}
       <div className="glass-panel rounded-3xl p-6 sm:p-7 shadow-celestial border border-white/80">
-        <div className="flex items-center space-x-2 text-xs font-extrabold uppercase tracking-wider text-indigo-700 mb-1">
-          <span className="flex items-center space-x-1 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 shadow-sm font-extrabold">
+        <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-indigo-700 mb-1">
+          <span className="flex items-center space-x-1 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100 shadow-sm font-semibold">
             <Brain className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Memory & Cognitive Knowledge Base</span>
+            <span>Memory & Cognitive Base</span>
           </span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Memories & Insights</h2>
-        <p className="text-xs text-slate-500 mt-1 font-medium">
+        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Memories & Insights</h2>
+        <p className="text-xs text-slate-500 mt-0.5 font-normal">
           Search and retrieve past lessons, mental models, operating principles, and breakthroughs.
         </p>
 
         {/* Search Bar */}
-        <form onSubmit={handleSearch} className="mt-5 flex gap-2">
+        <form onSubmit={handleSearch} className="mt-4 flex gap-2">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-4 top-3.5 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
             <input
               type="text"
               placeholder="Search past insights, mental models, lessons, and breakthroughs..."
@@ -108,13 +108,13 @@ export const MemoriesView: React.FC = () => {
                 setSearchQuery(e.target.value);
                 if (!e.target.value.trim()) setSearchResults(null);
               }}
-              className="w-full text-sm pl-11 pr-4 py-3 rounded-full border border-indigo-100 focus:ring-2 focus:ring-indigo-500 bg-white/90 shadow-sm font-medium"
+              className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-full border border-indigo-100 focus:ring-2 focus:ring-indigo-500 bg-white/90 shadow-sm"
             />
           </div>
           <button
             type="submit"
             disabled={isSearching}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-6 py-3 rounded-full text-xs font-extrabold shadow-md shadow-indigo-600/30 flex items-center space-x-1.5 transition-all"
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-5 py-2.5 rounded-full text-xs font-semibold shadow-sm flex items-center space-x-1.5 transition-all"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>{isSearching ? 'Searching...' : 'Search'}</span>
@@ -125,15 +125,15 @@ export const MemoriesView: React.FC = () => {
       {/* Main Grid: Store Memory Form + List / Search Results */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Add Memory Form */}
-        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-4 shadow-celestial border border-white/80">
-          <h3 className="font-extrabold text-sm text-slate-900 flex items-center space-x-2">
+        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-3.5 shadow-celestial border border-white/80">
+          <h3 className="font-bold text-sm text-slate-900 flex items-center space-x-2">
             <Plus className="w-4 h-4 text-indigo-600" />
             <span>Record New Insight</span>
           </h3>
 
-          <form onSubmit={handleCreateMemory} className="space-y-4">
+          <form onSubmit={handleCreateMemory} className="space-y-3">
             <div>
-              <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Insight / Principle / Lesson *
               </label>
               <textarea
@@ -142,19 +142,19 @@ export const MemoriesView: React.FC = () => {
                 placeholder="Write an operating principle, rule of thumb, or key realization..."
                 value={newMemoryText}
                 onChange={(e) => setNewMemoryText(e.target.value)}
-                className="w-full text-sm p-4 rounded-2xl border border-indigo-100 focus:ring-2 focus:ring-indigo-500 bg-white/90 shadow-sm resize-none font-sans font-medium"
+                className="w-full text-sm p-3 rounded-xl border border-indigo-100 focus:ring-2 focus:ring-indigo-500 bg-white/90 shadow-sm resize-none font-sans"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-1">
-                  Memory Type
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Type
                 </label>
                 <select
                   value={newMemoryType}
                   onChange={(e) => setNewMemoryType(e.target.value)}
-                  className="w-full text-xs p-3 rounded-2xl border border-indigo-100 bg-white/90 text-slate-800 shadow-sm font-semibold"
+                  className="w-full text-xs p-2.5 rounded-xl border border-indigo-100 bg-white/90 text-slate-800 shadow-sm font-medium"
                 >
                   <option value="insight">Insight</option>
                   <option value="principle">Principle</option>
@@ -164,7 +164,7 @@ export const MemoriesView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Importance ({newMemoryImportance})
                 </label>
                 <input
@@ -174,14 +174,14 @@ export const MemoriesView: React.FC = () => {
                   step="0.1"
                   value={newMemoryImportance}
                   onChange={(e) => setNewMemoryImportance(parseFloat(e.target.value))}
-                  className="w-full accent-indigo-600 mt-2 cursor-pointer"
+                  className="w-full accent-indigo-600 mt-1.5 cursor-pointer"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-full text-xs font-extrabold shadow-md shadow-indigo-600/30 transition-all"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-full text-xs font-semibold shadow-sm transition-all"
             >
               Save Memory
             </button>
@@ -189,9 +189,9 @@ export const MemoriesView: React.FC = () => {
         </div>
 
         {/* Right: Search Results or All Memories */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-3.5">
           <div className="flex items-center justify-between">
-            <h3 className="font-extrabold text-sm text-slate-900">
+            <h3 className="font-bold text-sm text-slate-900">
               {searchResults ? `Search Results (${searchResults.length})` : `Saved Memories (${memories.length})`}
             </h3>
             {searchResults && (
@@ -200,40 +200,40 @@ export const MemoriesView: React.FC = () => {
                   setSearchResults(null);
                   setSearchQuery('');
                 }}
-                className="text-xs text-indigo-600 hover:underline font-bold"
+                className="text-xs text-indigo-600 hover:underline font-semibold"
               >
                 Clear Search
               </button>
             )}
           </div>
 
-          <div className="space-y-3.5">
+          <div className="space-y-3">
             {loading ? (
-              <div className="glass-panel rounded-3xl p-8 animate-pulse text-center text-xs text-slate-400">
+              <div className="glass-panel rounded-3xl p-6 animate-pulse text-center text-xs text-slate-400">
                 Loading memories...
               </div>
             ) : searchResults ? (
               searchResults.length === 0 ? (
-                <div className="glass-panel rounded-3xl border border-dashed border-indigo-200 p-8 text-center text-xs text-slate-400 font-medium">
+                <div className="glass-panel rounded-3xl border border-dashed border-indigo-200 p-6 text-center text-xs text-slate-400 font-normal">
                   No memories matched this query.
                 </div>
               ) : (
                 searchResults.map((res, idx) => (
                   <div
                     key={res.id || idx}
-                    className="glass-card-interactive rounded-3xl p-5 space-y-2 border border-white/80 shadow-celestial"
+                    className="glass-card-interactive rounded-3xl p-4 space-y-2 border border-white/80 shadow-celestial"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-slate-900 leading-snug">{res.text}</p>
+                      <p className="text-xs font-medium text-slate-900 leading-relaxed">{res.text}</p>
                       {res.score !== undefined && (
-                        <span className="text-[11px] font-mono font-black bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-200 flex-shrink-0">
+                        <span className="text-xs font-mono font-bold bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-200 flex-shrink-0">
                           Match: {(res.score * 100).toFixed(0)}%
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center space-x-3 text-[11px] text-slate-500 pt-2 border-t border-indigo-50 font-medium">
-                      <span className="capitalize font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">{res.memory_type}</span>
+                    <div className="flex items-center space-x-3 text-xs text-slate-500 pt-1.5 border-t border-indigo-50 font-normal">
+                      <span className="capitalize font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">{res.memory_type}</span>
                       {res.source_date && <span>Date: {res.source_date}</span>}
                       {res.importance !== undefined && <span>Importance: {res.importance}</span>}
                     </div>
@@ -241,28 +241,28 @@ export const MemoriesView: React.FC = () => {
                 ))
               )
             ) : memories.length === 0 ? (
-              <div className="glass-panel rounded-3xl border border-dashed border-indigo-200 p-8 text-center text-xs text-slate-400 font-medium">
-                No memories recorded yet. Add your first operating principle or insight above.
+              <div className="glass-panel rounded-3xl border border-dashed border-indigo-200 p-6 text-center text-xs text-slate-400 font-normal">
+                No memories recorded yet.
               </div>
             ) : (
               memories.map((mem) => (
                 <div
                   key={mem.id}
-                  className="glass-card-interactive rounded-3xl p-5 space-y-2 border border-white/80 shadow-celestial"
+                  className="glass-card-interactive rounded-3xl p-4 space-y-2 border border-white/80 shadow-celestial"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-slate-900 leading-snug">{mem.text}</p>
+                    <p className="text-xs font-medium text-slate-900 leading-relaxed">{mem.text}</p>
                     <button
                       type="button"
                       onClick={() => handleDelete(mem.id)}
-                      className="text-slate-300 hover:text-rose-500 transition-colors p-1.5 rounded-lg"
+                      className="text-slate-300 hover:text-rose-500 transition-colors p-1"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
-                  <div className="flex items-center space-x-3 text-[11px] text-slate-500 pt-2 border-t border-indigo-50 font-medium">
-                    <span className="text-[10px] uppercase font-black tracking-wider bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                  <div className="flex items-center space-x-3 text-xs text-slate-500 pt-1.5 border-t border-indigo-50 font-normal">
+                    <span className="text-xs font-medium bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100">
                       {mem.memory_type}
                     </span>
                     {mem.source_date && <span>Date: {mem.source_date}</span>}

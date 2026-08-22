@@ -66,21 +66,19 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
         <div className="flex items-center space-x-1.5 bg-slate-100/80 p-1 rounded-full border border-slate-200/60 backdrop-blur-md">
           <button
             onClick={() => setViewMode('full')}
-            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${
-              viewMode === 'full'
+            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${viewMode === 'full'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             Full Lifespan (70 Years)
           </button>
           <button
             onClick={() => setViewMode('currentDecade')}
-            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${
-              viewMode === 'currentDecade'
+            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${viewMode === 'currentDecade'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             Current Decade (Age {currentDecadeStart}-{currentDecadeStart + 9})
           </button>
@@ -143,23 +141,21 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
               return (
                 <div
                   key={row.age}
-                  className={`grid grid-cols-[48px_repeat(52,1fr)] gap-1 items-center p-0.5 rounded-xl transition-all ${
-                    isCurrentAge
+                  className={`grid grid-cols-[48px_repeat(52,1fr)] gap-1 items-center p-0.5 rounded-xl transition-all ${isCurrentAge
                       ? 'bg-amber-50/70 ring-1 ring-amber-300 shadow-sm'
                       : isDecadeMarker
-                      ? 'bg-indigo-50/40 border border-indigo-100/50'
-                      : ''
-                  }`}
+                        ? 'bg-indigo-50/40 border border-indigo-100/50'
+                        : ''
+                    }`}
                 >
                   {/* Age Label */}
                   <div
-                    className={`text-xs font-mono text-right pr-2 ${
-                      isCurrentAge
+                    className={`text-xs font-mono text-right pr-2 ${isCurrentAge
                         ? 'text-amber-800 font-bold'
                         : isDecadeMarker
-                        ? 'text-indigo-700 font-bold'
-                        : 'text-slate-400 font-normal'
-                    }`}
+                          ? 'text-indigo-700 font-bold'
+                          : 'text-slate-400 font-normal'
+                      }`}
                   >
                     {row.age}
                   </div>

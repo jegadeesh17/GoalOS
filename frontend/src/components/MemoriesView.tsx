@@ -1,17 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Memory, goalOSApi } from '../api/client';
 import { 
   Search, 
   Plus, 
   Trash2, 
   Sparkles,
-  Brain
+  Brain,
+  Table as TableIcon,
+  LayoutGrid,
+  Calendar,
+  Layers,
+  Lightbulb,
+  BookOpen,
+  Award,
+  Fingerprint
 } from 'lucide-react';
 
 export const MemoriesView: React.FC = () => {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [newMemoryText, setNewMemoryText] = useState('');
@@ -21,7 +31,7 @@ export const MemoriesView: React.FC = () => {
   const loadMemories = async () => {
     try {
       setLoading(true);
-      const list = await goalOSApi.listMemories(50);
+      const list = await goalOSApi.listMemories(100);
       setMemories(list);
     } catch (err) {
       console.error('Failed to load memories:', err);
@@ -42,7 +52,7 @@ export const MemoriesView: React.FC = () => {
     }
     try {
       setIsSearching(true);
-      const results = await goalOSApi.searchMemories(searchQuery.trim(), 10);
+      const results = await goalOSApi.searchMemories(searchQuery.trim(), 20);
       setSearchResults(results);
     } catch (err) {
       console.error('Search failed:', err);
@@ -81,6 +91,48 @@ export const MemoriesView: React.FC = () => {
     }
   };
 
+  const displayedList = useMemo(() => {
+    const rawList = searchResults !== null ? searchResults : memories;
+    if (selectedType === 'all') return rawList;
+    return rawList.filter((m) => (m.memory_type || '').toLowerCase() === selectedType.toLowerCase());
+  }, [searchResults, memories, selectedType]);
+
+  const getTypeBadge = (type: string) => {
+    const t = (type || 'insight').toLowerCase();
+    switch (t) {
+      case 'principle':
+        return (
+          <span className="inline-flex items-center space-x-1 text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/70 px-2.5 py-0.5 rounded-full shadow-xs">
+            <Award className="w-3 h-3 text-amber-600" />
+            <span className="capitalize">Principle</span>
+          </span>
+        );
+      case 'lesson':
+        return (
+          <span className="inline-flex items-center space-x-1 text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/70 px-2.5 py-0.5 rounded-full shadow-xs">
+            <BookOpen className="w-3 h-3 text-emerald-600" />
+            <span className="capitalize">Lesson</span>
+          </span>
+        );
+      case 'identity':
+        return (
+          <span className="inline-flex items-center space-x-1 text-[11px] font-semibold bg-purple-50 text-purple-800 border border-purple-200/70 px-2.5 py-0.5 rounded-full shadow-xs">
+            <Fingerprint className="w-3 h-3 text-purple-600" />
+            <span className="capitalize">Identity</span>
+          </span>
+        );
+      case 'insight':
+      default:
+        return (
+          <span className="inline-flex items-center space-x-1 text-[11px] font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200/70 px-2.5 py-0.5 rounded-full shadow-xs">
+            <Lightbulb className="w-3 h-3 text-indigo-600" />
+            <span className="capitalize">Insight</span>
+          </span>
+        );
+    }
+  };
+
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -108,13 +160,13 @@ export const MemoriesView: React.FC = () => {
                 setSearchQuery(e.target.value);
                 if (!e.target.value.trim()) setSearchResults(null);
               }}
-              className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-full border border-indigo-100 focus:ring-2 focus:ring-indigo-500 bg-white/90 shadow-sm"
+              className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-full border border-indigo-100 focus:ring-2 focus:ring-indigo-500 bg-white/90 shadow-sm transition-all"
             />
           </div>
           <button
             type="submit"
             disabled={isSearching}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-5 py-2.5 rounded-full text-xs font-semibold shadow-sm flex items-center space-x-1.5 transition-all"
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-5 py-2.5 rounded-full text-xs font-semibold shadow-sm flex items-center space-x-1.5 transition-all cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>{isSearching ? 'Searching...' : 'Search'}</span>
@@ -122,10 +174,10 @@ export const MemoriesView: React.FC = () => {
         </form>
       </div>
 
-      {/* Main Grid: Store Memory Form + List / Search Results */}
+      {/* Main Layout: Record Insight Form + Table View */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Add Memory Form */}
-        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-3.5 shadow-celestial border border-white/80">
+        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-3.5 shadow-celestial border border-white/80 h-fit">
           <h3 className="font-bold text-sm text-slate-900 flex items-center space-x-2">
             <Plus className="w-4 h-4 text-indigo-600" />
             <span>Record New Insight</span>
@@ -181,99 +233,229 @@ export const MemoriesView: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-full text-xs font-semibold shadow-sm transition-all"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-full text-xs font-semibold shadow-sm transition-all cursor-pointer"
             >
               Save Memory
             </button>
           </form>
         </div>
 
-        {/* Right: Search Results or All Memories */}
+        {/* Right: Table / List */}
         <div className="lg:col-span-2 space-y-3.5">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-slate-900">
-              {searchResults ? `Search Results (${searchResults.length})` : `Saved Memories (${memories.length})`}
-            </h3>
-            {searchResults && (
-              <button
-                onClick={() => {
-                  setSearchResults(null);
-                  setSearchQuery('');
-                }}
-                className="text-xs text-indigo-600 hover:underline font-semibold"
-              >
-                Clear Search
-              </button>
-            )}
+          {/* Controls Bar */}
+          <div className="glass-panel rounded-2xl px-4 py-3 border border-white/80 shadow-celestial flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-sm text-slate-900">
+                {searchResults ? `Search Results (${displayedList.length})` : `Saved Memories (${displayedList.length})`}
+              </span>
+              {searchResults && (
+                <button
+                  onClick={() => {
+                    setSearchResults(null);
+                    setSearchQuery('');
+                  }}
+                  className="text-xs text-indigo-600 hover:underline font-semibold ml-2 cursor-pointer"
+                >
+                  Clear Search
+                </button>
+              )}
+            </div>
+
+            {/* Type Filters & View Mode Toggles */}
+            <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+              <div className="flex items-center bg-slate-100/90 rounded-lg p-0.5 text-xs">
+                {(['all', 'insight', 'principle', 'lesson', 'identity'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setSelectedType(type)}
+                    className={`px-2.5 py-1 rounded-md capitalize font-medium transition-all cursor-pointer ${
+                      selectedType === type
+                        ? 'bg-white text-indigo-900 shadow-xs font-semibold'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+
+              {/* View Toggle */}
+              <div className="flex items-center bg-slate-100/90 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode('table')}
+                  title="Table View"
+                  className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                    viewMode === 'table' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  <TableIcon className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('cards')}
+                  title="Card View"
+                  className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                    viewMode === 'cards' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {loading ? (
-              <div className="glass-panel rounded-3xl p-6 animate-pulse text-center text-xs text-slate-400">
-                Loading memories...
-              </div>
-            ) : searchResults ? (
-              searchResults.length === 0 ? (
-                <div className="glass-panel rounded-3xl border border-dashed border-indigo-200 p-6 text-center text-xs text-slate-400 font-normal">
-                  No memories matched this query.
-                </div>
-              ) : (
-                searchResults.map((res, idx) => (
-                  <div
-                    key={res.id || idx}
-                    className="glass-card-interactive rounded-3xl p-4 space-y-2 border border-white/80 shadow-celestial"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-xs font-medium text-slate-900 leading-relaxed">{res.text}</p>
-                      {res.score !== undefined && (
-                        <span className="text-xs font-mono font-bold bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-200 flex-shrink-0">
-                          Match: {(res.score * 100).toFixed(0)}%
-                        </span>
-                      )}
-                    </div>
+          {/* Data Container */}
+          {loading ? (
+            <div className="glass-panel rounded-3xl p-8 animate-pulse text-center text-xs text-slate-400">
+              Loading memories...
+            </div>
+          ) : displayedList.length === 0 ? (
+            <div className="glass-panel rounded-3xl border border-dashed border-indigo-200 p-8 text-center text-xs text-slate-400">
+              <Layers className="w-8 h-8 text-indigo-300 mx-auto mb-2 opacity-60" />
+              <p className="font-medium text-slate-600">No memories found</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {searchResults ? 'Try a different search term or clear the filter.' : 'Record a new insight to get started.'}
+              </p>
+            </div>
+          ) : viewMode === 'table' ? (
+            /* Table View */
+            <div className="glass-panel rounded-3xl shadow-celestial border border-white/80 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/90 border-b border-indigo-100/70 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <th className="py-3 px-4 w-12 text-center">#</th>
+                      <th className="py-3 px-4">Memory / Insight</th>
+                      <th className="py-3 px-3 w-28">Type</th>
+                      <th className="py-3 px-3 w-28">Date</th>
+                      <th className="py-3 px-3 w-28">Importance</th>
+                      {searchResults && <th className="py-3 px-3 w-24">Match</th>}
+                      <th className="py-3 px-3 w-14 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {displayedList.map((mem, idx) => (
+                      <tr 
+                        key={mem.id || idx}
+                        className="hover:bg-indigo-50/40 transition-colors group"
+                      >
+                        {/* Index */}
+                        <td className="py-3 px-4 text-center font-mono text-[11px] text-slate-400">
+                          {idx + 1}
+                        </td>
 
-                    <div className="flex items-center space-x-3 text-xs text-slate-500 pt-1.5 border-t border-indigo-50 font-normal">
-                      <span className="capitalize font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">{res.memory_type}</span>
-                      {res.source_date && <span>Date: {res.source_date}</span>}
-                      {res.importance !== undefined && <span>Importance: {res.importance}</span>}
-                    </div>
-                  </div>
-                ))
-              )
-            ) : memories.length === 0 ? (
-              <div className="glass-panel rounded-3xl border border-dashed border-indigo-200 p-6 text-center text-xs text-slate-400 font-normal">
-                No memories recorded yet.
+                        {/* Memory Text */}
+                        <td className="py-3 px-4">
+                          <p className="font-medium text-slate-800 leading-relaxed break-words line-clamp-3 group-hover:line-clamp-none transition-all">
+                            {mem.text}
+                          </p>
+                        </td>
+
+                        {/* Type */}
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          {getTypeBadge(mem.memory_type)}
+                        </td>
+
+                        {/* Date */}
+                        <td className="py-3 px-3 whitespace-nowrap text-slate-500 font-mono text-[11px]">
+                          {mem.source_date ? (
+                            <span className="flex items-center space-x-1">
+                              <Calendar className="w-3 h-3 text-slate-400" />
+                              <span>{mem.source_date}</span>
+                            </span>
+                          ) : (
+                            <span className="text-slate-300">-</span>
+                          )}
+                        </td>
+
+                        {/* Importance */}
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[10px] font-semibold text-slate-600">
+                              <span>{(mem.importance ?? 0.8).toFixed(1)}</span>
+                            </div>
+                            <div className="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full"
+                                style={{ width: `${Math.min(100, Math.max(0, (mem.importance ?? 0.8) * 100))}%` }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Match Score (if search active) */}
+                        {searchResults && (
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            {mem.score !== undefined ? (
+                              <span className="inline-block text-[11px] font-mono font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-200">
+                                {(mem.score * 100).toFixed(0)}%
+                              </span>
+                            ) : (
+                              <span className="text-slate-300">-</span>
+                            )}
+                          </td>
+                        )}
+
+                        {/* Delete Action */}
+                        <td className="py-3 px-3 text-center">
+                          {mem.id ? (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(mem.id)}
+                              title="Delete Memory"
+                              className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ) : (
-              memories.map((mem) => (
+            </div>
+          ) : (
+            /* Cards View */
+            <div className="space-y-3">
+              {displayedList.map((mem, idx) => (
                 <div
-                  key={mem.id}
+                  key={mem.id || idx}
                   className="glass-card-interactive rounded-3xl p-4 space-y-2 border border-white/80 shadow-celestial"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-xs font-medium text-slate-900 leading-relaxed">{mem.text}</p>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(mem.id)}
-                      className="text-slate-300 hover:text-rose-500 transition-colors p-1"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {mem.id && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(mem.id)}
+                        className="text-slate-300 hover:text-rose-500 transition-colors p-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
 
-                  <div className="flex items-center space-x-3 text-xs text-slate-500 pt-1.5 border-t border-indigo-50 font-normal">
-                    <span className="text-xs font-medium bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100">
-                      {mem.memory_type}
-                    </span>
-                    {mem.source_date && <span>Date: {mem.source_date}</span>}
-                    <span>Importance: {mem.importance}</span>
+                  <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-indigo-50 font-normal">
+                    <div className="flex items-center space-x-2">
+                      {getTypeBadge(mem.memory_type)}
+                      {mem.source_date && <span>Date: {mem.source_date}</span>}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span>Importance: {mem.importance}</span>
+                      {mem.score !== undefined && (
+                        <span className="text-[11px] font-mono font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-200">
+                          Match: {(mem.score * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
+

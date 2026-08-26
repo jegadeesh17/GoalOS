@@ -16,6 +16,8 @@
 ## 📖 Table of Contents
 
 - [Executive Overview](#-executive-overview)
+- [Complete Architecture & Specifications](docs/ARCHITECTURE_AND_SPECIFICATIONS.md)
+- [Project Brain & Agent Memory](.agents/brain/README.md)
 - [Key Features](#-key-features)
 - [System Architecture](#-system-architecture)
 - [Frontend Design System](#-frontend-design-system)

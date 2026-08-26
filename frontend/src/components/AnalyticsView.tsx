@@ -181,12 +181,12 @@ export const AnalyticsView: React.FC = () => {
                 {data.recent_scores.map((s: any, idx: number) => (
                   <tr key={idx} className="hover:bg-white/80 font-mono text-slate-700 transition-colors">
                     <td className="py-3 pr-4 font-sans font-semibold text-slate-900">{s.date}</td>
-                    <td className="py-3 px-3">{(s.goal_alignment_score * 100).toFixed(0)}%</td>
-                    <td className="py-3 px-3">{(s.consistency_score * 100).toFixed(0)}%</td>
-                    <td className="py-3 px-3">{(s.health_score * 100).toFixed(0)}%</td>
-                    <td className="py-3 px-3">{(s.productivity_score * 100).toFixed(0)}%</td>
+                    <td className="py-3 px-3">{Math.round(s.goal_alignment_score || 0)}%</td>
+                    <td className="py-3 px-3">{Math.round(s.consistency_score || 0)}%</td>
+                    <td className="py-3 px-3">{Math.round(s.health_score || 0)}%</td>
+                    <td className="py-3 px-3">{Math.round(s.productivity_score || 0)}%</td>
                     <td className="py-3 pl-3 text-right font-bold text-indigo-700">
-                      {(s.overall_growth_score * 100).toFixed(0)}%
+                      {Math.round(s.overall_growth_score || 0)}%
                     </td>
                   </tr>
                 ))}

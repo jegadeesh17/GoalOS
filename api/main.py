@@ -7,7 +7,7 @@ import json
 import logging
 import os
 import sys
-from datetime import date
+from datetime import date, timedelta
 from typing import Any, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
@@ -208,7 +208,7 @@ def journal_today() -> dict:
   repo = LogRepository()
   log = repo.get_by_date(today)
   if not log:
-    log = repo.upsert_fields(today, DailyLogUpdate())
+    return DailyLog(id=0, date=today).model_dump(mode="json")
   return log.model_dump(mode="json")
 
 
@@ -217,7 +217,7 @@ def journal_get_by_date(target_date: date) -> dict:
   repo = LogRepository()
   log = repo.get_by_date(target_date)
   if not log:
-    log = repo.upsert_fields(target_date, DailyLogUpdate())
+    return DailyLog(id=0, date=target_date).model_dump(mode="json")
   return log.model_dump(mode="json")
 
 
@@ -232,6 +232,18 @@ def journal_upsert(payload: dict) -> dict:
   update_data = {k: v for k, v in payload.items() if k != "date"}
   changes = DailyLogUpdate(**update_data)
   log = LogRepository().upsert_fields(target_date, changes)
+
+  # Automatically update daily scores
+  try:
+    from services.analytics_service import calculate_daily_scores
+    logs_30d = LogRepository().get_range(target_date - timedelta(days=30), target_date)
+    goals = GoalRepository().get_active()
+    recent_scores = ScoreRepository().get_recent(7)
+    scores_7d = [s.overall_growth_score or 50.0 for s in recent_scores]
+    calculate_daily_scores(log, goals, logs_30d, scores_7d)
+  except Exception as exc:
+    logger.warning("Failed to calculate daily score on journal upsert: %s", exc)
+
   return log.model_dump(mode="json")
 
 
@@ -484,24 +496,53 @@ def memories_delete(memory_id: int) -> dict:
 def analytics_dashboard() -> dict:
   log_repo = LogRepository()
   score_repo = ScoreRepository()
+  goal_repo = GoalRepository()
   recent_logs = log_repo.get_recent(last_n=30)
   recent_scores = score_repo.get_recent(last_n=30)
+  active_goals = goal_repo.get_active()
+
+  pattern_cards = []
   try:
-    patterns = PatternService().analyze_multi_day_patterns(limit=14)
-  except Exception:
-    patterns = []
+    analysis = PatternService().analyze_patterns(recent_logs, active_goals)
+    for p in analysis.get("repeating_unhealthy_patterns", []):
+      dates = p.get("dates_observed", [])
+      date_str = f" ({', '.join(dates[:3])})" if dates else ""
+      pattern_cards.append({
+        "title": p.get("pattern_name", "Friction Pattern"),
+        "description": f"{p.get('occurrences_count', 1)}x recorded{date_str}. Action: {p.get('actionable_countermeasure', '')}",
+        "pattern_type": "warning",
+      })
+    for p in analysis.get("compounding_healthy_patterns", []):
+      pattern_cards.append({
+        "title": p.get("pattern_name", "Momentum Pattern"),
+        "description": f"{p.get('evidence', '')} Rule: {p.get('reinforcement_rule', '')}",
+        "pattern_type": "healthy",
+      })
+    for f in analysis.get("isolated_friction_events", []):
+      pattern_cards.append({
+        "title": f.get("event_name", "Isolated Event"),
+        "description": f"Observed on {f.get('date_observed')}: {f.get('actionable_note', '')}",
+        "pattern_type": "warning",
+      })
+  except Exception as exc:
+    logger.warning("Failed to analyze multi-day patterns: %s", exc)
+    pattern_cards = []
 
   total_logs = len(recent_logs)
-  avg_sleep = round(sum(l.sleep_hours or 0 for l in recent_logs) / total_logs, 1) if total_logs else 0
-  avg_deep_work = round(sum(l.deep_work_hours or 0 for l in recent_logs) / total_logs, 1) if total_logs else 0
-  avg_mood = round(sum(l.mood_morning or 3 for l in recent_logs) / total_logs, 1) if total_logs else 0
+  sleep_logs = [l.sleep_hours for l in recent_logs if l.sleep_hours is not None]
+  deep_work_logs = [l.deep_work_hours for l in recent_logs if l.deep_work_hours is not None]
+  mood_logs = [l.mood_morning for l in recent_logs if l.mood_morning is not None]
+
+  avg_sleep = round(sum(sleep_logs) / len(sleep_logs), 1) if sleep_logs else 0.0
+  avg_deep_work = round(sum(deep_work_logs) / len(deep_work_logs), 1) if deep_work_logs else 0.0
+  avg_mood = round(sum(mood_logs) / len(mood_logs), 1) if mood_logs else 3.0
 
   return {
     "total_logs": total_logs,
     "avg_sleep_hours": avg_sleep,
     "avg_deep_work_hours": avg_deep_work,
     "avg_morning_mood": avg_mood,
-    "patterns": patterns,
+    "patterns": pattern_cards,
     "recent_scores": [s.model_dump(mode="json") for s in recent_scores],
   }
 

@@ -11,7 +11,7 @@
 | **Status** | Active |
 | **Last updated** | 2026-07-08 |
 | **Repository** | [github.com/jegadeesh17/GoalOS](https://github.com/jegadeesh17/GoalOS) |
-| **Related docs** | [README.md](../README.md), [DEPLOY.md](../DEPLOY.md), [DEMO.md](./DEMO.md) |
+| **Related docs** | [ARCHITECTURE_AND_SPECIFICATIONS.md](./ARCHITECTURE_AND_SPECIFICATIONS.md), [README.md](../README.md), [DEPLOY.md](../DEPLOY.md), [DEMO.md](./DEMO.md) |
 
 ---
 

@@ -34,14 +34,15 @@ $$\text{API Layer (FastAPI)} \longrightarrow \text{Service Layer} \longrightarro
 
 ## 2. ⚛️ Frontend & React Architectural Invariants
 
-### 2.1 Celestial Light Design System Tokens
+### 2.1 Forest Mist Paper Glass Design System Tokens
 - **Theme Palette:**
-  - Background: `bg-[#f8faff]` (Soft celestial canvas)
-  - Surface Cards: `bg-white/80 backdrop-blur-md border border-indigo-50/60 shadow-sm rounded-2xl`
-  - Primary Accent: `text-indigo-600`, `bg-indigo-600 hover:bg-indigo-700 text-white`
-  - Secondary Accent: `text-purple-600`, `bg-purple-50 border border-purple-100`
-  - Success/Pacing: `text-emerald-600`, `bg-emerald-50 border border-emerald-100`
-  - Warning/Fatigue: `text-amber-600`, `bg-amber-50 border border-amber-100`
+  - Background: `bg-[#f7f9f7]` (Soft dewy mist canvas with fluid watercolor watermark blooms)
+  - Surface Cards: `glass-panel` (`bg-white/86 backdrop-blur-2xl border border-emerald-100/70 shadow-forest rounded-3xl`)
+  - Interactive Cards: `glass-card-interactive` (`bg-white/88 backdrop-blur-xl border border-emerald-100/80 shadow-forest`)
+  - Primary Accent: `text-emerald-800`, `bg-emerald-700 hover:bg-emerald-800 text-white`
+  - Secondary Botanical: `text-teal-800`, `bg-teal-50 border border-teal-200/80`
+  - Herbal Sage: `text-forest-800`, `bg-emerald-50/90 border border-emerald-200/70`
+  - Warm Sunlit Amber: `text-amber-900`, `bg-amber-50/90 border border-amber-200/80`
 
 ### 2.2 Typography Scale & Non-Redundancy
 - **H1 Header:** `text-2xl font-bold tracking-tight text-slate-900`

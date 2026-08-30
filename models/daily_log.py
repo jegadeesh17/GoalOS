@@ -24,6 +24,7 @@ class DailyLogBase(BaseModel):
   supporting_task_1: Optional[str] = None
   supporting_task_2: Optional[str] = None
   gratitude: Optional[str] = None
+  awake_range: Optional[str] = None
   time_blocks: Optional[str] = None
   planned_tasks: Optional[str] = None
   evening_completed: bool = False
@@ -65,6 +66,7 @@ class DailyLogUpdate(BaseModel):
   supporting_task_1: Optional[str] = None
   supporting_task_2: Optional[str] = None
   gratitude: Optional[str] = None
+  awake_range: Optional[str] = None
   time_blocks: Optional[str] = None
   planned_tasks: Optional[str] = None
   evening_completed: Optional[bool] = None

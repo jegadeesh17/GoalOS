@@ -117,21 +117,21 @@ export const GoalsView: React.FC = () => {
       title: '1-Month Sprints', 
       desc: 'Immediate tactical focus & habit momentum', 
       icon: Target,
-      gradient: 'from-emerald-400 to-teal-500'
+      gradient: 'from-emerald-600 to-teal-600'
     },
     { 
       key: '1-year', 
       title: '1-Year Horizons', 
       desc: 'Strategic compounding milestones & skill expansion', 
       icon: Calendar,
-      gradient: 'from-indigo-600 to-purple-600'
+      gradient: 'from-teal-600 to-emerald-700'
     },
     { 
       key: '5-year', 
       title: '5-Year Vision', 
       desc: 'Long-term life trajectory & identity architecture', 
       icon: Compass,
-      gradient: 'from-amber-400 to-rose-400'
+      gradient: 'from-earth-amber to-emerald-600'
     },
   ];
 
@@ -151,11 +151,11 @@ export const GoalsView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header & Create Action */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-7 shadow-celestial border border-white/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="glass-panel rounded-3xl p-6 sm:p-7 shadow-forest border border-emerald-100/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-indigo-700 mb-1">
-            <span className="flex items-center space-x-1 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100 shadow-sm font-semibold">
-              <Target className="w-3.5 h-3.5 text-indigo-600" />
+          <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-forest-700 mb-1">
+            <span className="flex items-center space-x-1 bg-emerald-50/90 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200/70 shadow-forest-xs font-semibold">
+              <Target className="w-3.5 h-3.5 text-emerald-700" />
               <span>Multi-Horizon Architecture</span>
             </span>
           </div>
@@ -167,7 +167,7 @@ export const GoalsView: React.FC = () => {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-sm transition-all"
+          className="flex items-center justify-center space-x-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-forest-xs transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>New Goal</span>
@@ -182,15 +182,15 @@ export const GoalsView: React.FC = () => {
           return (
             <div key={col.key} className="space-y-4">
               {/* Column Header */}
-              <div className="glass-panel rounded-3xl p-4 sm:p-5 shadow-celestial border border-white/80">
+              <div className="glass-panel rounded-3xl p-4 sm:p-5 shadow-forest border border-emerald-100/70">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-700">
+                    <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/60">
                       <Icon className="w-4 h-4" />
                     </div>
                     <h3 className="font-bold text-sm text-slate-900">{col.title}</h3>
                   </div>
-                  <span className="text-xs font-semibold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100">
+                  <span className="text-xs font-semibold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200/70">
                     {columnGoals.length}
                   </span>
                 </div>
@@ -200,7 +200,7 @@ export const GoalsView: React.FC = () => {
               {/* Goal Cards List */}
               <div className="space-y-3.5">
                 {columnGoals.length === 0 ? (
-                  <div className="glass-panel rounded-3xl border border-dashed border-indigo-200/70 p-6 text-center text-xs text-slate-400 font-normal">
+                  <div className="glass-panel rounded-3xl border border-dashed border-emerald-200/70 p-6 text-center text-xs text-slate-400 font-normal">
                     No active goals in this horizon.
                   </div>
                 ) : (
@@ -214,13 +214,13 @@ export const GoalsView: React.FC = () => {
                     return (
                       <div
                         key={goal.id}
-                        className="glass-card-interactive rounded-3xl p-5 space-y-3 border border-white/80 shadow-celestial"
+                        className="glass-card-interactive rounded-3xl p-5 space-y-3 border border-emerald-100/80 shadow-forest"
                       >
                         {/* Title & Category Badge */}
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <div className="flex items-center space-x-2 mb-1">
-                              <span className="text-xs uppercase font-semibold bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-200">
+                              <span className="text-xs uppercase font-semibold bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-900 px-2 py-0.5 rounded-md border border-emerald-200/80">
                                 {goal.category}
                               </span>
                               <span className="text-xs font-mono text-slate-400">P{goal.priority}</span>
@@ -231,7 +231,7 @@ export const GoalsView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleDeleteGoal(goal.id)}
-                            className="text-slate-300 hover:text-rose-500 transition-colors p-1"
+                            className="text-slate-400 hover:text-rose-600 transition-colors p-1 cursor-pointer"
                             title="Delete goal"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -239,18 +239,18 @@ export const GoalsView: React.FC = () => {
                         </div>
 
                         {goal.reason && (
-                          <p className="text-xs text-slate-600 bg-white/80 p-2.5 rounded-xl border border-indigo-100/70">
-                            <strong className="text-slate-800">Motivation:</strong> {goal.reason}
+                          <p className="text-xs text-slate-700 bg-white/90 p-2.5 rounded-xl border border-emerald-100/70 leading-relaxed">
+                            <strong className="text-slate-900 font-semibold">Motivation:</strong> {goal.reason}
                           </p>
                         )}
 
                         {/* Progress Bar */}
                         <div>
-                          <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                          <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
                             <span>Progress</span>
-                            <span className="text-indigo-700 font-bold">{progressPercent}%</span>
+                            <span className="text-emerald-800 font-bold">{progressPercent}%</span>
                           </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden p-0.5 border border-indigo-100">
+                          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden p-0.5 border border-emerald-100">
                             <div
                               className={`bg-gradient-to-r ${col.gradient} h-full rounded-full transition-all duration-500`}
                               style={{ width: `${progressPercent}%` }}
@@ -259,13 +259,13 @@ export const GoalsView: React.FC = () => {
                         </div>
 
                         {/* Milestones Checklist */}
-                        <div className="space-y-1.5 pt-2.5 border-t border-indigo-100/60">
+                        <div className="space-y-1.5 pt-2.5 border-t border-emerald-100/60">
                           <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
                             <span className="flex items-center space-x-1">
-                              <Flag className="w-3.5 h-3.5 text-indigo-600" />
+                              <Flag className="w-3.5 h-3.5 text-emerald-700" />
                               <span>Milestones</span>
                             </span>
-                            <span className="text-xs text-indigo-600 font-medium">
+                            <span className="text-xs text-emerald-700 font-medium">
                               {completedMilestones.length}/{milestones.length}
                             </span>
                           </div>
@@ -281,12 +281,12 @@ export const GoalsView: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleToggleMilestone(ms)}
-                                    className="flex items-center space-x-2 text-left flex-1 min-w-0"
+                                    className="flex items-center space-x-2 text-left flex-1 min-w-0 cursor-pointer"
                                   >
                                     {isCompleted ? (
-                                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                                     ) : (
-                                      <Circle className="w-4 h-4 text-indigo-300 flex-shrink-0" />
+                                      <Circle className="w-4 h-4 text-emerald-300 flex-shrink-0" />
                                     )}
                                     <span className={`truncate ${isCompleted ? 'line-through text-slate-400' : 'text-slate-800 font-normal'}`}>
                                       {ms.title}
@@ -305,12 +305,12 @@ export const GoalsView: React.FC = () => {
                               value={newMilestoneText[goal.id] || ''}
                               onChange={(e) => setNewMilestoneText({ ...newMilestoneText, [goal.id]: e.target.value })}
                               onKeyDown={(e) => e.key === 'Enter' && handleAddMilestone(goal.id)}
-                              className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-indigo-100 bg-white/90 focus:ring-1 focus:ring-indigo-500 shadow-sm"
+                              className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-emerald-100 bg-white/95 focus:ring-1 focus:ring-emerald-600 shadow-xs text-slate-900"
                             />
                             <button
                               type="button"
                               onClick={() => handleAddMilestone(goal.id)}
-                              className="p-1.5 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-900 rounded-lg text-xs font-semibold border border-indigo-200"
+                              className="p-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-950 rounded-lg text-xs font-semibold border border-emerald-200/80 cursor-pointer"
                             >
                               <Plus className="w-3.5 h-3.5" />
                             </button>
@@ -329,17 +329,17 @@ export const GoalsView: React.FC = () => {
       {/* Create Goal Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="glass-panel rounded-3xl border border-white max-w-lg w-full p-6 space-y-4 shadow-celestial-lg animate-fadeIn">
-            <div className="flex items-center justify-between pb-2 border-b border-indigo-100/60">
+          <div className="glass-panel rounded-3xl border border-emerald-100 max-w-lg w-full p-6 space-y-4 shadow-forest-lg animate-fadeIn">
+            <div className="flex items-center justify-between pb-2 border-b border-emerald-100/60">
               <div className="flex items-center space-x-2">
-                <div className="p-1.5 rounded-lg bg-indigo-600 text-white">
+                <div className="p-1.5 rounded-lg bg-emerald-700 text-white">
                   <Target className="w-4 h-4" />
                 </div>
                 <h3 className="font-bold text-base text-slate-900">Add New Goal</h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-full hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -356,7 +356,7 @@ export const GoalsView: React.FC = () => {
                   placeholder="e.g., Master Multi-Agent Systems"
                   value={newGoal.title}
                   onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-indigo-100 focus:ring-2 focus:ring-indigo-500 bg-white/90 shadow-sm"
+                  className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs text-slate-900"
                 />
               </div>
 
@@ -368,7 +368,7 @@ export const GoalsView: React.FC = () => {
                   <select
                     value={newGoal.horizon}
                     onChange={(e) => setNewGoal({ ...newGoal, horizon: e.target.value })}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-indigo-100 bg-white/90 text-slate-800 shadow-sm font-medium"
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-emerald-100 bg-white/95 text-slate-800 shadow-xs font-medium"
                   >
                     <option value="1-month">1-Month Sprint</option>
                     <option value="1-year">1-Year Horizon</option>
@@ -383,7 +383,7 @@ export const GoalsView: React.FC = () => {
                   <select
                     value={newGoal.category}
                     onChange={(e) => setNewGoal({ ...newGoal, category: e.target.value })}
-                    className="w-full text-xs px-3 py-2 rounded-xl border border-indigo-100 bg-white/90 text-slate-800 shadow-sm font-medium"
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-emerald-100 bg-white/95 text-slate-800 shadow-xs font-medium"
                   >
                     <option value="Career">Career & Tech</option>
                     <option value="Health">Health & Fitness</option>
@@ -403,21 +403,21 @@ export const GoalsView: React.FC = () => {
                   placeholder="Why is achieving this essential to your life trajectory?"
                   value={newGoal.reason || ''}
                   onChange={(e) => setNewGoal({ ...newGoal, reason: e.target.value })}
-                  className="w-full text-sm px-3.5 py-2 rounded-xl border border-indigo-100 focus:ring-2 focus:ring-indigo-500 bg-white/90 shadow-sm resize-none"
+                  className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs resize-none text-slate-900"
                 />
               </div>
 
-              <div className="flex items-center justify-end space-x-2.5 pt-2 border-t border-indigo-100/60">
+              <div className="flex items-center justify-end space-x-2.5 pt-2 border-t border-emerald-100/60">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  className="px-4 py-2 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-full text-xs font-semibold shadow-sm"
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 rounded-full text-xs font-semibold shadow-forest-xs cursor-pointer"
                 >
                   Save Goal
                 </button>

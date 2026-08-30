@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS daily_logs (
     supporting_task_1 TEXT,
     supporting_task_2 TEXT,
     gratitude TEXT,
+    awake_range TEXT,
     time_blocks TEXT,
     planned_tasks TEXT,
     evening_completed BOOLEAN DEFAULT FALSE,
@@ -230,10 +231,16 @@ def _migration_3_weekly_sync_and_life_calendar(conn: sqlite3.Connection) -> None
   conn.execute("CREATE INDEX IF NOT EXISTS ix_weekly_sync_logs_week ON weekly_sync_logs(week_start DESC)")
 
 
+def _migration_4_awake_range(conn: sqlite3.Connection) -> None:
+  """Add awake_range column to daily_logs."""
+  _add_column(conn, "daily_logs", "awake_range TEXT")
+
+
 MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
   (1, _migration_1_integrity),
   (2, _migration_2_memory_search),
   (3, _migration_3_weekly_sync_and_life_calendar),
+  (4, _migration_4_awake_range),
 ]
 
 

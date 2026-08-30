@@ -1,0 +1,152 @@
+[
+  {
+    "id": "MORN-01",
+    "pipeline": "morning_coach",
+    "title": "Morning Execution Discipline with Conflicting Urgent Tasks",
+    "prompt_context": "Morning journal for 2026-08-30. User woke up at 8:30 AM after 6.5h sleep. Top Priority: 'Implement Distributed Cache for GoalOS RAG'. Time blocks: 9-11 Cache Architecture, 11-12 Review PRs, 14-16 API Testing. Active 1-Month Sprint: 'Ship V2.2 Cache Engine'. Active 1-Year Goal: 'Master Distributed Systems Architecture'. Memories: ['Lesson: Whenever I check Slack before starting deep work, my entire morning is derailed.', 'Principle: First 2 hours belong to deep technical creation.']",
+    "context_entities": ["Distributed Cache", "Slack", "deep work", "6.5h sleep", "Ship V2.2"],
+    "active_goals": ["Ship V2.2 Cache Engine", "Master Distributed Systems Architecture"],
+    "expected_keys": ["mentor_rule", "why_this_rule", "past_mistake_called_out", "goal_connection", "if_you_ignore_this", "confidence"],
+    "expected_tools": []
+  },
+  {
+    "id": "MORN-02",
+    "pipeline": "morning_coach",
+    "title": "Fatigue & Sleep Deficit Recovery Morning",
+    "prompt_context": "Morning journal. User had 5.0h sleep, feeling 2/5 vitality. Top Priority: 'Refactor SQLite migrations'. Active Goal: 'Maintain 7.5h sleep baseline & steady code cadence'. Past Memory: ['Principle: When fatigued, reduce scope to 1 critical task rather than thrashing across 5 things.', 'Lesson: Heavy caffeine after 3 PM destroys next morning sleep.']",
+    "context_entities": ["5.0h sleep", "vitality", "SQLite migrations", "reduce scope", "fatigued"],
+    "active_goals": ["Maintain 7.5h sleep baseline & steady code cadence"],
+    "expected_keys": ["mentor_rule", "why_this_rule", "past_mistake_called_out", "goal_connection", "if_you_ignore_this", "confidence"],
+    "expected_tools": []
+  },
+  {
+    "id": "MORN-03",
+    "pipeline": "morning_coach",
+    "title": "High-Stakes Milestone Delivery Day",
+    "prompt_context": "Morning journal. Target: 'Deliver production release of GoalOS AI Eval pipeline by 5:00 PM'. Time blocks: 9-13 Core Eval Engine, 14-16 Benchmark Suite, 16-17 Leaderboard Generator. Active 1-Month Sprint: 'Production AI Evaluation Suite'. Active 5-Year Vision: 'Build autonomous AI pair programmer agents'. Past Memory: ['Principle: Done is better than perfect; verify with automated tests before declaring victory.']",
+    "context_entities": ["AI Eval pipeline", "5:00 PM", "Core Eval Engine", "Leaderboard Generator", "automated tests"],
+    "active_goals": ["Production AI Evaluation Suite", "Build autonomous AI pair programmer agents"],
+    "expected_keys": ["mentor_rule", "why_this_rule", "past_mistake_called_out", "goal_connection", "if_you_ignore_this", "confidence"],
+    "expected_tools": []
+  },
+  {
+    "id": "MORN-04",
+    "pipeline": "morning_coach",
+    "title": "Distraction Recovery & Context Switching Shield",
+    "prompt_context": "Morning journal. Gratitude: 'Grateful for quiet morning hours'. Priority: 'Finish ChromaDB vector embedding indexer'. User logged concern: 'Too many meetings scheduled between 2 PM and 5 PM'. Active Goal: 'ChromaDB Local Vector Search'. Past Memory: ['Lesson: Meeting fragmentation leaves zero energy for deep architecture. Protect morning 4-hour block at all costs.']",
+    "context_entities": ["ChromaDB", "vector embedding", "meetings", "4-hour block", "fragmentation"],
+    "active_goals": ["ChromaDB Local Vector Search"],
+    "expected_keys": ["mentor_rule", "why_this_rule", "past_mistake_called_out", "goal_connection", "if_you_ignore_this", "confidence"],
+    "expected_tools": []
+  },
+  {
+    "id": "EVE-01",
+    "pipeline": "evening_coach",
+    "title": "Evening Retrospective on Over-Planning & Missed Tasks",
+    "prompt_context": "Evening reflection. Planned 6 tasks, only completed 2. Deep work logged: 2.0h (planned 5.0h). Journal Entry: 'Got pulled into tangential debugging and spent 3 hours optimizing a non-bottleneck.' Takeaway: 'Need strict timeboxing.' Active Goal: 'Finish Core Milestone 1'. Past Memory: ['Principle: Profile before optimizing. Never optimize without benchmark evidence.']",
+    "context_entities": ["planned 6 tasks", "2.0h", "tangential debugging", "optimizing", "timeboxing", "Profile before optimizing"],
+    "active_goals": ["Finish Core Milestone 1"],
+    "expected_keys": ["review_summary", "takeaway", "blindspot_identified", "tomorrow_adjustment", "confidence"],
+    "expected_tools": []
+  },
+  {
+    "id": "EVE-02",
+    "pipeline": "evening_coach",
+    "title": "High-Performance Execution Day Review",
+    "prompt_context": "Evening reflection. Completed 5/5 tasks. Deep work logged: 6.5h. Workout: completed. Journal: 'Super locked in today. Flow state achieved during compiler design.' Takeaway: 'Having phone in another room was the 10x difference.' Active Goal: 'Advanced Agentic Engineering'. Past Memory: ['Principle: Physical separation from digital notifications yields flow state.']",
+    "context_entities": ["5/5 tasks", "6.5h", "Flow state", "compiler design", "phone in another room"],
+    "active_goals": ["Advanced Agentic Engineering"],
+    "expected_keys": ["review_summary", "takeaway", "blindspot_identified", "tomorrow_adjustment", "confidence"],
+    "expected_tools": []
+  },
+  {
+    "id": "EVE-03",
+    "pipeline": "evening_coach",
+    "title": "Health Deficit & Workout Skip Analysis",
+    "prompt_context": "Evening reflection. Worked 8 hours, but skipped workout for 3rd consecutive day. Sleep last night: 5.5h. Journal: 'Tired and sluggish around 4 PM. Brain felt fried.' Takeaway: 'Health is the foundation of cognitive performance.' Active Goal: 'Consistent Strength Training 4x/week'. Past Memory: ['Lesson: Skipping workouts lowers cognitive stamina for the next 48 hours.']",
+    "context_entities": ["skipped workout", "3rd consecutive day", "5.5h", "sluggish", "Strength Training"],
+    "active_goals": ["Consistent Strength Training 4x/week"],
+    "expected_keys": ["review_summary", "takeaway", "blindspot_identified", "tomorrow_adjustment", "confidence"],
+    "expected_tools": []
+  },
+  {
+    "id": "GOAL-01",
+    "pipeline": "goal_alignment",
+    "title": "Short-Term Freelance Distraction vs 5-Year AI Architecture Vision",
+    "prompt_context": "Goal Alignment Query. 5-Year Vision: 'Become a world-class AI Systems Architect and Lead Researcher'. 1-Year Horizon: 'Publish breakthrough Multi-Agent framework'. Current 1-Month Dilemma: 'Offered a 3-week quick freelance WordPress/PHP gig for fast cash, but it will consume 40 hours/week.' Past Memory: ['Principle: Say no to good opportunities so you can say yes to great trajectories.']",
+    "context_entities": ["AI Systems Architect", "Multi-Agent framework", "freelance WordPress", "40 hours", "Say no to good opportunities"],
+    "active_goals": ["Publish breakthrough Multi-Agent framework", "Become a world-class AI Systems Architect"],
+    "expected_keys": ["strategic_verdict", "alignment_score", "tradeoff_analysis", "recommended_action", "long_term_risk"],
+    "expected_tools": []
+  },
+  {
+    "id": "GOAL-02",
+    "pipeline": "goal_alignment",
+    "title": "Sprint Milestone Pacing vs Over-Scoping",
+    "prompt_context": "Goal Alignment Query. 1-Month Sprint: 'Master SQLite Internals & Storage Engines'. User has added 14 sub-milestones with only 8 days left in sprint. Completed: 3/14. Dilemma: 'How to prune scope to achieve core compounding learning without failing the sprint?' Past Memory: ['Principle: Ruthless prioritization beats exhaustive failure.']",
+    "context_entities": ["SQLite Internals", "14 sub-milestones", "8 days left", "3/14", "prune scope"],
+    "active_goals": ["Master SQLite Internals & Storage Engines"],
+    "expected_keys": ["strategic_verdict", "alignment_score", "tradeoff_analysis", "recommended_action", "long_term_risk"],
+    "expected_tools": []
+  },
+  {
+    "id": "GOAL-03",
+    "pipeline": "goal_alignment",
+    "title": "Career Switch to Autonomous Agent Engineering",
+    "prompt_context": "Goal Alignment Query. Target: 'Transition from general fullstack development to AI Agentic Coding Specialist within 6 months.' Active 1-Month Sprint: 'Build Tool-Calling Eval Framework for GoalOS'. Past Memory: ['Identity: I am an engineer who solves hard technical problems from first principles.']",
+    "context_entities": ["Transition", "AI Agentic Coding Specialist", "6 months", "Tool-Calling Eval Framework", "first principles"],
+    "active_goals": ["Transition to AI Agentic Coding Specialist", "Build Tool-Calling Eval Framework"],
+    "expected_keys": ["strategic_verdict", "alignment_score", "tradeoff_analysis", "recommended_action", "long_term_risk"],
+    "expected_tools": []
+  },
+  {
+    "id": "FUT-01",
+    "pipeline": "future_self",
+    "title": "10-Year Future Self Trajectory & Life Compounding",
+    "prompt_context": "Future-Self Reflection. Current Age: 24. Target Age Horizon: 70 Years. 10-Year Life Vision: 'Leading a research lab pioneering human-AI cognitive collaboration, financially independent, operating with extreme intellectual clarity.' Current daily journal shows steady 4-hour deep work habit. User asks: 'What compounding habits should I double down on today to ensure this 10-year reality?'",
+    "context_entities": ["Age 24", "research lab", "human-AI cognitive collaboration", "financially independent", "4-hour deep work"],
+    "active_goals": ["Lead AI Research Lab", "Financial Independence by 35"],
+    "expected_keys": ["future_projection", "compounding_habits", "vulnerability_to_avoid", "message_from_ten_years", "confidence"],
+    "expected_tools": []
+  },
+  {
+    "id": "FUT-02",
+    "pipeline": "future_self",
+    "title": "Navigating Career Stagnation & Risk-Taking",
+    "prompt_context": "Future-Self Reflection. User feels safe in current comfort zone but fears 10-year regret. Vision: 'Founding an autonomous infrastructure company'. Dilemma: 'Should I take the risk of dedicating 20 hours a week to open-source agentic frameworks instead of taking a comfortable overtime assignment?' Past Memory: ['Lesson: Regret of inaction compounds far worse than failure of ambitious attempts.']",
+    "context_entities": ["comfort zone", "autonomous infrastructure company", "20 hours", "open-source", "Regret of inaction"],
+    "active_goals": ["Found Autonomous Infrastructure Company"],
+    "expected_keys": ["future_projection", "compounding_habits", "vulnerability_to_avoid", "message_from_ten_years", "confidence"],
+    "expected_tools": []
+  },
+  {
+    "id": "FUT-03",
+    "pipeline": "future_self",
+    "title": "Health & Vitality Longevity Defense",
+    "prompt_context": "Future-Self Reflection. 10-Year Vision: 'High physical energy, sharp cognitive longevity at age 34, running marathons and maintaining peak focus.' Current warning pattern: 'Sitting 12 hours a day without posture breaks.' User asks for 10-year perspective on physical foundation.",
+    "context_entities": ["cognitive longevity", "age 34", "running marathons", "Sitting 12 hours", "posture breaks"],
+    "active_goals": ["Peak Physical Vitality & Marathon Stamina"],
+    "expected_keys": ["future_projection", "compounding_habits", "vulnerability_to_avoid", "message_from_ten_years", "confidence"],
+    "expected_tools": []
+  },
+  {
+    "id": "AGENT-01",
+    "pipeline": "agent_morning_coach",
+    "title": "Agentic Tool Calling: Fetching Relevant Goal & Memory Context",
+    "prompt_context": "Agent Morning Mentor Scenario. User prompt mentions: 'I need to know how my SQLite work connects to my yearly goals and what past mistakes I made regarding database migrations.' Agent must invoke tools: search_memories(query='database migrations') and get_active_goals(horizon='1-year').",
+    "context_entities": ["SQLite", "database migrations", "yearly goals", "past mistakes"],
+    "active_goals": ["Master SQLite Internals & Storage Engines"],
+    "expected_keys": ["mentor_rule", "why_this_rule", "past_mistake_called_out", "goal_connection", "confidence"],
+    "expected_tools": ["search_memories", "get_active_goals"]
+  },
+  {
+    "id": "AGENT-02",
+    "pipeline": "agent_morning_coach",
+    "title": "Agentic Tool Calling: Multi-Factor Pacing & Pacing Warning Check",
+    "prompt_context": "Agent Morning Mentor Scenario. User prompt: 'Check my recent performance patterns and health logs before deciding whether I should push for 8 hours of coding today.' Agent must invoke: get_performance_summary(days=7).",
+    "context_entities": ["performance patterns", "health logs", "8 hours coding", "recent performance"],
+    "active_goals": ["Maintain 7.5h sleep baseline & steady code cadence"],
+    "expected_keys": ["mentor_rule", "why_this_rule", "past_mistake_called_out", "goal_connection", "confidence"],
+    "expected_tools": ["get_performance_summary"]
+  }
+]

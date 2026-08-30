@@ -47,13 +47,6 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col text-slate-900 selection:bg-emerald-100 selection:text-emerald-950 relative overflow-x-hidden bg-[#f7f9f7]">
-      {/* Soft Watercolor Watermark & Ambient Paint Wash */}
-      <div className="watercolor-wash-watermark">
-        <div className="watercolor-blob-1"></div>
-        <div className="watercolor-blob-2"></div>
-        <div className="watercolor-blob-3"></div>
-      </div>
-
       {/* Floating Sticky Header Navigation */}
       <Navbar
         activeTab={activeTab}

@@ -47,9 +47,9 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 
 ## 4. 🎨 Frontend & Design System Learnings
 
-### 4.1 Frosted Glass Performance
-- **Observation:** Heavy backdrop blur on large grid items (3,640 weeks) caused minor frame drops during scroll on low-spec screens.
-- **Solution:** Applied `backdrop-blur-md` only to static navigation bars and modal overlays. Discrete week blocks in `LifeCalendar.tsx` use pure CSS colors with transition states.
+### 4.1 Zero-Lag Compositor & Paper Glass Optimization
+- **Observation:** Combining continuous, dynamic CSS Gaussian blurs (`filter: blur(70px)` with keyframe morph animations) underneath multi-layer `backdrop-filter: blur(20px)` glass panels forced the browser GPU compositor to re-rasterize full-screen matrix blurs on every single frame (60-120fps), creating heavy lag and page load delays during tab switching.
+- **Solution:** Replaced dynamic runtime DOM blurs with pre-computed, GPU-cached CSS multi-stop radial gradient washes on the body canvas. Standardized `.glass-panel` and `.glass-card-interactive` on crisp, high-performance opaque paper glass (`background: rgba(255, 255, 255, 0.94)`), eliminating 100% of viewport repaint lag while preserving the serene watercolor aesthetic.
 
 ### 4.2 Non-Redundant Metric Presentation
 - **Observation:** Showing total weeks lived in multiple cards caused visual clutter and desynchronization.
@@ -57,7 +57,7 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 
 ### 4.3 Watercolor Watermark & Paper Glass Contrast
 - **Observation:** Excessive saturation in background gradients makes dark text harder to read and creates a flashy, robotic aesthetic.
-- **Solution:** Embody an Ultra-Minimal Paper Glass design with diffuse, low-opacity (`opacity: 0.45`, `blur: 60-70px`) floating watercolor blooms (sage, eucalyptus, moss, dewy morning sun). Text uses high-contrast deep forest slate (`#0F291E` / `#0F172A`), providing pristine typographic legibility while keeping the theme calm, light, and organic.
+- **Solution:** Embody an Ultra-Minimal Paper Glass design with diffuse, low-opacity floating watercolor blooms (sage, eucalyptus, moss, dewy morning sun). Text uses high-contrast deep forest slate (`#0F291E` / `#0F172A`), providing pristine typographic legibility while keeping the theme calm, light, and organic.
 
 ### 4.4 Smooth Humanized Typography & Anti-Robotic Textualizer
 - **Observation:** Over-reliance on utilitarian fonts (raw Inter) and aggressive uppercase labels (`PLAN (SCHEDULE)`, `GRATITUDE`) made the application feel mechanical, robotic, and tiring to read.

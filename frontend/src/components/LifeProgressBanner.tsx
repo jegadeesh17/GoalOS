@@ -19,10 +19,6 @@ export const LifeProgressBanner: React.FC<LifeProgressBannerProps> = ({ summary,
 
   return (
     <div className="glass-panel rounded-3xl p-6 sm:p-7 relative overflow-hidden shadow-forest transition-all border border-emerald-100/70">
-      {/* Background Ambient Watercolor Glow */}
-      <div className="absolute -top-12 -right-12 w-64 h-64 bg-gradient-to-br from-emerald-100/40 via-teal-100/25 to-amber-100/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
-      <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-gradient-to-tr from-amber-100/30 via-emerald-50/30 to-teal-100/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
-
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         {/* Left Lifespan Stats */}
         <div className="space-y-1">

@@ -46,7 +46,7 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 ### 3.3 Free-Tier Model Evaluation & Rate Limit Throttling
 - **Observation:** Free-tier OpenRouter models enforce strict burst limits (10-20 RPM). Unthrottled automated evals fail with HTTP 429 errors within 10 calls.
 - **Solution:** Integrated `RateLimiter` using leaky bucket interval spacing ($\ge 4.29$s between requests) with exponential backoff and jitter. Created automated pre-flight health checks to auto-substitute candidate models with healthy backups (`qwen`, `gemma-2`, `mistral`) if an endpoint is busy or offline.
-- **Benchmark Outcome:** In 45-scenario evaluation across live free models, `minimax/minimax-m3:free` won 1st place with a 77.2% composite score, 100% schema integrity, and 15/15 successful completions. It is now the default free model.
+- **Benchmark Outcome:** In 45-scenario evaluation across live free models, `nvidia/nemotron-3-super-120b-a12b:free` won 1st place with a 76.8% composite score, 93.3% grounding, and 14/15 successful completions, closely followed by `minimax/minimax-m3:free` (74.4%). `nvidia/nemotron-3-super-120b-a12b:free` is configured as default in `.env`.
 
 ---
 

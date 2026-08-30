@@ -19,6 +19,14 @@ from typing import Any, Optional
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 
+# Ensure UTF-8 stdout/stderr encoding on Windows
+if sys.platform == "win32":
+  try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+  except Exception:
+    pass
+
 from ai.eval.evaluator import GoalOSEvaluator, ModelEvaluationReport, ScenarioResult
 from ai.eval.rate_limiter import RateLimiter
 from ai.openrouter_client import OpenRouterClient
@@ -34,19 +42,19 @@ logging.basicConfig(
 logger = logging.getLogger("goalos_eval")
 
 
-# Primary candidate models and prioritized backup pool
+# Primary candidate models (Top 3 Free Models) and prioritized backup pool
 PRIMARY_CANDIDATE_MODELS = [
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "google/gemini-2.0-flash-exp:free",
-  "deepseek/deepseek-r1:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  "minimax/minimax-m3:free",
 ]
 
 BACKUP_FREE_MODELS = [
-  "google/gemma-2-9b-it:free",
-  "deepseek/deepseek-chat:free",
-  "qwen/qwen-2.5-coder-32b-instruct:free",
-  "mistralai/mistral-small-24b-instruct-2501:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
+  "cohere/north-mini-code:free",
+  "liquid/lfm-2.5-2.6b:free",
+  "google/gemma-4-31b-it:free",
+  "google/gemma-4-26b-a4b-it:free",
+  "openrouter/free",
 ]
 
 
@@ -69,7 +77,7 @@ def select_active_models(api_key: str, requested_models: Optional[list[str]] = N
     if len(active_models) >= 3:
       break
     client = OpenRouterClient(api_key=api_key, model=model)
-    conn = client.test_connection()
+    conn = client.test_connection(allow_fallback=False)
     if conn.get("ok"):
       logger.info(f"  ✅ [Online] {model}")
       active_models.append(model)
@@ -77,7 +85,7 @@ def select_active_models(api_key: str, requested_models: Optional[list[str]] = N
       logger.warning(f"  ⚠️ [Offline/Busy] {model}: {conn.get('error')} ({conn.get('detail')})")
 
   if not active_models:
-    logger.warning("No candidate models passed online ping. Falling back to default list for simulated/mock eval.")
+    logger.warning("No candidate models passed online ping. Falling back to default candidate list.")
     active_models = PRIMARY_CANDIDATE_MODELS[:3]
 
   return active_models
@@ -91,22 +99,22 @@ def execute_pipeline_call(client: OpenRouterClient, scenario: dict[str, Any]) ->
   if pipeline == "morning_coach":
     system = load_prompt("mentor")
     user_msg = f"{prompt_context}\n\nIssue ONE mentor rule as JSON with keys: mentor_rule, why_this_rule, past_mistake_called_out, goal_connection, if_you_ignore_this, confidence."
-    return client.complete(system, user_msg, response_format={"type": "json_object"}, temperature=0.45)
+    return client.complete(system, user_msg, response_format={"type": "json_object"}, temperature=0.45, allow_fallback=False)
 
   elif pipeline == "evening_coach":
     system = load_prompt("evening")
     user_msg = f"{prompt_context}\n\nProvide evening reflection as JSON with keys: review_summary, takeaway, blindspot_identified, tomorrow_adjustment, confidence."
-    return client.complete(system, user_msg, response_format={"type": "json_object"}, temperature=0.45)
+    return client.complete(system, user_msg, response_format={"type": "json_object"}, temperature=0.45, allow_fallback=False)
 
   elif pipeline == "goal_alignment":
     system = load_prompt("goal_alignment")
     user_msg = f"{prompt_context}\n\nAnalyze alignment as JSON with keys: strategic_verdict, alignment_score, tradeoff_analysis, recommended_action, long_term_risk."
-    return client.complete(system, user_msg, response_format={"type": "json_object"}, temperature=0.45)
+    return client.complete(system, user_msg, response_format={"type": "json_object"}, temperature=0.45, allow_fallback=False)
 
   elif pipeline == "future_self":
     system = load_prompt("future_self")
     user_msg = f"{prompt_context}\n\nProject 10-year trajectory as JSON with keys: future_projection, compounding_habits, vulnerability_to_avoid, message_from_ten_years, confidence."
-    return client.complete(system, user_msg, response_format={"type": "json_object"}, temperature=0.45)
+    return client.complete(system, user_msg, response_format={"type": "json_object"}, temperature=0.45, allow_fallback=False)
 
   elif pipeline == "agent_morning_coach":
     system = load_prompt("mentor")
@@ -128,7 +136,7 @@ def execute_pipeline_call(client: OpenRouterClient, scenario: dict[str, Any]) ->
   else:
     # Generic fallback
     system = "You are an executive life coach. Respond with structured JSON."
-    return client.complete(system, prompt_context, response_format={"type": "json_object"})
+    return client.complete(system, prompt_context, response_format={"type": "json_object"}, allow_fallback=False)
 
 
 def run_evaluation(

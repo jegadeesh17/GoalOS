@@ -17,12 +17,13 @@ class OpenRouterClient:
 
   BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
   FREE_FALLBACK_MODELS = [
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "openai/gpt-oss-20b:free",
-    "qwen/qwen3-coder:free",
-    "meta-llama/llama-3.2-3b-instruct:free",
-    "google/gemma-4-31b-it:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "minimax/minimax-m3:free",
     "cohere/north-mini-code:free",
+    "liquid/lfm-2.5-2.6b:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
   ]
 
   def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
@@ -40,7 +41,7 @@ class OpenRouterClient:
     self.api_key = os.getenv("OPENROUTER_API_KEY", "") or ""
     self.model = os.getenv("OPENROUTER_MODEL", self.model) or self.model
 
-  def test_connection(self) -> dict:
+  def test_connection(self, allow_fallback: bool = False) -> dict:
     """Quick ping to verify OpenRouter key + model work."""
     if not self.api_key:
       return {"ok": False, "error": "no_api_key", "detail": "No API key in .env or Settings"}
@@ -49,6 +50,7 @@ class OpenRouterClient:
       "Test",
       temperature=0,
       max_tokens=16,
+      allow_fallback=allow_fallback,
     )
     if isinstance(reply, str) and reply.strip():
       if reply.strip().startswith("Error:"):
@@ -70,6 +72,7 @@ class OpenRouterClient:
     temperature: float = 0.7,
     max_tokens: int = 2000,
     max_retries: int = 3,
+    allow_fallback: bool = True,
   ) -> Union[dict, str]:
     """Call OpenRouter with retry logic."""
     if not self.api_key:
@@ -117,34 +120,36 @@ class OpenRouterClient:
           if response.status_code == 401:
             return self._error_response("invalid_api_key", "Key rejected by OpenRouter", response_format)
           if response.status_code == 402:
-            free_model = self._pick_next_free_model(current_model, tried_models)
-            if free_model:
-              logger.warning(
-                "Insufficient credits on %s. Retrying with free model %s.",
-                current_model,
-                free_model,
-              )
-              current_model = free_model
-              tried_models.add(current_model)
-              continue
+            if allow_fallback:
+              free_model = self._pick_next_free_model(current_model, tried_models)
+              if free_model:
+                logger.warning(
+                  "Insufficient credits on %s. Retrying with free model %s.",
+                  current_model,
+                  free_model,
+                )
+                current_model = free_model
+                tried_models.add(current_model)
+                continue
             return self._error_response("insufficient_credits", "Add credits at openrouter.ai", response_format)
           if response.status_code == 404:
-            free_model = self._pick_next_free_model(current_model, tried_models)
-            if free_model:
-              logger.warning(
-                "Model %s not found. Retrying with free model %s.",
-                current_model,
-                free_model,
-              )
-              current_model = free_model
-              tried_models.add(current_model)
-              continue
+            if allow_fallback:
+              free_model = self._pick_next_free_model(current_model, tried_models)
+              if free_model:
+                logger.warning(
+                  "Model %s not found. Retrying with free model %s.",
+                  current_model,
+                  free_model,
+                )
+                current_model = free_model
+                tried_models.add(current_model)
+                continue
             return self._error_response("model_not_found", f"Model not found: {current_model}", response_format)
 
           if response.status_code in (429, 500, 502, 503):
             last_status_code = response.status_code
             last_response_text = response.text or ""
-            if response.status_code == 429:
+            if response.status_code == 429 and allow_fallback:
               free_model = self._pick_next_free_model(current_model, tried_models)
               if free_model:
                 logger.warning(

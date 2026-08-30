@@ -47,12 +47,12 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
   }
 
   return (
-    <div className="glass-panel rounded-3xl shadow-celestial p-6 sm:p-7 transition-all border border-white/80 relative overflow-hidden">
+    <div className="glass-panel rounded-3xl shadow-forest p-6 sm:p-7 transition-all border border-emerald-100/70 relative overflow-hidden">
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-indigo-100/60">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-emerald-100/60">
         <div>
           <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm">
+            <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-emerald-700 to-teal-600 flex items-center justify-center text-white shadow-forest-xs">
               <Calendar className="w-4 h-4" />
             </div>
             <h2 className="text-lg font-bold text-slate-900 tracking-tight">70-Year Life Calendar (Memento Mori)</h2>
@@ -63,23 +63,23 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
         </div>
 
         {/* View Toggle */}
-        <div className="flex items-center space-x-1.5 bg-slate-100/80 p-1 rounded-full border border-slate-200/60 backdrop-blur-md">
+        <div className="flex items-center space-x-1.5 bg-slate-100/80 p-1 rounded-full border border-emerald-100/70 backdrop-blur-md">
           <button
             onClick={() => setViewMode('full')}
-            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${
+            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               viewMode === 'full'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-emerald-700 text-white shadow-forest-xs'
+                : 'text-slate-700 hover:text-slate-900'
             }`}
           >
             Full Lifespan (70 Years)
           </button>
           <button
             onClick={() => setViewMode('currentDecade')}
-            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${
+            className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               viewMode === 'currentDecade'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-emerald-700 text-white shadow-forest-xs'
+                : 'text-slate-700 hover:text-slate-900'
             }`}
           >
             Current Decade (Age {currentDecadeStart}-{currentDecadeStart + 9})
@@ -88,30 +88,30 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
       </div>
 
       {/* Interactive Legend & Inspector (Clean & Non-redundant) */}
-      <div className="my-4 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-white via-indigo-50/30 to-purple-50/20 p-3.5 rounded-2xl border border-indigo-100/70 text-xs shadow-sm">
+      <div className="my-4 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-white via-emerald-50/30 to-teal-50/20 p-3.5 rounded-2xl border border-emerald-100/80 text-xs shadow-forest-xs">
         {/* Legend */}
         <div className="flex items-center space-x-5">
           <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-slate-400 to-indigo-300 shadow-sm"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-slate-400 to-emerald-300 shadow-sm"></span>
             <span className="text-slate-700 font-medium">Weeks Lived</span>
           </div>
           <div className="flex items-center space-x-2">
             <span className="w-3 h-3 rounded-full bg-amber-400 ring-4 ring-amber-200/80 animate-star-pulse"></span>
-            <span className="text-amber-900 font-bold">Current Week</span>
+            <span className="text-amber-950 font-bold">Current Week</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-white border border-indigo-200 shadow-sm"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-white border border-emerald-200 shadow-sm"></span>
             <span className="text-slate-600 font-medium">Remaining Weeks</span>
           </div>
         </div>
 
         {/* Hover Inspector */}
-        <div className="text-slate-700 font-medium flex items-center space-x-2 bg-white/90 px-3 py-1 rounded-full border border-indigo-100 shadow-sm">
-          <Info className="w-3.5 h-3.5 text-indigo-600" />
+        <div className="text-slate-700 font-medium flex items-center space-x-2 bg-white/95 px-3 py-1 rounded-full border border-emerald-100 shadow-forest-xs">
+          <Info className="w-3.5 h-3.5 text-emerald-700" />
           {hoveredWeek ? (
             <span>
               <strong>Age {hoveredWeek.year}</strong>, Week {hoveredWeek.week_of_year} (Global #{hoveredWeek.global_week}) &mdash;{' '}
-              <span className={hoveredWeek.status === 'current' ? 'text-amber-600 font-bold' : 'text-indigo-600 font-semibold'}>
+              <span className={hoveredWeek.status === 'current' ? 'text-amber-700 font-bold' : 'text-emerald-700 font-semibold'}>
                 {hoveredWeek.status.toUpperCase()}
               </span>
             </span>
@@ -128,7 +128,7 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
           <div className="grid grid-cols-[48px_repeat(52,1fr)] gap-1 mb-1 text-xs text-slate-400 font-mono text-center">
             <div className="font-semibold text-slate-500">AGE</div>
             {Array.from({ length: 52 }, (_, i) => i + 1).map((wk) => (
-              <div key={wk} className={wk % 10 === 0 || wk === 1 || wk === 52 ? 'text-indigo-600 font-semibold' : 'opacity-30'}>
+              <div key={wk} className={wk % 10 === 0 || wk === 1 || wk === 52 ? 'text-emerald-700 font-semibold' : 'opacity-30'}>
                 {wk % 10 === 0 ? wk : ''}
               </div>
             ))}
@@ -145,9 +145,9 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
                   key={row.age}
                   className={`grid grid-cols-[48px_repeat(52,1fr)] gap-1 items-center p-0.5 rounded-xl transition-all ${
                     isCurrentAge
-                      ? 'bg-amber-50/70 ring-1 ring-amber-300 shadow-sm'
+                      ? 'bg-amber-50/70 ring-1 ring-amber-300 shadow-forest-xs'
                       : isDecadeMarker
-                      ? 'bg-indigo-50/40 border border-indigo-100/50'
+                      ? 'bg-emerald-50/40 border border-emerald-100/50'
                       : ''
                   }`}
                 >
@@ -157,7 +157,7 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
                       isCurrentAge
                         ? 'text-amber-800 font-bold'
                         : isDecadeMarker
-                        ? 'text-indigo-700 font-bold'
+                        ? 'text-emerald-800 font-bold'
                         : 'text-slate-400 font-normal'
                     }`}
                   >
@@ -166,11 +166,11 @@ export const LifeCalendar: React.FC<LifeCalendarProps> = ({ summary }) => {
 
                   {/* 52 Week Nodes */}
                   {row.weeks.map((week) => {
-                    let nodeStyle = 'bg-white/80 border border-slate-200/90 hover:border-indigo-500 hover:scale-150 hover:z-20 hover:shadow-sm';
+                    let nodeStyle = 'bg-white/90 border border-slate-200/90 hover:border-emerald-500 hover:scale-150 hover:z-20 hover:shadow-forest-xs';
                     if (week.status === 'past') {
-                      nodeStyle = 'bg-gradient-to-tr from-slate-300 to-indigo-200 hover:from-slate-400 hover:to-indigo-400 hover:scale-150 hover:z-20 hover:shadow-sm';
+                      nodeStyle = 'bg-gradient-to-tr from-slate-300 to-emerald-200/90 hover:from-slate-400 hover:to-emerald-400 hover:scale-150 hover:z-20 hover:shadow-forest-xs';
                     } else if (week.status === 'current') {
-                      nodeStyle = 'bg-gradient-to-r from-amber-400 to-rose-400 ring-4 ring-amber-300/80 animate-star-pulse scale-125 z-30 shadow-glow-amber';
+                      nodeStyle = 'bg-gradient-to-r from-amber-400 to-emerald-400 ring-4 ring-amber-300/80 animate-star-pulse scale-125 z-30 shadow-glow-amber';
                     }
 
                     return (

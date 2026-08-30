@@ -36,9 +36,9 @@ All commit messages MUST follow the Conventional Commits specification:
 
 ---
 
-## 3. 🔄 Continuous Post-Edit Git Workflow
+## 3. 🔄 Autonomous Continuous Post-Edit Git Workflow
 
-When completing a task or upon explicit request to update GitHub:
+Upon concluding any meaningful code change, refactor, or style update, the AI agent autonomously executes the following workflow without requiring user prompts:
 
 ```
 +-----------------------------------------------------------------------------------+

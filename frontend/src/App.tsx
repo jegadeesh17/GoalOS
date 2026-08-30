@@ -46,11 +46,13 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col text-slate-900 selection:bg-indigo-100 selection:text-indigo-950 relative overflow-x-hidden">
-      {/* Luminous Ambient Aurora Orbs in Background */}
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-indigo-200/40 via-purple-200/30 to-transparent rounded-full blur-3xl pointer-events-none -z-10 animate-float"></div>
-      <div className="fixed top-1/3 right-10 w-96 h-96 bg-gradient-to-br from-amber-100/50 via-rose-100/30 to-transparent rounded-full blur-3xl pointer-events-none -z-10 animate-float" style={{ animationDelay: '-2s' }}></div>
-      <div className="fixed bottom-10 left-10 w-96 h-96 bg-gradient-to-tr from-cyan-100/40 via-indigo-100/30 to-transparent rounded-full blur-3xl pointer-events-none -z-10"></div>
+    <div className="min-h-screen flex flex-col text-slate-900 selection:bg-emerald-100 selection:text-emerald-950 relative overflow-x-hidden bg-[#f7f9f7]">
+      {/* Soft Watercolor Watermark & Ambient Paint Wash */}
+      <div className="watercolor-wash-watermark">
+        <div className="watercolor-blob-1"></div>
+        <div className="watercolor-blob-2"></div>
+        <div className="watercolor-blob-3"></div>
+      </div>
 
       {/* Floating Sticky Header Navigation */}
       <Navbar
@@ -77,32 +79,32 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto border-t border-indigo-100/60 glass-panel py-6">
+      <footer className="mt-auto border-t border-emerald-100/70 glass-panel py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div className="flex items-center space-x-3">
-            <span className="flex items-center space-x-1.5 font-bold text-slate-800">
-              <Compass className="w-4 h-4 text-indigo-600" />
+            <span className="flex items-center space-x-1.5 font-bold text-slate-900">
+              <Compass className="w-4 h-4 text-emerald-700" />
               <span>GoalOS v2.1</span>
             </span>
             <span className="text-slate-300">|</span>
-            <span className="flex items-center space-x-1 text-slate-500 font-medium">
-              <Database className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="flex items-center space-x-1 text-slate-600 font-medium">
+              <Database className="w-3.5 h-3.5 text-emerald-600/70" />
               <span>Local SQLite & ChromaDB Vector Storage</span>
             </span>
           </div>
 
           <div className="flex items-center space-x-4">
-            <span className="flex items-center space-x-1.5 text-emerald-700 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 shadow-sm">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="flex items-center space-x-1.5 text-emerald-800 font-bold bg-emerald-50/80 px-3 py-1 rounded-full border border-emerald-200/80 shadow-forest-xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>Local-First Grounded</span>
             </span>
             {healthStatus?.openrouter_configured ? (
-              <span className="text-[11px] font-mono font-bold text-indigo-800 bg-gradient-to-r from-indigo-50 to-purple-50 px-3 py-1 rounded-full border border-indigo-200 shadow-sm flex items-center space-x-1">
+              <span className="text-[11px] font-mono font-bold text-emerald-900 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-1 rounded-full border border-emerald-200/80 shadow-forest-xs flex items-center space-x-1">
                 <Sparkle className="w-2.5 h-2.5 text-amber-500 fill-amber-400" />
                 <span>AI Coach Online</span>
               </span>
             ) : (
-              <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+              <span className="text-[11px] font-mono text-slate-600 bg-slate-100/90 px-3 py-1 rounded-full border border-slate-200/60">
                 Deterministic Mode
               </span>
             )}

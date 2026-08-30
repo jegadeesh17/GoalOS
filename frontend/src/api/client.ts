@@ -40,6 +40,14 @@ export interface TaskItem {
   milestone_id?: number | null;
 }
 
+export interface TimeBlockItem {
+  id?: string;
+  time: string;
+  activity: string;
+  hours?: number;
+  is_work?: boolean;
+}
+
 export interface DailyLog {
   id?: number;
   date: string;
@@ -59,6 +67,7 @@ export interface DailyLog {
   supporting_task_1?: string | null;
   supporting_task_2?: string | null;
   gratitude?: string | null;
+  awake_range?: string | null;
   time_blocks?: string | null;
   planned_tasks?: string | null;
   evening_completed: boolean;

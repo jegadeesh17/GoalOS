@@ -54,3 +54,24 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 ### 4.2 Non-Redundant Metric Presentation
 - **Observation:** Showing total weeks lived in multiple cards caused visual clutter and desynchronization.
 - **Solution:** Centralized in `LifeProgressBanner.tsx` with unified props passed from `LifeCalendarService`.
+
+### 4.3 Watercolor Watermark & Paper Glass Contrast
+- **Observation:** Excessive saturation in background gradients makes dark text harder to read and creates a flashy, robotic aesthetic.
+- **Solution:** Embody an Ultra-Minimal Paper Glass design with diffuse, low-opacity (`opacity: 0.45`, `blur: 60-70px`) floating watercolor blooms (sage, eucalyptus, moss, dewy morning sun). Text uses high-contrast deep forest slate (`#0F291E` / `#0F172A`), providing pristine typographic legibility while keeping the theme calm, light, and organic.
+
+### 4.4 Smooth Humanized Typography & Anti-Robotic Textualizer
+- **Observation:** Over-reliance on utilitarian fonts (raw Inter) and aggressive uppercase labels (`PLAN (SCHEDULE)`, `GRATITUDE`) made the application feel mechanical, robotic, and tiring to read.
+- **Solution:** 
+  - Standardized on **Plus Jakarta Sans** as primary UI font for soothing geometric curvature, high legibility, and modern warmth.
+  - Paired with **Newsreader** editorial serif typography for mentor directives, life visions, and reflective insights.
+  - Replaced aggressive uppercase labels with calm, readable title-case / sentence-case labels and subpixel antialiasing (`-webkit-font-smoothing: antialiased`).
+
+---
+
+## 5. 🛠️ Autonomous Operational Discipline & Memory Retention
+
+### 5.1 Autonomous Knowledge Capture Invariant
+- **Rule:** Every user aesthetic preference, workflow directive, and architectural discovery must be immediately written to `.agents/brain/project_learnings.md` and `.agents/brain/evolution_log.md` so the user never needs to repeat requirements across sessions.
+
+### 5.2 Autonomous Git Execution Invariant
+- **Rule:** Upon completing any meaningful code edit or feature milestone, the AI agent must autonomously inspect `git status`, verify cleanliness, stage modified files, and execute Conventional Commits (`feat:`, `style:`, `refactor:`, `docs:`, `fix:`) without waiting for explicit user prompts.

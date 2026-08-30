@@ -8,8 +8,8 @@ Welcome to GoalOS. As an AI pair-programmer working on this codebase, you must a
 
 Before and after every meaningful task:
 1. **Consult the Brain:** Check `.agents/brain/system_patterns.md` and `.agents/brain/project_learnings.md` before designing solutions.
-2. **Respect Invariants:** Adhere to SQLite context managers, ChromaDB path normalization, 512KB API payload guards, and celestial light UI tokens.
-3. **Continuous Evolution:** After resolving non-trivial issues or adding features, extract lessons and log reflections to `.agents/brain/evolution_log.md` and `.agents/brain/project_learnings.md` (or run `.agents/brain/update_brain.py`).
+2. **Respect Invariants:** Adhere to SQLite context managers, ChromaDB path normalization, 512KB API payload guards, Forest Mist Paper Glass design tokens, and smooth humanized typography (Plus Jakarta Sans + Newsreader).
+3. **Continuous Evolution & Autonomous Capture:** Immediately extract and persist all user preferences, styling guidelines, and architectural lessons to `.agents/brain/project_learnings.md` and `.agents/brain/evolution_log.md` without requiring the user to repeat them.
 
 ---
 
@@ -31,11 +31,11 @@ Before and after every meaningful task:
 
 ---
 
-## 4. 🌿 Git Discipline & Version Control
+## 4. 🌿 Autonomous Git Discipline & Version Control
 
-- **Atomic Commits:** Follow Conventional Commits format (`feat`, `fix`, `docs`, `refactor`, `test`, `chore`).
-- **Hygiene & Verification:** Verify changes with `git status --short` before committing. Never commit secrets (`.env`) or broken code.
-- **Post-Edit Sync:** When updating GitHub or completing work, stage cleanly, commit with a descriptive message, and push safely.
+- **Autonomous Commits:** Upon concluding any meaningful code change, refactor, or style update, automatically stage verified files and create atomic Conventional Commits (`feat:`, `style:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`) without waiting for explicit user prompts.
+- **Hygiene & Safety:** Verify modified files with `git status --short` before committing. Never commit secrets (`.env`) or broken code.
+- **Traceability:** Always report the commit message and summary in the implementation debrief.
 
 ---
 

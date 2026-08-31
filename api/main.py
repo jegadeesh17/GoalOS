@@ -23,19 +23,32 @@ from config.settings import settings
 from database.connection import get_db
 from database.migrations import run_migrations
 from database.repositories.coach_repository import CoachRepository
+from database.repositories.coach_session_repository import CoachSessionRepository
 from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from database.repositories.memory_repository import MemoryRepository
 from database.repositories.milestone_repository import MilestoneRepository
 from database.repositories.score_repository import ScoreRepository
+from database.repositories.telemetry_repository import TelemetryRepository
+from models.coach_session import (
+  CoachChatRequest,
+  CoachChatResponse,
+  CoachMessageRead,
+  CoachSessionCreate,
+  CoachSessionRead,
+  TelemetrySpan,
+  TelemetrySummaryResponse,
+)
 from models.daily_log import DailyLog, DailyLogUpdate
 from models.goal import Goal, GoalCreate, GoalUpdate
 from models.milestone import Milestone, MilestoneCreate, MilestoneUpdate
+from ai.pipelines.coordinator import CoordinatorPipeline
 from services.coach_service import CoachService
 from services.data_portability_service import DataPortabilityService
 from services.journal_helpers import serialize_journal_fields
 from services.life_calendar_service import LifeCalendarService
 from services.memory_service import MemoryService
+from services.observability_service import ObservabilityService
 from services.pattern_service import PatternService
 from services.settings_service import SettingsService
 
@@ -440,6 +453,74 @@ def coach_goal_alignment(payload: dict) -> dict:
   except Exception:
     logger.exception("goal_alignment_coach_failed event=api")
     raise HTTPException(status_code=500, detail="Unable to generate goal alignment coaching") from None
+
+
+# ---------------------------------------------------------------------------
+# Multi-Agent Coordinator & Session Management
+# ---------------------------------------------------------------------------
+
+
+@app.post("/coach/chat", dependencies=[Depends(require_api_token)], response_model=CoachChatResponse)
+def coach_chat(req: CoachChatRequest) -> CoachChatResponse:
+  """Conversational coordinator agent with multi-agent triage and scoped tools."""
+  try:
+    pipeline = CoordinatorPipeline()
+    return pipeline.chat(req)
+  except Exception:
+    logger.exception("coach_chat_failed event=api")
+    raise HTTPException(status_code=500, detail="Coordinator coaching failed") from None
+
+
+@app.get("/coach/sessions", dependencies=[Depends(require_api_token)], response_model=list[CoachSessionRead])
+def list_coach_sessions(limit: int = Query(default=30, ge=1, le=100)) -> list[CoachSessionRead]:
+  """List recent persistent coaching sessions."""
+  return CoachSessionRepository().list_sessions(limit=limit)
+
+
+@app.post("/coach/sessions", dependencies=[Depends(require_api_token)], response_model=CoachSessionRead)
+def create_coach_session(req: CoachSessionCreate) -> CoachSessionRead:
+  """Create a new conversational coaching session with optional blackboard state."""
+  return CoachSessionRepository().create_session(
+    title=req.title,
+    intent=req.intent,
+    active_horizon_id=req.active_horizon_id,
+    blackboard=req.blackboard,
+  )
+
+
+@app.get("/coach/sessions/{session_id}", dependencies=[Depends(require_api_token)], response_model=CoachSessionRead)
+def get_coach_session(session_id: str) -> CoachSessionRead:
+  """Get full session conversation history and blackboard state."""
+  session = CoachSessionRepository().get_session(session_id)
+  if not session:
+    raise HTTPException(status_code=404, detail="Coaching session not found")
+  return session
+
+
+@app.delete("/coach/sessions/{session_id}", dependencies=[Depends(require_api_token)])
+def delete_coach_session(session_id: str) -> dict:
+  """Delete a coaching session and its message history."""
+  deleted = CoachSessionRepository().delete_session(session_id)
+  if not deleted:
+    raise HTTPException(status_code=404, detail="Coaching session not found")
+  return {"success": True}
+
+
+# ---------------------------------------------------------------------------
+# Observability & Cost Telemetry
+# ---------------------------------------------------------------------------
+
+
+@app.get("/coach/telemetry/summary", dependencies=[Depends(require_api_token)], response_model=TelemetrySummaryResponse)
+def get_telemetry_summary(days: int = Query(default=30, ge=1, le=365)) -> TelemetrySummaryResponse:
+  """Get aggregated AI token consumption, latency, and estimated USD spend."""
+  return ObservabilityService().get_summary(days=days)
+
+
+@app.get("/coach/telemetry/traces", dependencies=[Depends(require_api_token)], response_model=list[TelemetrySpan])
+def get_telemetry_traces(limit: int = Query(default=25, ge=1, le=100)) -> list[TelemetrySpan]:
+  """Get recent AI execution spans and latency metrics."""
+  return ObservabilityService().get_recent_traces(limit=limit)
 
 
 # ---------------------------------------------------------------------------

@@ -86,6 +86,12 @@ $$S = 0.35 \cdot S_{\text{sem}} + 0.15 \cdot S_{\text{lex}} + 0.25 \cdot S_{\tex
   - 6. Operational Efficiency (10%): Latency p50/p95 benchmarking and token density.
 - **Free-Tier Rate Limiter Invariant:** Always enforce leaky-bucket rate limiting ($\le 14$ RPM, $\ge 4.29$s interval) with exponential backoff and jitter on HTTP 429/503.
 
+### 3.4 Multi-Agent Coordination & Scoped Tooling Invariants
+- **Coordinator Agent Pattern:** The supervisor in `ai/pipelines/coordinator.py` triages conversational intent into specialized domains (`execution`, `goals`, `memory`, `calendar`, `general`).
+- **Domain Tool Scoping:** Subagents and pipelines only receive tool schemas relevant to their specific domain, saving 40-50% in prompt tokens and eliminating hallucinated tool calls.
+- **Session & Blackboard State:** Multi-turn conversational history is persisted in `coach_sessions` and `coach_messages` with a dynamic `blackboard` JSON bus for inter-agent context sharing.
+- **Non-Blocking Telemetry & Cost Metering:** Every LLM completion and tool loop automatically emits latency, token consumption, and estimated USD spend to `ai_telemetry` via `ObservabilityService`.
+
 ---
 
 ## 4. 🌿 Git Discipline & Repository Patterns

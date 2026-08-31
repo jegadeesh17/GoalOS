@@ -73,6 +73,9 @@ class OpenRouterClient:
     max_tokens: int = 2000,
     max_retries: int = 3,
     allow_fallback: bool = True,
+    trace_id: Optional[str] = None,
+    session_id: Optional[str] = None,
+    span_name: Optional[str] = None,
   ) -> Union[dict, str]:
     """Call OpenRouter with retry logic."""
     if not self.api_key:
@@ -167,6 +170,24 @@ class OpenRouterClient:
 
           response.raise_for_status()
           data = response.json()
+
+          # Record telemetry
+          try:
+            from services.observability_service import ObservabilityService
+            usage = data.get("usage") or {}
+            ObservabilityService().record_span(
+              span_name=span_name or "llm_complete",
+              model=current_model,
+              prompt_tokens=usage.get("prompt_tokens", 0),
+              completion_tokens=usage.get("completion_tokens", 0),
+              latency_ms=round(latency * 1000, 2),
+              trace_id=trace_id,
+              session_id=session_id,
+              status="success",
+            )
+          except Exception as tel_err:
+            logger.debug("Telemetry recording skipped: %s", tel_err)
+
           raw_content = data["choices"][0]["message"].get("content", "")
           content = self._extract_text_content(raw_content)
           if not content.strip():
@@ -224,6 +245,9 @@ class OpenRouterClient:
     max_tokens: int = 2000,
     max_tool_rounds: int = 3,
     max_retries: int = 3,
+    trace_id: Optional[str] = None,
+    session_id: Optional[str] = None,
+    span_name: Optional[str] = None,
   ) -> Union[dict, str]:
     """LLM completion with OpenAI-style tool / function calling loop."""
     from ai.tools import serialize_tool_result
@@ -244,6 +268,9 @@ class OpenRouterClient:
     ]
     tools_used: list[str] = []
     current_model = self.model
+    start_time = time.time()
+    accumulated_prompt_tokens = 0
+    accumulated_comp_tokens = 0
 
     for _round in range(max_tool_rounds):
       payload: dict[str, Any] = {
@@ -259,6 +286,10 @@ class OpenRouterClient:
       data = self._post_chat_completion(headers, payload, max_retries)
       if isinstance(data, dict) and data.get("error"):
         return data
+
+      usage = data.get("usage") or {}
+      accumulated_prompt_tokens += usage.get("prompt_tokens", 0)
+      accumulated_comp_tokens += usage.get("completion_tokens", 0)
 
       message = data["choices"][0]["message"]
       tool_calls = message.get("tool_calls")
@@ -280,6 +311,22 @@ class OpenRouterClient:
             "content": serialize_tool_result(result),
           })
         continue
+
+      total_latency_ms = round((time.time() - start_time) * 1000, 2)
+      try:
+        from services.observability_service import ObservabilityService
+        ObservabilityService().record_span(
+          span_name=span_name or "agent_tool_loop",
+          model=current_model,
+          prompt_tokens=accumulated_prompt_tokens,
+          completion_tokens=accumulated_comp_tokens,
+          latency_ms=total_latency_ms,
+          trace_id=trace_id,
+          session_id=session_id,
+          status="success",
+        )
+      except Exception as tel_err:
+        logger.debug("Telemetry recording skipped: %s", tel_err)
 
       raw_content = message.get("content", "")
       content = self._extract_text_content(raw_content)

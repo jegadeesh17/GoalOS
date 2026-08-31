@@ -58,12 +58,24 @@ flowchart TB
     subgraph API_Layer ["2. REST API & Gateway Layer (Port 8000)"]
         FastAPI_App["FastAPI Engine (api/main.py)"]
         Middleware["Middleware: CORS | 512KB Request Limiter | HMAC Token Auth"]
-        Routers["REST Routers: /calendar | /journal | /goals | /coach | /memories | /analytics | /settings | /export"]
+        Routers["REST Routers: /calendar | /journal | /goals | /coach (/chat, /sessions, /telemetry) | /memories | /analytics | /settings | /export"]
         FastAPI_App --> Middleware --> Routers
     end
 
-    subgraph Service_Layer ["3. Core Business & Domain Services"]
+    subgraph Coordinator_Layer ["3. Multi-Agent Supervisor & Toolkits"]
+        CoordAgent["CoordinatorPipeline (ai/pipelines/coordinator.py)"]
+        subgraph Toolkits ["Domain-Partitioned Toolkits (ai/tools/*)"]
+            T_Mem["MemoryToolkit (Hybrid RAG)"]
+            T_Goal["GoalsToolkit (Pacing & Milestones)"]
+            T_Jour["JournalToolkit (Daily Logs & Progress)"]
+            T_Cal["CalendarToolkit (Lifespan Statistics)"]
+        end
+        CoordAgent --> Toolkits
+    end
+
+    subgraph Service_Layer ["4. Core Business & Domain Services"]
         CoachSvc["CoachService (ai/pipelines/*)"]
+        ObsSvc["ObservabilityService (Token & USD Cost Tracking)"]
         MemSvc["MemoryService (Hybrid RAG)"]
         PatternSvc["PatternService (Longitudinal Analysis)"]
         AnalyticsSvc["AnalyticsService (Growth & Alignment)"]
@@ -72,21 +84,28 @@ flowchart TB
         PortabilitySvc["DataPortabilityService (Backup & Reset)"]
     end
 
-    subgraph Persistence_Layer ["4. Local Persistence & Vector Storage"]
-        SQLite[("SQLite 3 Database (goalos.db)\n• Structured Tables\n• FTS5 Full-Text Search")]
+    subgraph Persistence_Layer ["5. Local Persistence & Session Storage"]
+        SQLite[("SQLite 3 Database (goalos.db)\n• Structured Tables & Migrations\n• coach_sessions & coach_messages\n• ai_telemetry Spans & Spend\n• FTS5 memory_fts")]
         Chroma[("ChromaDB Vector Store (chroma_db/)\n• all-MiniLM-L6-v2 Embeddings\n• Cosine Distance Index")]
     end
 
-    subgraph External_Gateway ["5. External AI Gateway (Optional)"]
+    subgraph External_Gateway ["6. External AI Gateway (Optional)"]
         OpenRouter["OpenRouter Gateway (Claude 3.5 / Llama 3.3 / Gemini 2.5)"]
         Fallback["Deterministic Rule-Based Fallback Engine"]
     end
 
     Client_Layer -->|Axios REST / JSON| API_Layer
+    API_Layer --> Coordinator_Layer
     API_Layer --> Service_Layer
+    Coordinator_Layer --> Service_Layer
     Service_Layer --> Persistence_Layer
+    Coordinator_Layer <--> Persistence_Layer
+    CoordAgent -->|Remote Consent Active| OpenRouter
+    CoordAgent -->|Offline / No API Key| Fallback
     CoachSvc -->|Remote Consent Active| OpenRouter
     CoachSvc -->|Offline / No API Key| Fallback
+    OpenRouter -.->|Telemetry Spans| ObsSvc
+    ObsSvc --> Persistence_Layer
     MemSvc -->|Dual-Write & Query| SQLite
     MemSvc -->|Embeddings Query| Chroma
 ```

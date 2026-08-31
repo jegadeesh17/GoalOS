@@ -236,11 +236,56 @@ def _migration_4_awake_range(conn: sqlite3.Connection) -> None:
   _add_column(conn, "daily_logs", "awake_range TEXT")
 
 
+def _migration_5_agentic_sessions_and_telemetry(conn: sqlite3.Connection) -> None:
+  """Add coach_sessions, coach_messages, and ai_telemetry tables for multi-agent coordination and observability."""
+  conn.execute("""CREATE TABLE IF NOT EXISTS coach_sessions (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      intent TEXT,
+      active_horizon_id TEXT,
+      blackboard TEXT DEFAULT '{}',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )""")
+  conn.execute("CREATE INDEX IF NOT EXISTS ix_coach_sessions_updated ON coach_sessions(updated_at DESC)")
+
+  conn.execute("""CREATE TABLE IF NOT EXISTS coach_messages (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL REFERENCES coach_sessions(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      agent_name TEXT,
+      tool_calls TEXT,
+      citations TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )""")
+  conn.execute("CREATE INDEX IF NOT EXISTS ix_coach_messages_session ON coach_messages(session_id, created_at ASC)")
+
+  conn.execute("""CREATE TABLE IF NOT EXISTS ai_telemetry (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      trace_id TEXT NOT NULL,
+      span_name TEXT NOT NULL,
+      session_id TEXT,
+      model TEXT NOT NULL,
+      prompt_tokens INTEGER DEFAULT 0,
+      completion_tokens INTEGER DEFAULT 0,
+      total_tokens INTEGER DEFAULT 0,
+      estimated_cost_usd REAL DEFAULT 0.0,
+      latency_ms REAL DEFAULT 0.0,
+      status TEXT NOT NULL DEFAULT 'success',
+      error_message TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )""")
+  conn.execute("CREATE INDEX IF NOT EXISTS ix_ai_telemetry_created ON ai_telemetry(created_at DESC)")
+  conn.execute("CREATE INDEX IF NOT EXISTS ix_ai_telemetry_trace ON ai_telemetry(trace_id)")
+
+
 MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
   (1, _migration_1_integrity),
   (2, _migration_2_memory_search),
   (3, _migration_3_weekly_sync_and_life_calendar),
   (4, _migration_4_awake_range),
+  (5, _migration_5_agentic_sessions_and_telemetry),
 ]
 
 

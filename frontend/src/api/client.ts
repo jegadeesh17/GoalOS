@@ -143,6 +143,43 @@ export interface AnalyticsDashboardData {
   recent_scores: any[];
 }
 
+export interface CoachMessage {
+  id: string;
+  session_id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  agent_name?: string | null;
+  tool_calls?: { tool: string }[];
+  citations?: any[];
+  created_at?: string | null;
+}
+
+export interface CoachSession {
+  id: string;
+  title: string;
+  intent?: string | null;
+  active_horizon_id?: string | null;
+  blackboard?: Record<string, any>;
+  created_at?: string | null;
+  updated_at?: string | null;
+  messages: CoachMessage[];
+}
+
+export interface CoachChatResponse {
+  session_id: string;
+  reply: string;
+  agent_name: string;
+  intent: string;
+  confidence: number;
+  source: 'ai_agent' | 'deterministic_rules' | 'fallback';
+  tools_used: string[];
+  citations: any[];
+  blackboard: Record<string, any>;
+  trace_id: string;
+  latency_ms: number;
+  fallback_reason?: string | null;
+}
+
 export const goalOSApi = {
   // Calendar
   getCalendarSummary: async (): Promise<LifeSummary> => {
@@ -245,6 +282,29 @@ export const goalOSApi = {
   },
   goalAlignmentCoach: async (goalId: number): Promise<any> => {
     const res = await api.post('/coach/goal-alignment', { goal_id: goalId });
+    return res.data;
+  },
+
+  // Coach Chat & Sessions (Multi-Agent Coordinator)
+  sendChatMessage: async (payload: {
+    message: string;
+    session_id?: string;
+    remote_ai_consent?: boolean;
+    preferred_domain?: string;
+  }): Promise<CoachChatResponse> => {
+    const res = await api.post<CoachChatResponse>('/coach/chat', payload);
+    return res.data;
+  },
+  listCoachSessions: async (limit = 30): Promise<CoachSession[]> => {
+    const res = await api.get<CoachSession[]>(`/coach/sessions?limit=${limit}`);
+    return res.data;
+  },
+  getCoachSession: async (sessionId: string): Promise<CoachSession> => {
+    const res = await api.get<CoachSession>(`/coach/sessions/${sessionId}`);
+    return res.data;
+  },
+  deleteCoachSession: async (sessionId: string): Promise<{ success: boolean }> => {
+    const res = await api.delete<{ success: boolean }>(`/coach/sessions/${sessionId}`);
     return res.data;
   },
 

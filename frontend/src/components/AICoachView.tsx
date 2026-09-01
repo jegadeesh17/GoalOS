@@ -269,6 +269,64 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'morning
     }
   };
 
+  // Render the pipeline-specific fields each coach actually returns. Without this,
+  // future-self (message) and goal-alignment (alignment_narrative/neglected_goals/…)
+  // never surface, and every pipeline falls back to the same generic directive.
+  const renderStructuredBody = (r: any) => (
+    <>
+      {r.message && (
+        <div className="mt-1.5 space-y-2 text-[15px] leading-relaxed text-forest-950 font-serif">
+          {String(r.message).split(/\n\n+/).map((para: string, i: number) => (
+            <p key={i}>{para}</p>
+          ))}
+          {typeof r.written_from_age !== 'undefined' && (
+            <p className="text-xs text-slate-500 not-italic font-sans pt-1">— your future self, age {r.written_from_age}</p>
+          )}
+        </div>
+      )}
+
+      {r.alignment_narrative && (
+        <p className="mt-1.5 text-sm text-slate-700 leading-relaxed">{r.alignment_narrative}</p>
+      )}
+
+      {((Array.isArray(r.aligned_goals) && r.aligned_goals.length > 0) ||
+        (Array.isArray(r.neglected_goals) && r.neglected_goals.length > 0)) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          {Array.isArray(r.aligned_goals) && r.aligned_goals.length > 0 && (
+            <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-2">On track</div>
+              <ul className="space-y-1.5 text-xs text-emerald-950">
+                {r.aligned_goals.map((g: string, i: number) => (
+                  <li key={i} className="flex gap-1.5"><span className="text-emerald-600">✓</span><span>{g}</span></li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {Array.isArray(r.neglected_goals) && r.neglected_goals.length > 0 && (
+            <div className="bg-rose-50/70 border border-rose-200 rounded-xl p-3.5">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-rose-700 mb-2">Neglected</div>
+              <ul className="space-y-1.5 text-xs text-rose-950">
+                {r.neglected_goals.map((g: string, i: number) => (
+                  <li key={i} className="flex gap-1.5"><span className="text-rose-500">✕</span><span>{g}</span></li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {Array.isArray(r.key_things_referenced) && r.key_things_referenced.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {r.key_things_referenced.map((k: string, i: number) => (
+            <span key={i} className="text-[11px] bg-white/90 border border-emerald-100 text-slate-600 px-2 py-0.5 rounded-full">
+              {k}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -426,9 +484,24 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'morning
                   <span>Core Mentor Directive</span>
                 </div>
 
-                <h3 className="text-2xl font-medium text-forest-950 font-serif italic leading-snug tracking-tight">
-                  &ldquo;{coachingResult.mentor_rule || coachingResult.rule || coachingResult.core_insight || coachingResult.coaching || 'Focus on relentless execution of today\'s #1 priority.'}&rdquo;
-                </h3>
+                {(() => {
+                  const directive =
+                    coachingResult.mentor_rule ||
+                    coachingResult.rule ||
+                    coachingResult.core_insight ||
+                    coachingResult.coaching ||
+                    coachingResult.recommendation ||
+                    (coachingResult.message || coachingResult.alignment_narrative
+                      ? ''
+                      : 'Focus on relentless execution of today\'s #1 priority.');
+                  return directive ? (
+                    <h3 className="text-2xl font-medium text-forest-950 font-serif italic leading-snug tracking-tight">
+                      &ldquo;{directive}&rdquo;
+                    </h3>
+                  ) : null;
+                })()}
+
+                {renderStructuredBody(coachingResult)}
 
                 {coachingResult.why_this_rule && (
                   <p className="text-xs text-slate-700 mt-3 bg-white/95 p-3.5 rounded-xl border border-emerald-100 shadow-forest-xs leading-relaxed">

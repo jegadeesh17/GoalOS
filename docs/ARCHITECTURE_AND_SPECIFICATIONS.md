@@ -42,7 +42,7 @@ GoalOS follows a clean, decoupled 4-tier local architecture:
 flowchart TB
     subgraph Client_Layer ["1. Frontend Client Layer (Port 5173)"]
         UI_App["React 18 + TypeScript SPA (Vite)"]
-        Nav["Celestial Navigation & Command Shell"]
+        Nav["Forest Mist Navigation & Command Shell"]
         subgraph Views ["Application Views"]
             V_Cal["Life Calendar (Memento Mori)"]
             V_Jrn["Daily Journal & Tasks"]
@@ -116,7 +116,7 @@ flowchart TB
 
 ### 3.1 Frontend Layer (`frontend/src/`)
 - **Technology Stack:** React 18, TypeScript 5, Vite, Tailwind CSS 3, Lucide Icons, Axios.
-- **Design System:** Celestial Light Mode (`bg-[#f8faff]`, soft lavender/indigo gradients, frosted glass capsules, non-redundant metrics, unified typography scale).
+- **Design System:** Forest Mist Paper Glass (opaque emerald/sage glass panels, static pre-computed gradient washes, Plus Jakarta Sans + Newsreader typography, non-redundant metrics).
 - **Core Views:**
   1. `LifeCalendar.tsx`: 3,640 discrete interactive week blocks (70 years × 52 weeks), decade delimiters, lived/remaining milestone stats.
   2. `JournalView.tsx`: Two-phase morning planning (sleep, mood, intentions, top priority, goal-linked tasks) and evening review (wins, lessons, distractions, deep work hours).

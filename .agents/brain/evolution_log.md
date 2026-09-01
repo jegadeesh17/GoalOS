@@ -4,6 +4,15 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-01 — Coach Chat UI, Consent Fix, Generic-Output Bug Fix & August Ingestion
+
+- **Action:** Committed the pending Coach Chat frontend (`AICoachView.tsx` chat thread + sessions sidebar, `GoalFormModal.tsx`, `client.ts` chat/session methods) against the multi-agent `CoordinatorPipeline` backend. Fixed two bugs found via user report ("every coach output looks the same, no specific patterns"): (1) chat sent no `remote_ai_consent` field, so the backend's `True` default silently overrode a user who had disabled remote AI in Settings; (2) `AICoachView` rendered only a hardcoded directive string for every pipeline result, ignoring the real fields each pipeline returns (future-self `message`, goal-alignment `alignment_narrative`/`aligned_goals`/`neglected_goals`), so every coach screen showed the same fallback line ("Focus on relentless execution of today's #1 priority") regardless of what the AI actually produced. Also ingested August journal days 16–31 (previously only 1–15 were in `daily_logs`) via the existing `scripts/import_journal_csv.py`, and produced a grounded month-in-review report (`reports/august-ledger.html`) directly from the 31-day dataset to demonstrate what a properly grounded coach response looks like.
+- **Rationale:** A coaching app whose output looks identical regardless of underlying data is a trust-breaking bug, not a content problem — the root cause was a UI/data-shape mismatch plus a data-completeness gap, not a prompting issue. The privacy toggle silently not applying to the primary chat surface is a contract violation for a "privacy-first, local-first" product.
+- **Verification:** `npx tsc --noEmit` clean; `pytest` 106/106 passing; verified `daily_logs` has 31/31 August rows with correct `task_completion_rate` after import (spot-checked 2026-08-23 → 0%, 2026-08-31 → 50%).
+- **Agent Reflection:** When a user reports "the AI feels generic," check the render path before touching prompts — a pipeline can be well-grounded and still appear generic if the UI only surfaces one hardcoded field. Also: any per-user consent/privacy toggle needs an explicit end-to-end trace from the setting's storage to every call site that gates on it, since a sensible-looking backend default can silently defeat the toggle at just one call site.
+
+---
+
 ## 2026-08-30 — Production AI Evaluation Framework & Vision Metrics
 
 - **Action:** Built production-grade autonomous evaluation orchestration framework (`ai/eval/`) with 6 GoalOS Vision Metrics (Schema Integrity, Grounding & Anti-Hallucination, Actionability, Horizon Alignment, Tool-Calling Precision, Operational Efficiency), rate limiter with exponential backoff for free-tier models, 15 benchmark scenarios dataset (`data/eval_scenarios.json`), and CLI orchestrator (`scripts/run_model_eval.py`).

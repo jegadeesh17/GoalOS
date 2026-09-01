@@ -8,7 +8,7 @@
 [![Vector DB](https://img.shields.io/badge/Vector%20Store-ChromaDB-purple.svg)](https://www.trychroma.com/)
 [![Database](https://img.shields.io/badge/Database-SQLite%203%20%2B%20FTS5-003B57.svg)](https://www.sqlite.org/)
 [![Validation](https://img.shields.io/badge/Schema-Pydantic%20v2-E92063.svg)](https://docs.pydantic.dev/)
-[![Tests](https://img.shields.io/badge/Tests-pytest%20(91%20passing)-green.svg)](https://docs.pytest.org/)
+[![Tests](https://img.shields.io/badge/Tests-pytest%20(106%20passing)-green.svg)](https://docs.pytest.org/)
 [![License](https://img.shields.io/badge/License-MIT-gray.svg)](LICENSE)
 
 ---
@@ -72,6 +72,7 @@
   - **Weekly Sync:** Evaluates longitudinal pacing and weekly review.
   - **Future Self:** Connects current trajectory with 10-year identity.
   - **Goal Alignment:** Stress-tests active goals against daily reality.
+- **Coach Chat (Multi-Agent Coordinator):** Free-form conversational coaching backed by `CoordinatorPipeline` — classifies intent, routes to scoped domain toolkits (goals/journal/memory/calendar), persists a session blackboard across turns, and falls back to a deterministic rule engine when remote AI consent is off or no API key is configured.
 - **Grounded Verification:** Transparent evidence reporting with retrieved memory sources and confidence scores.
 
 ### 📊 5. Longitudinal Analytics & Pattern Engine
@@ -93,10 +94,10 @@
 
 ```mermaid
 flowchart TD
-    subgraph Frontend_Layer ["React 18 + TypeScript (Light Mode)"]
+    subgraph Frontend_Layer ["React 18 + TypeScript (Forest Mist Paper Glass)"]
         Vite["Vite Dev Server (Port 5173)"]
         App["App.tsx"]
-        Views["Views: Calendar | Journal | Goals | AI Coach | Analytics | Memories | Settings"]
+        Views["Views: Calendar | Journal | Goals | AI Coach (Pipelines + Chat) | Analytics | Memories | Settings"]
         Vite --> App --> Views
     end
 
@@ -108,10 +109,12 @@ flowchart TD
 
     subgraph Service_Layer ["Core Python Services"]
         CoachService["CoachService (services/coach_service.py)"]
+        Coordinator["CoordinatorPipeline (ai/pipelines/coordinator.py)"]
         MemoryService["MemoryService (services/memory_service.py)"]
         PatternService["PatternService (services/pattern_service.py)"]
         AnalyticsService["AnalyticsService (services/analytics_service.py)"]
         SettingsService["SettingsService (services/settings_service.py)"]
+        Observability["ObservabilityService (services/observability_service.py)"]
     end
 
     subgraph Data_Layer ["Local Persistence"]
@@ -129,8 +132,8 @@ flowchart TD
 
 ## 🎨 Frontend Design System
 
-- **Color Palette:** Curated celestial light theme (`bg-[#f8faff]`, soft lavender/indigo gradients, crisp white frosted glass panels).
-- **Typography Scale:** Harmonic hierarchy (`h1: text-2xl font-bold`, `h2: text-xl font-bold`, `h3: text-sm font-bold`, `metrics: text-xl font-bold`, `body: text-sm font-normal`, `labels: text-xs font-medium`).
+- **Color Palette:** Forest Mist Paper Glass theme — opaque emerald/sage paper surfaces (`glass-panel`: `bg-white/86 backdrop-blur-2xl border border-emerald-100/70 shadow-forest`) over pre-computed static gradient washes (no real-time blur compositing).
+- **Typography:** Plus Jakarta Sans for UI text paired with Newsreader serif for editorial/reflective accents (journal quotes, coach directives).
 - **Layout Balance:** Symmetrically centered navigation capsules with responsive flex containers.
 - **Non-Redundancy:** Strict single-instance metric placement across all views.
 
@@ -222,6 +225,11 @@ Open `http://localhost:5173` in your browser.
 | `/coach/weekly` | `POST` | Generate weekly review coaching |
 | `/coach/future-self` | `POST` | Generate 10-year identity alignment guidance |
 | `/coach/goal-alignment` | `POST` | Evaluate specific goal alignment |
+| `/coach/chat` | `POST` | Multi-agent coordinator chat turn (intent routing, scoped tools, session blackboard) |
+| `/coach/sessions` | `GET`, `POST` | List or create coach chat sessions |
+| `/coach/sessions/{id}` | `GET`, `DELETE` | Fetch or delete a chat session and its messages |
+| `/coach/telemetry/summary` | `GET` | Aggregated coordinator latency/tool-use telemetry |
+| `/coach/telemetry/traces` | `GET` | Individual coordinator trace spans |
 | `/analytics/dashboard` | `GET` | Aggregated metrics, scores, and behavioral patterns |
 | `/memories` | `GET`, `POST` | List and record cognitive memories |
 | `/memories/search` | `GET` | Hybrid lexical & vector semantic search |
@@ -237,7 +245,7 @@ Run the comprehensive pytest test suite:
 ```bash
 pytest
 ```
-**Results:** **91/91 tests passing (100%)**.
+**Results:** **106/106 tests passing (100%)**.
 
 Run frontend typecheck and build validation:
 ```bash

@@ -1,0 +1,446 @@
+<title>The August Ledger</title>
+<meta name="description" content="A grounded review of 31 days of journals, and the AI coach responses redone from what the data actually says." />
+<style>
+  :root{
+    --paper:#F2F4EE;
+    --surface:#FBFCF9;
+    --surface-2:#F6F8F2;
+    --ink:#17242C;
+    --ink-2:#4C5A61;
+    --ink-3:#7A868B;
+    --line:#D8DECF;
+    --rule:#E4E9DC;
+    --accent:#2F5D8A;
+    --accent-soft:#E4EDF4;
+    --done:#3C7A4C;
+    --done-soft:#E3EFE3;
+    --skip:#B03A3A;
+    --skip-soft:#F3E2E1;
+    --amber:#9A6B14;
+    --amber-soft:#F3EBD7;
+    --shadow:0 1px 2px rgba(20,35,44,.05),0 8px 24px rgba(20,35,44,.06);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#111820;
+      --surface:#182029;
+      --surface-2:#1C2530;
+      --ink:#E9ECE5;
+      --ink-2:#A2ADA9;
+      --ink-3:#79857F;
+      --line:#2A343D;
+      --rule:#232D36;
+      --accent:#7FB0D8;
+      --accent-soft:#1E2C39;
+      --done:#6FB27F;
+      --done-soft:#1B2A22;
+      --skip:#D68585;
+      --skip-soft:#2E2020;
+      --amber:#D6AC5B;
+      --amber-soft:#2A2413;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#111820;
+    --surface:#182029;
+    --surface-2:#1C2530;
+    --ink:#E9ECE5;
+    --ink-2:#A2ADA9;
+    --ink-3:#79857F;
+    --line:#2A343D;
+    --rule:#232D36;
+    --accent:#7FB0D8;
+    --accent-soft:#1E2C39;
+    --done:#6FB27F;
+    --done-soft:#1B2A22;
+    --skip:#D68585;
+    --skip-soft:#2E2020;
+    --amber:#D6AC5B;
+    --amber-soft:#2A2413;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Instrument Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:clamp(28px,5vw,64px) clamp(18px,4vw,32px) 96px}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);font-weight:500;
+  }
+  h1{
+    font-family:"Fraunces",Georgia,serif;
+    font-weight:600;font-optical-sizing:auto;
+    font-size:clamp(38px,8vw,62px);
+    line-height:1.02;letter-spacing:-.01em;
+    text-wrap:balance;margin:.28em 0 .32em;
+  }
+  h2{
+    font-family:"Fraunces",Georgia,serif;
+    font-weight:600;font-size:clamp(23px,4vw,30px);
+    line-height:1.12;letter-spacing:-.01em;text-wrap:balance;margin:0;
+  }
+  h3{
+    font-family:"Fraunces",Georgia,serif;
+    font-weight:600;font-size:19px;line-height:1.2;margin:0;
+  }
+  p{margin:0 0 1em;max-width:64ch}
+  a{color:var(--accent)}
+  .lede{font-size:clamp(17px,2.4vw,19.5px);color:var(--ink-2);max-width:60ch}
+  .lede strong{color:var(--ink);font-weight:600}
+
+  .rule{height:1px;background:var(--rule);border:0;margin:0}
+  section{margin-top:clamp(44px,6vw,68px)}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:22px}
+  .sec-head .num{
+    font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3);
+    letter-spacing:.1em;padding-top:6px;
+  }
+
+  /* meta row under title */
+  .meta{
+    display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;
+    font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-3);
+    letter-spacing:.02em;margin-top:20px;
+  }
+  .meta b{color:var(--ink-2);font-weight:500}
+
+  /* callout of the corrected directive vs the generic one */
+  .swap{
+    display:grid;grid-template-columns:1fr;gap:14px;margin:26px 0 4px;
+  }
+  @media(min-width:620px){.swap{grid-template-columns:1fr 1fr}}
+  .swap .card{
+    border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:var(--surface);
+  }
+  .swap .before{opacity:.86}
+  .swap .tag{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;display:block}
+  .swap .before .tag{color:var(--skip)}
+  .swap .after .tag{color:var(--done)}
+  .swap .quote{font-family:"Fraunces",Georgia,serif;font-size:18px;line-height:1.32;font-style:italic}
+
+  /* the ledger */
+  .ledger{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:clamp(18px,3vw,26px);box-shadow:var(--shadow);
+  }
+  .ledger-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px;align-items:flex-end;margin-bottom:20px}
+  .ledger-top .label{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  .ledger-top .task{font-family:"Fraunces",serif;font-size:22px;font-weight:600}
+  .bigstat{font-family:"Fraunces",serif;font-weight:600;font-size:34px;line-height:1;letter-spacing:-.01em}
+  .bigstat span{font-size:15px;color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-weight:400;letter-spacing:0}
+
+  .grid31{display:grid;grid-template-columns:repeat(16,1fr);gap:6px}
+  @media(max-width:520px){.grid31{grid-template-columns:repeat(8,1fr)}}
+  .cell{
+    aspect-ratio:1/1;border-radius:6px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;position:relative;
+    font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;
+    border:1px solid transparent;user-select:none;
+  }
+  .cell .d{position:absolute;top:3px;left:5px;font-size:8.5px;font-weight:400;opacity:.5}
+  .cell.done{background:var(--done-soft);color:var(--done)}
+  .cell.skip{background:var(--skip-soft);color:var(--skip)}
+  .cell.na{background:var(--surface-2);color:var(--ink-3);border-color:var(--rule)}
+  .cell.na .m{opacity:.4}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:18px;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-2)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .dot{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .streak{
+    margin-top:18px;padding:13px 16px;border-left:3px solid var(--skip);
+    background:var(--skip-soft);border-radius:0 10px 10px 0;font-size:14.5px;color:var(--ink)
+  }
+  .streak b{color:var(--skip)}
+
+  /* patterns */
+  .pattern{padding:22px 0;border-top:1px solid var(--rule)}
+  .pattern:first-of-type{border-top:0;padding-top:4px}
+  .pattern .p-head{display:flex;gap:14px;align-items:baseline;margin-bottom:8px}
+  .pattern .p-idx{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--accent);font-weight:500;flex:none;width:26px}
+  .pattern p{margin-bottom:.6em}
+  .ev{
+    font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-2);
+    background:var(--surface-2);border:1px solid var(--rule);border-radius:9px;
+    padding:10px 13px;margin:10px 0 0;line-height:1.55;
+  }
+  .ev b{color:var(--ink);font-weight:500}
+  blockquote{
+    margin:14px 0;padding-left:16px;border-left:2px solid var(--line);
+    font-family:"Fraunces",serif;font-style:italic;font-size:17px;color:var(--ink);line-height:1.4
+  }
+  blockquote .src{display:block;font-family:"IBM Plex Mono",monospace;font-style:normal;font-size:11.5px;color:var(--ink-3);margin-top:6px;letter-spacing:.03em}
+
+  /* coach response cards */
+  .coach{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:clamp(20px,3.4vw,30px);box-shadow:var(--shadow);margin-top:20px;position:relative;overflow:hidden
+  }
+  .coach::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+  .coach .role{
+    font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--accent);display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px
+  }
+  .coach .role .conf{color:var(--ink-3)}
+  .coach .letter p{font-family:"Fraunces",Georgia,serif;font-size:17.5px;line-height:1.5;color:var(--ink);max-width:60ch}
+  .coach .letter p em{color:var(--ink)}
+  .coach .body p{font-size:15.5px;max-width:62ch}
+  .coach h3{margin-bottom:12px}
+  .signoff{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-3);margin-top:14px}
+
+  .cols{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+  @media(min-width:600px){.cols{grid-template-columns:1fr 1fr}}
+  .col{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--surface-2)}
+  .col .h{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:11px;display:flex;align-items:center;gap:7px}
+  .col.aligned .h{color:var(--done)}
+  .col.neglect .h{color:var(--skip)}
+  .col ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+  .col li{font-size:14px;line-height:1.4;padding-left:18px;position:relative}
+  .col li::before{position:absolute;left:0;top:0;font-family:"IBM Plex Mono",monospace;font-size:13px}
+  .col.aligned li::before{content:"✓";color:var(--done)}
+  .col.neglect li::before{content:"✕";color:var(--skip)}
+  .col li b{font-weight:600}
+  .col li small{display:block;color:var(--ink-3);font-size:12px;font-family:"IBM Plex Mono",monospace;margin-top:2px}
+
+  /* september springboard */
+  .spring{display:flex;flex-direction:column;gap:2px;margin-top:8px;counter-reset:s}
+  .step{display:grid;grid-template-columns:auto 1fr;gap:16px;padding:18px 0;border-top:1px solid var(--rule)}
+  .step:first-child{border-top:0}
+  .step .n{
+    counter-increment:s;font-family:"Fraunces",serif;font-weight:600;font-size:22px;color:var(--accent);
+    line-height:1;width:34px
+  }
+  .step .n::before{content:counter(s)}
+  .step .t{font-family:"Fraunces",serif;font-size:18px;font-weight:600;margin-bottom:4px}
+  .step p{font-size:14.5px;color:var(--ink-2);margin:0;max-width:58ch}
+  .step .why{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3);margin-top:6px}
+
+  .endnote{
+    margin-top:56px;padding:20px 22px;border:1px dashed var(--line);border-radius:14px;
+    background:var(--surface-2);font-size:13.5px;color:var(--ink-2)
+  }
+  .endnote b{color:var(--ink)}
+  .endnote code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--paper);padding:1px 6px;border-radius:5px;border:1px solid var(--rule);color:var(--ink)}
+
+  .foot{margin-top:40px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3);letter-spacing:.03em;text-align:center}
+  @media (prefers-reduced-motion:no-preference){
+    .cell{animation:pop .4s ease backwards}
+  }
+  @keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">GoalOS · Journal review · 1–31 Aug 2026</div>
+    <h1>The August Ledger</h1>
+    <p class="lede"><strong>You don't have a focus problem. You have an avoidance problem.</strong> Across 31 days you reliably finished the work that felt safe — building, restructuring, tinkering — and skipped the one task you kept naming as your highest-ROI: applying. The month is not generic, and neither is what it's asking of you.</p>
+    <div class="meta">
+      <span><b>31</b> days logged</span>
+      <span><b>~25</b> nights past 1&nbsp;AM</span>
+      <span><b>Applications:</b> 6 of 26 days</span>
+      <span><b>Turn:</b> Aug&nbsp;29–31</span>
+    </div>
+  </header>
+
+  <div class="swap">
+    <div class="card before">
+      <span class="tag">What the coach kept saying</span>
+      <div class="quote">"Focus on relentless execution of today's #1 priority."</div>
+    </div>
+    <div class="card after">
+      <span class="tag">What August actually says</span>
+      <div class="quote">"You already know your #1 priority. You've written it 26 times. The problem is you keep doing the comfortable thing instead."</div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: THE LEDGER -->
+  <section>
+    <div class="sec-head"><span class="num">01</span><h2>One task, all month</h2></div>
+    <p style="color:var(--ink-2);margin-bottom:22px">"Apply for companies" / "Applications" appeared on your task list <b style="color:var(--ink)">26 of 31 days</b> — more than any other item, and the one you flagged P1 and "highest ROI" over and over. Here is every day it was on the list, and whether it got crossed off.</p>
+
+    <div class="ledger">
+      <div class="ledger-top">
+        <div>
+          <div class="label">Recurring task</div>
+          <div class="task">Applications</div>
+        </div>
+        <div style="text-align:right">
+          <div class="bigstat">23%<span> done</span></div>
+          <div class="label" style="margin-top:4px">6 done · 20 skipped</div>
+        </div>
+      </div>
+      <div class="grid31" id="grid"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--done-soft);border:1px solid var(--done)"></i> Done</span>
+        <span><i class="dot" style="background:var(--skip-soft);border:1px solid var(--skip)"></i> On the list, not done</span>
+        <span><i class="dot" style="background:var(--surface-2);border:1px solid var(--rule)"></i> Not listed (shipping instead)</span>
+      </div>
+      <div class="streak">From <b>Aug 14 to 26</b> — thirteen days straight — it was on the page almost every day and crossed off <b>zero</b> times. On the 23rd you wrote it as your only task, then: <em>"I only had one job and I failed."</em></div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: PATTERNS -->
+  <section>
+    <div class="sec-head"><span class="num">02</span><h2>What the pages keep repeating</h2></div>
+
+    <div class="pattern">
+      <div class="p-head"><span class="p-idx">A</span><h3>You substitute building for applying</h3></div>
+      <p>The tasks you completed were almost all <em>making</em> things: Quandao, the GoalOS restructure, Redhold bug-hunting, the Moser / troopod / GUVI assignments, a WisprFlow bug report, "buy Claude &amp; build a tool." The tasks you skipped were almost all <em>exposing yourself</em>: applications, interviews, "apply for redhold." Building is safe — it can't reject you. That's the tell.</p>
+      <div class="ev"><b>Aug 21:</b> "the current highest ROI work is application and I'm not doing that." &nbsp;·&nbsp; <b>Aug 22:</b> "spent most of the day in less ROI work."</div>
+    </div>
+
+    <div class="pattern">
+      <div class="p-head"><span class="p-idx">B</span><h3>The lesson is already learned — it just isn't enforced</h3></div>
+      <p>Your takeaways are sharp and correct. They're also the same six sentences, over and over: <em>focus on what matters, do the highest ROI, start early, finish work earlier, learn to say no.</em> Insight isn't your bottleneck. You've diagnosed this perfectly ten times. A takeaway you've written ten times isn't a takeaway anymore — it's a system you haven't built yet.</p>
+      <blockquote>"Remember the more you delay the hardwork the more harder it gonna become."<span class="src">— Takeaway, Aug 15</span></blockquote>
+    </div>
+
+    <div class="pattern">
+      <div class="p-head"><span class="p-idx">C</span><h3>The day is lost before noon</h3></div>
+      <p>Wake was 9–10 AM most of the month with bedtimes past 1–3 AM, and mornings routinely went to scrolling and porn before any real work. When the morning leaked, the whole day tended to follow. The two days you fixed this — waking at <b>6 AM on the 30th and 31st</b> — were among your most productive.</p>
+      <div class="ev"><b>Aug 24:</b> "Everyday is a battle between comfort and survival." &nbsp;·&nbsp; <b>Aug 28:</b> "only way to grind is early to rise early to bed."</div>
+    </div>
+
+    <div class="pattern">
+      <div class="p-head"><span class="p-idx">D</span><h3>Other people's time became your leak</h3></div>
+      <p>Three separate days you flagged unplanned social time as the thing that ate the day. You even wrote the fix on the 18th — "learn to say no" — and hit the same wall on the 28th and 30th. This is a concrete, fixable boundary, not a character flaw.</p>
+      <div class="ev"><b>Aug 28:</b> "easily wasted 4 hours on calls." &nbsp;·&nbsp; <b>Aug 30:</b> "spent a lot of time talking to [a friend]… should talk only once."</div>
+    </div>
+
+    <div class="pattern">
+      <div class="p-head"><span class="p-idx">E</span><h3>The last week is a different person — pay attention to it</h3></div>
+      <p>Something shifted around Aug 26. You started <em>shipping</em>: filed a real WisprFlow bug report, hunted Redhold bugs, did system-design prep, built a tool. On the 29th you went 4-for-4. The traction didn't come from finally forcing yourself to apply — it came from doing real work on real products. That's a signal about where September's income goal might actually live.</p>
+      <div class="ev"><b>Aug 29:</b> WisprFlow bug report ✓ · use free version ✓ · Redhold ✓ · "will focus only what matters." &nbsp;·&nbsp; <b>Aug 31:</b> system-design prep ✓ · built a tool ✓</div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: THE REDONE RESPONSES -->
+  <section>
+    <div class="sec-head"><span class="num">03</span><h2>The coach responses, redone</h2></div>
+    <p style="color:var(--ink-2);margin-bottom:4px">Same three pipelines your app runs — Future Self, Goal Alignment, Core Directive — but written from your actual August instead of a fallback line. This is the output you should have been seeing.</p>
+
+    <!-- Future self -->
+    <div class="coach">
+      <div class="role"><span>Future Self · written from age 35</span><span class="conf">grounded in 31 entries</span></div>
+      <div class="letter">
+        <p>I remember this August. Not because it was dramatic — because it almost wasn't. You wrote "Applications" on the page twenty-six times and I watched you cross it off six. You weren't lazy those other days; you were <em>busy</em>. Quandao, GoalOS, Redhold, the restructures — you did real work. It was just always the work that couldn't tell you no.</p>
+        <p>Here's what I can tell you from here: the applications were never the thing. What scared you was putting something out and hearing nothing back — so you kept building, because building always answers. The day you wrote <em>"I only had one job and I failed"</em> you thought you'd proven you weren't serious. You hadn't. You'd proven you'd rather fail quietly at building than risk failing loudly at reaching out.</p>
+        <p>The version of you I'm proud of showed up on the 29th and the 30th — awake at six, shipping bug reports, building a tool someone would actually use. That week wasn't a fluke. That was the direction. Stop apologizing to the notebook and go make the thing that makes applying unnecessary.</p>
+      </div>
+      <div class="signoff">— references: Aug 21, 23, 24, 26, 29, 30, 31</div>
+    </div>
+
+    <!-- Goal alignment -->
+    <div class="coach">
+      <div class="role"><span>Goal Alignment · goals vs. actual August</span><span class="conf">6 active goals checked</span></div>
+      <div class="body">
+        <p>Your active goals say <b>"Getting a job,"</b> <b>"Getting paid,"</b> and <b>"Getting my body in shape."</b> Here's how the month actually spent itself against them.</p>
+        <div class="cols">
+          <div class="col aligned">
+            <div class="h">Where actions matched</div>
+            <ul>
+              <li><b>Shipping real work</b><small>Quandao, GoalOS, Redhold, WisprFlow, assignments — done consistently</small></li>
+              <li><b>Skill &amp; interview prep</b><small>SME/GoQuant prep, system design, one interview finished</small></li>
+              <li><b>Late-week execution</b><small>Aug 29–31: earlier wake, tasks completed</small></li>
+            </ul>
+          </div>
+          <div class="col neglect">
+            <div class="h">Where they didn't</div>
+            <ul>
+              <li><b>"Getting a job" → applying</b><small>Named 26 days, done 6. This is the core gap.</small></li>
+              <li><b>"Body in shape"</b><small>A few wins early (Aug 3,8,10,12,13), then absent after mid-month</small></li>
+              <li><b>Sleep / mornings</b><small>~25 nights past 1 AM; days lost before noon</small></li>
+            </ul>
+          </div>
+        </div>
+        <p style="margin-top:16px"><b>Recommendation:</b> You have a contradiction to resolve <em>before</em> September, not a motivation problem. Either applications become a small daily quota you will actually hit (5 a day, first thing, done by 10 AM), <em>or</em> you stop pretending "apply to 30 companies" is the plan and route the income goal through what you're already shipping — Redhold, GoQuant, bug bounties, tools. Pick one. A goal you skip 20 times isn't a goal; it's a guilt generator.</p>
+      </div>
+    </div>
+
+    <!-- Core directive -->
+    <div class="coach">
+      <div class="role"><span>Core Directive · September's operating rule</span><span class="conf">replaces the fallback line</span></div>
+      <div class="letter">
+        <p style="font-size:20px;line-height:1.4"><em>"Do the thing that can reject you — first, small, and before the comfortable work. Five applications (or one real outreach) by 10 AM, or don't let yourself open the project you'd rather build."</em></p>
+      </div>
+      <p class="body" style="margin-top:6px;color:var(--ink-2);font-size:14.5px">Why this and not "execute your #1 priority": your #1 priority was never unclear. The failure was always <em>sequence</em> — comfort work first, scary work "later," later never came. Fix the order, not the intention.</p>
+    </div>
+  </section>
+
+  <!-- SECTION 4: SEPTEMBER -->
+  <section>
+    <div class="sec-head"><span class="num">04</span><h2>Before you set September</h2></div>
+    <p style="color:var(--ink-2);margin-bottom:6px">Five things the data suggests you decide first. Not goals themselves — the constraints that will make your goals honest.</p>
+
+    <div class="spring">
+      <div class="step"><div class="n"></div><div>
+        <div class="t">Resolve the apply-vs-build contradiction on paper</div>
+        <p>Don't carry both into September unspoken. Write which one is the income path this month. If it's applying, it gets a hard daily number. If it's shipping, drop "apply to companies" from the list entirely so it stops generating guilt.</p>
+        <div class="why">evidence · Applications 6/26; late-week traction came from shipping</div>
+      </div></div>
+
+      <div class="step"><div class="n"></div><div>
+        <div class="t">Make one goal a schedule, not an outcome</div>
+        <p>"Get a job" is an outcome you don't control. "5 applications before 10 AM" and "in bed by midnight" are behaviours you do. Set at least one September goal you could technically complete every single day.</p>
+        <div class="why">evidence · repeated takeaways about ROI &amp; starting early never became a rule</div>
+      </div></div>
+
+      <div class="step"><div class="n"></div><div>
+        <div class="t">Protect the morning like it's the whole game</div>
+        <p>Your two 6 AM days were your best. Make a wake time and a no-scroll-before-work rule an explicit tracked goal, because when the morning held, the day held.</p>
+        <div class="why">evidence · Aug 30–31 vs. the 9–10 AM norm</div>
+      </div></div>
+
+      <div class="step"><div class="n"></div><div>
+        <div class="t">Give fitness a floor, not a finish line</div>
+        <p>It vanished after mid-month because "get in shape" is vague. A floor — "walk 20 min daily" — survives bad days. Decide the minimum you'll never skip.</p>
+        <div class="why">evidence · workouts logged early, then gone by week 3</div>
+      </div></div>
+
+      <div class="step"><div class="n"></div><div>
+        <div class="t">Write one boundary for people-time</div>
+        <p>You already know the fix — you wrote "learn to say no" and "talk only once." Turn it into one concrete September rule so it stops eating afternoons.</p>
+        <div class="why">evidence · Aug 18, 28, 30</div>
+      </div></div>
+    </div>
+  </section>
+
+  <div class="endnote">
+    <b>Why every coach card looked identical in the app.</b> Each pipeline already returns specific content — Future Self returns a <code>message</code>, Goal Alignment returns <code>alignment_narrative</code> / <code>neglected_goals</code> / <code>recommendation</code> — but <code>AICoachView</code> only renders a directive from <code>mentor_rule</code>/<code>rule</code>/<code>core_insight</code>/<code>coaching</code>, which none of them return, so it fell back to the hardcoded "relentless execution" line every time and hid the real output in the collapsed Raw panel. That plus days 16–31 not being in the database is the whole cause. Both are fixable — the render mapping and a one-time ingest of this month.
+  </div>
+
+  <div class="foot">Compiled from 31 handwritten entries · Aug 2026 · private review</div>
+</div>
+
+<script>
+  // Applications: per-day status. done | skip | na
+  const days = {
+    1:'na',2:'skip',3:'done',4:'skip',5:'skip',6:'skip',7:'done',8:'done',
+    9:'skip',10:'done',11:'skip',12:'done',13:'done',14:'skip',15:'skip',
+    16:'skip',17:'skip',18:'skip',19:'skip',20:'skip',21:'skip',22:'skip',
+    23:'skip',24:'skip',25:'skip',26:'skip',27:'na',28:'na',29:'na',30:'na',31:'skip'
+  };
+  const mark = {done:'✓',skip:'✕',na:'–'};
+  const g = document.getElementById('grid');
+  for(let i=1;i<=31;i++){
+    const s = days[i];
+    const c = document.createElement('div');
+    c.className = 'cell '+s;
+    c.style.animationDelay = (i*11)+'ms';
+    c.innerHTML = '<span class="d">'+i+'</span><span class="m">'+mark[s]+'</span>';
+    const title = s==='done'?'Aug '+i+': applied':(s==='skip'?'Aug '+i+': on the list, not done':'Aug '+i+': not listed');
+    c.title = title;
+    g.appendChild(c);
+  }
+</script>

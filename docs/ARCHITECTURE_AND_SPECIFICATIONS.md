@@ -201,6 +201,8 @@ erDiagram
     GOALS ||--o{ MEMORIES : references
     DAILY_LOGS ||--o{ SCORES : generates
     DAILY_LOGS ||--o{ COACH_OUTPUTS : triggers
+    COACH_SESSIONS ||--o{ COACH_MESSAGES : contains
+    COACH_SESSIONS ||--o{ AI_TELEMETRY : logs
 
     USER {
         int id PK
@@ -275,6 +277,42 @@ erDiagram
         float productivity_score
         float overall_growth_score
     }
+
+    COACH_SESSIONS {
+        string id PK
+        string title
+        string intent
+        string active_horizon_id
+        string blackboard
+        datetime created_at
+        datetime updated_at
+    }
+
+    COACH_MESSAGES {
+        string id PK
+        string session_id FK
+        string role
+        string content
+        string agent_name
+        string tool_calls
+        string citations
+        datetime created_at
+    }
+
+    AI_TELEMETRY {
+        int id PK
+        string trace_id
+        string span_name
+        string session_id
+        string model
+        int prompt_tokens
+        int completion_tokens
+        int total_tokens
+        float estimated_cost_usd
+        float latency_ms
+        string status
+        datetime created_at
+    }
 ```
 
 ---
@@ -292,27 +330,37 @@ erDiagram
 | `POST` | `/journal/upsert` | Upsert daily log fields & auto-recompute daily scores | Yes (in prod) |
 | `GET` | `/journal/history` | Fetch historical daily logs with limit | Yes (in prod) |
 | `GET` | `/goals` | List all goals with optional category/status filters | Yes (in prod) |
+| `GET` | `/goals/horizons` | List active goals grouped by 1M, 1Y, and 5Y horizons | Yes (in prod) |
+| `GET` | `/goals/{goal_id}` | Fetch a single goal by ID | Yes (in prod) |
 | `POST` | `/goals` | Create a new multi-horizon goal | Yes (in prod) |
 | `PUT` | `/goals/{goal_id}` | Update an existing goal | Yes (in prod) |
 | `DELETE` | `/goals/{goal_id}` | Delete a goal and cascade milestones | Yes (in prod) |
 | `POST` | `/goals/{goal_id}/milestones` | Add milestone to a goal | Yes (in prod) |
 | `PUT` | `/milestones/{milestone_id}` | Update milestone completion status | Yes (in prod) |
+| `PATCH` | `/milestones/{milestone_id}` | Partially update milestone fields | Yes (in prod) |
 | `DELETE` | `/milestones/{milestone_id}` | Delete milestone | Yes (in prod) |
 | `POST` | `/coach/morning` | Execute morning coaching pipeline | Yes (in prod) |
 | `POST` | `/coach/evening` | Execute evening retrospective pipeline | Yes (in prod) |
 | `POST` | `/coach/weekly` | Execute weekly sync coaching pipeline | Yes (in prod) |
 | `POST` | `/coach/future-self` | Execute 10-year future self alignment pipeline | Yes (in prod) |
 | `POST` | `/coach/goal-alignment` | Stress-test goal feasibility and habit pacing | Yes (in prod) |
+| `POST` | `/coach/chat` | Multi-agent coordinator chat turn (intent routing, scoped tools, blackboard) | Yes (in prod) |
+| `GET` | `/coach/sessions` | List recent coaching chat sessions | Yes (in prod) |
+| `POST` | `/coach/sessions` | Create a new coaching chat session | Yes (in prod) |
+| `GET` | `/coach/sessions/{session_id}` | Fetch session history and messages | Yes (in prod) |
+| `DELETE` | `/coach/sessions/{session_id}` | Delete a chat session and associated messages | Yes (in prod) |
+| `GET` | `/coach/telemetry/summary` | Fetch aggregated coordinator latency and token spend | Yes (in prod) |
+| `GET` | `/coach/telemetry/traces` | Fetch individual coordinator execution trace spans | Yes (in prod) |
+| `GET` | `/memories` | List cognitive memories with optional type filter | Yes (in prod) |
 | `GET` | `/memories/search` | Execute 5-factor hybrid RAG memory search | Yes (in prod) |
 | `POST` | `/memories` | Store new memory (dual-write SQLite + Chroma) | Yes (in prod) |
 | `DELETE` | `/memories/{memory_id}` | Delete memory and purge vector index | Yes (in prod) |
-| `POST` | `/memories/reconcile` | Repair desynchronized SQLite/Chroma vectors | Yes (in prod) |
-| `GET` | `/analytics/trends` | Fetch longitudinal scoring trends | Yes (in prod) |
-| `GET` | `/analytics/patterns` | Fetch detected behavioral patterns | Yes (in prod) |
-| `GET` | `/settings` | Fetch user profile and consent settings | Yes (in prod) |
-| `POST` | `/settings` | Update user profile and consent settings | Yes (in prod) |
-| `GET` | `/export/all` | One-click JSON data export | Yes (in prod) |
-| `POST` | `/admin/factory-reset` | Safe reset with automated timestamped backup | Yes (in prod) |
+| `GET` | `/analytics/dashboard` | Fetch consolidated averages, behavioral patterns, and scores | Yes (in prod) |
+| `GET` | `/analytics/scores` | Fetch historical daily growth and alignment scores | Yes (in prod) |
+| `GET` | `/settings` | Fetch user profile, life visions, and consent settings | Yes (in prod) |
+| `POST` | `/settings` | Update user profile, life visions, and consent settings | Yes (in prod) |
+| `GET` | `/export` | Full JSON database export | Yes (in prod) |
+| `POST` | `/export/reset` | Safe factory reset with automated SQLite backup | Yes (in prod) |
 
 ---
 

@@ -77,3 +77,26 @@ Adopt a composite scoring formula that weights 5 independent signals:
 ### Consequences
 - **Pros:** Balanced, highly relevant cognitive retrieval that favors important and recently relevant insights.
 - **Cons:** Requires tuning weights and logging memory access events.
+
+---
+
+## ADR-005: Supervisor-Coordinator Multi-Agent Pattern with Domain Toolkits & Blackboard State
+
+### Status
+**Accepted**
+
+### Context
+As coaching capabilities grew (morning planning, evening retrospectives, weekly reviews, multi-horizon goal pacing, and cognitive memory search), passing all tool definitions simultaneously into every conversational turn bloated prompt tokens by 40-50% and caused occasional tool hallucination or out-of-domain tool calls. Furthermore, multi-turn conversations needed state persistence and telemetry across turns without relying on external SaaS databases.
+
+### Decision
+Implement a Supervisor-Coordinator architecture modeled on enterprise-grade agent designs:
+1. **Coordinator Agent (`ai/pipelines/coordinator.py`):** Acts as the supervisor that classifies user conversational intent into domains (`execution`, `goals`, `memory`, `calendar`, `general`).
+2. **Domain-Scoped Toolkits (`ai/tools/*`):** Partition tool definitions into discrete modules (`JournalToolkit`, `GoalsToolkit`, `MemoryToolkit`, `CalendarToolkit`). The coordinator injects only domain-relevant tools into each prompt.
+3. **Session Store & Blackboard State (`database/repositories/coach_session_repository.py`):** Persists multi-turn conversations in SQLite tables `coach_sessions` and `coach_messages`, retaining an inter-agent JSON `blackboard` bus.
+4. **Non-Blocking Telemetry & APM Hub (`services/observability_service.py`):** Spans, token consumption, and estimated USD spend are asynchronously recorded to table `ai_telemetry` without impacting user latency.
+5. **Deterministic Fallback Engine:** Guarantees instant, structured responses from local heuristics when offline or when remote AI consent is turned off.
+
+### Consequences
+- **Pros:** 40-50% prompt token reduction, zero out-of-domain tool hallucinations, stateful multi-turn coaching sessions, live USD spend observability, and guaranteed offline availability.
+- **Cons:** Requires schema migration for session and telemetry tables and maintaining domain toolkit mappings.
+

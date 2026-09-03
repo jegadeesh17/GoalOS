@@ -4,6 +4,19 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-03 — Comprehensive Documentation & Codebase Parity Synchronization
+
+- **Action:** Brought all project specifications, architecture documents, demo scripts, and ADRs into 100% parity with the production codebase (v2.6.0).
+  - Modernized `docs/PROJECT_SPEC.md` from legacy July 2026 Streamlit draft to current React 18 + Vite desktop SPA, 106 tests, 5-factor hybrid RAG formula with MMR pruning, and full REST API specification.
+  - Corrected `docs/ARCHITECTURE_AND_SPECIFICATIONS.md` Section 5 REST API table (fixed `/analytics/dashboard`, `/analytics/scores`, `/export`, `/export/reset`, removed non-HTTP `/memories/reconcile`, and added full `/coach/chat`, `/coach/sessions`, and `/coach/telemetry/*` suite) and updated Section 4 ER diagram with `COACH_SESSIONS`, `COACH_MESSAGES`, and `AI_TELEMETRY`.
+  - Modernized `docs/DEMO.md` walkthrough script to showcase 106 tests, modern FastAPI endpoints, and the React 18 dashboard views.
+  - Codified ADR-005 in `architectural_decisions.md` documenting the Supervisor-Coordinator multi-agent pattern with domain toolkits and blackboard state.
+- **Rationale:** Documentation drift breaks trust for both human pair programmers and AI agents operating on the project brain. Every specification must accurately reflect running production systems.
+- **Verification:** Verified all route paths against `api/main.py`, verified React component references against `frontend/src/components/*`, ran `pytest -q` (106/106 passing).
+- **Agent Reflection:** Regular audits of specification documents against actual codebase routes and data models prevent subtle inconsistencies from accumulating as features evolve.
+
+---
+
 ## 2026-09-01 — Coach Chat UI, Consent Fix, Generic-Output Bug Fix & August Ingestion
 
 - **Action:** Committed the pending Coach Chat frontend (`AICoachView.tsx` chat thread + sessions sidebar, `GoalFormModal.tsx`, `client.ts` chat/session methods) against the multi-agent `CoordinatorPipeline` backend. Fixed two bugs found via user report ("every coach output looks the same, no specific patterns"): (1) chat sent no `remote_ai_consent` field, so the backend's `True` default silently overrode a user who had disabled remote AI in Settings; (2) `AICoachView` rendered only a hardcoded directive string for every pipeline result, ignoring the real fields each pipeline returns (future-self `message`, goal-alignment `alignment_narrative`/`aligned_goals`/`neglected_goals`), so every coach screen showed the same fallback line ("Focus on relentless execution of today's #1 priority") regardless of what the AI actually produced. Also ingested August journal days 16–31 (previously only 1–15 were in `daily_logs`) via the existing `scripts/import_journal_csv.py`, and produced a grounded month-in-review report (`reports/august-ledger.html`) directly from the 31-day dataset to demonstrate what a properly grounded coach response looks like.

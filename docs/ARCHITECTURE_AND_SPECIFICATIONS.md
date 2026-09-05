@@ -36,6 +36,12 @@
 
 ## 2. 🏗️ High-Level System Architecture
 
+> [!TIP]
+> **Interactive Architecture Diagram:** A complete multi-page editable Draw.io / diagrams.net diagram is available at [`docs/architecture.drawio`](file:///C:/Users/jegad/projects/GoalOS/docs/architecture.drawio). It can be opened directly in [app.diagrams.net](https://app.diagrams.net), the VS Code Draw.io extension, or the Draw.io desktop application. It includes:
+> 1. **Page 1:** System Topology & Layered Architecture (Presentation, API Gateway, Orchestrator, Services, Dual Storage, External AI Gateway)
+> 2. **Page 2:** Cognitive Multi-Agent Supervisor & Scoped Tool Execution Loop
+> 3. **Page 3:** Cognitive Memory Dual-Write & 5-Factor Hybrid RAG Pipeline
+
 GoalOS follows a clean, decoupled 4-tier local architecture:
 
 ```mermaid

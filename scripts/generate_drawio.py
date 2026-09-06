@@ -49,17 +49,25 @@ class DrawIOBuilder:
 
     @staticmethod
     def add_vertex(parent, cell_id, value, x, y, w, h, style):
-        return ET.SubElement(parent, "mxCell", {
+        cell = ET.SubElement(parent, "mxCell", {
             "id": cell_id,
             "value": value,
             "style": style,
             "vertex": "1",
             "parent": "1"
-        }, **{"x": str(x), "y": str(y), "width": str(w), "height": str(h)})
+        })
+        ET.SubElement(cell, "mxGeometry", {
+            "x": str(x),
+            "y": str(y),
+            "width": str(w),
+            "height": str(h),
+            "as": "geometry"
+        })
+        return cell
 
     @staticmethod
     def add_edge(parent, edge_id, value, source, target, style):
-        return ET.SubElement(parent, "mxCell", {
+        cell = ET.SubElement(parent, "mxCell", {
             "id": edge_id,
             "value": value,
             "style": style,
@@ -68,6 +76,11 @@ class DrawIOBuilder:
             "source": source,
             "target": target
         })
+        ET.SubElement(cell, "mxGeometry", {
+            "relative": "1",
+            "as": "geometry"
+        })
+        return cell
 
 def build_drawio_xml() -> str:
     builder = DrawIOBuilder()

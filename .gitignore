@@ -2,6 +2,7 @@
 __pycache__/
 .pytest_cache/
 *.pyc
+desktop.ini
 
 # Local app data/logs
 goalos.db

@@ -18,12 +18,10 @@ class OpenRouterClient:
   BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
   FREE_FALLBACK_MODELS = [
     "nvidia/nemotron-3-super-120b-a12b:free",
+    "nvidia/nemotron-3.5-lightning:free",
+    "nex-agi/nex-n2.5-mini:free",
+    "nex-agi/nex-n2.5-pro:free",
     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    "minimax/minimax-m3:free",
-    "cohere/north-mini-code:free",
-    "liquid/lfm-2.5-2.6b:free",
-    "google/gemma-4-31b-it:free",
-    "google/gemma-4-26b-a4b-it:free",
   ]
 
   def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
@@ -110,7 +108,7 @@ class OpenRouterClient:
       start = time.time()
       try:
         payload["model"] = current_model
-        with httpx.Client(timeout=60.0) as client:
+        with httpx.Client(timeout=18.0) as client:
           response = client.post(self.BASE_URL, headers=headers, json=payload)
           latency = time.time() - start
           logger.info(
@@ -170,6 +168,21 @@ class OpenRouterClient:
 
           response.raise_for_status()
           data = response.json()
+
+          if isinstance(data, dict) and "error" in data:
+            err_obj = data["error"]
+            err_msg = err_obj.get("message", "") if isinstance(err_obj, dict) else str(err_obj)
+            logger.warning("OpenRouter returned error payload: %s (model=%s)", err_msg, current_model)
+            if allow_fallback:
+              free_model = self._pick_next_free_model(current_model, tried_models)
+              if free_model:
+                logger.warning("Upstream error on %s. Retrying with free model %s.", current_model, free_model)
+                current_model = free_model
+                tried_models.add(current_model)
+                continue
+            last_error = err_msg
+            time.sleep(2 ** attempt)
+            continue
 
           # Record telemetry
           try:
@@ -358,7 +371,7 @@ class OpenRouterClient:
     for attempt in range(max_retries):
       payload["model"] = current_model
       try:
-        with httpx.Client(timeout=60.0) as client:
+        with httpx.Client(timeout=18.0) as client:
           response = client.post(self.BASE_URL, headers=headers, json=payload)
           if response.status_code == 401:
             return {"error": "invalid_api_key", "error_detail": "Key rejected by OpenRouter"}
@@ -387,7 +400,18 @@ class OpenRouterClient:
             time.sleep(2 ** attempt)
             continue
           response.raise_for_status()
-          return response.json()
+          data = response.json()
+          if isinstance(data, dict) and "error" in data:
+            err_obj = data["error"]
+            err_msg = err_obj.get("message", "") if isinstance(err_obj, dict) else str(err_obj)
+            logger.warning("OpenRouter tool payload error: %s (model=%s)", err_msg, current_model)
+            free_model = self._pick_next_free_model(current_model, tried_models)
+            if free_model:
+              current_model = free_model
+              tried_models.add(current_model)
+              continue
+            return {"error": "upstream_error", "error_detail": err_msg}
+          return data
       except Exception as e:
         last_error = e
         if attempt < max_retries - 1:

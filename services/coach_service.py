@@ -166,9 +166,7 @@ class CoachService:
       context["recent_coach_advice"],
     )
     if self._remote_ai_allowed():
-      result = run_agent_morning_coach(context, self.llm)
-      if not (isinstance(result, dict) and result.get("mentor_rule")):
-        result = run_morning_coach(context, self.llm)
+      result = run_morning_coach(context, self.llm)
     else:
       from ai.pipelines._base import fallback_morning
       result = fallback_morning(context)

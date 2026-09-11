@@ -88,11 +88,6 @@ class CoordinatorPipeline:
 
     # 3. Classify intent & target toolkits
     intent, target_domains = self.classify_intent(request.message, request.preferred_domain)
-    scoped_tools = get_scoped_tool_definitions(target_domains)
-    tool_executor = make_tool_executor(
-      memory_service=self.memory_service,
-      goal_repo=self.goal_repo,
-    )
 
     # 4. Check remote AI consent and API key availability
     has_key = bool(self.client.api_key and self.client.api_key.strip())
@@ -108,18 +103,72 @@ class CoordinatorPipeline:
       fallback_resp.latency_ms = round((time.time() - start_time) * 1000, 2)
       return fallback_resp
 
-    # 5. Build supervisor prompt with history & blackboard
-    system_prompt = self._build_system_prompt(intent, blackboard, session.messages)
+    # 5. Direct Context Grounding: retrieve domain data upfront
+    context_blocks: list[str] = []
+    tools_used: list[str] = []
+
+    if "goals" in target_domains:
+      try:
+        goals = self.goal_repo.get_active()
+        if goals:
+          tools_used.append("get_active_goals")
+          goals_summary = "\n".join(
+            f"- [{g.horizon}] {g.title} (Progress: {g.progress}%, Category: {g.category})"
+            for g in goals[:8]
+          )
+          context_blocks.append(f"ACTIVE GOALS:\n{goals_summary}")
+      except Exception:
+        pass
+
+    if "journal" in target_domains:
+      try:
+        recent_logs = self.log_repo.get_recent(3)
+        if recent_logs:
+          tools_used.append("get_recent_logs")
+          logs_summary = "\n".join(
+            f"- {l.date}: Top Priority: {l.top_priority or 'None'}, Reflection: {(l.journal_entry or '')[:120]}"
+            for l in recent_logs if l
+          )
+          context_blocks.append(f"RECENT DAILY EXECUTION:\n{logs_summary}")
+      except Exception:
+        pass
+
+    if "memory" in target_domains:
+      try:
+        memories = self.memory_service.repo.search_text(request.message, 4)
+        if not memories:
+          memories = self.memory_service.repo.get_all(status="active")[:4]
+        if memories:
+          tools_used.append("search_memories")
+          mems_summary = "\n".join(
+            f"- [{m.type}] {m.text[:140]}" for m in memories
+          )
+          context_blocks.append(f"RELEVANT COGNITIVE MEMORIES:\n{mems_summary}")
+      except Exception:
+        pass
+
+    if "calendar" in target_domains:
+      try:
+        cal = self.calendar_service.get_summary()
+        tools_used.append("get_lifespan_stats")
+        context_blocks.append(
+          f"LIFE CALENDAR STATS:\n- Weeks Lived: {cal.weeks_lived} / {cal.total_weeks} ({cal.percentage_lived}% elapsed)\n- Weeks Remaining: {cal.weeks_remaining}"
+        )
+      except Exception:
+        pass
+
+    grounded_context = "\n\n".join(context_blocks)
+
+    # 6. Build supervisor prompt with history, blackboard, and grounded data
+    system_prompt = self._build_system_prompt(intent, blackboard, session.messages, grounded_context)
     user_prompt = f"User Request: {request.message}"
 
     try:
-      ai_result = self.client.complete_with_tools(
+      ai_result = self.client.complete(
         system_prompt=system_prompt,
         user_message=user_prompt,
-        tools=scoped_tools,
-        tool_executor=tool_executor,
-        temperature=0.6,
-        max_tokens=1500,
+        temperature=0.5,
+        max_tokens=800,
         trace_id=trace_id,
         session_id=session_id,
         span_name=f"coordinator_{intent}",
@@ -138,7 +187,17 @@ class CoordinatorPipeline:
         return fallback_resp
 
       reply_text = str(ai_result).strip()
-      tools_used = ai_result.get("tool_calls_made", []) if isinstance(ai_result, dict) else []
+      if reply_text.startswith("Error:"):
+        fallback_resp = self._run_deterministic_fallback(
+          message=request.message,
+          intent=intent,
+          session_id=session_id,
+          blackboard=blackboard,
+          trace_id=trace_id,
+          reason=f"openrouter_error:{reply_text[:60]}",
+        )
+        fallback_resp.latency_ms = round((time.time() - start_time) * 1000, 2)
+        return fallback_resp
 
       # Update blackboard with intent and latest activity
       blackboard["last_intent"] = intent
@@ -185,27 +244,29 @@ class CoordinatorPipeline:
     intent: str,
     blackboard: dict[str, Any],
     history: list[Any],
+    grounded_context: str = "",
   ) -> str:
     recent_history_text = "\n".join(
       f"- {m.role.upper()}: {m.content}" for m in history[-6:]
     ) if history else "No previous dialog in this session."
 
     bb_text = json.dumps(blackboard, default=str)
+    context_section = f"\nREAL-TIME GROUNDED USER DATA:\n{grounded_context}\n" if grounded_context else ""
 
     return f"""You are the GoalOS Executive AI Coordinator.
 You supervise multi-horizon goal pacing, morning/evening daily execution, cognitive memory retrieval, and 70-year lifespan awareness.
 
 CURRENT INTENT: {intent.upper()}
 SHARED SESSION BLACKBOARD: {bb_text}
-
+{context_section}
 RECENT CONVERSATION HISTORY:
 {recent_history_text}
 
 OPERATING PRINCIPLES:
-1. Grounding & Anti-Hallucination: If the user asks about goals, habits, or past lessons, use the provided tools to query real state before answering.
+1. Grounding & Anti-Hallucination: Ground your coaching directly in the real-time user data provided above.
 2. Direct & Actionable: Give concise, high-density executive coaching. Avoid fluffy generic filler or excessive disclaimers.
 3. Multi-Horizon Pacing: Connect daily execution to 1-month sprints, 1-year horizons, and 5-year visions.
-4. If tool results are empty, state so clearly and recommend next concrete steps.
+4. If the user asks what to focus on, refer explicitly to their active priorities and goals.
 """
 
   def _run_deterministic_fallback(

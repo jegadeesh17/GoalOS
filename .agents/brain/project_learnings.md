@@ -19,6 +19,10 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 - **Observation:** Running DDL statements outside transaction blocks can leave the SQLite database in an inconsistent state if a migration step fails halfway.
 - **Solution:** All migrations in `database/migrations.py` execute within `with get_db() as conn: conn.execute("BEGIN IMMEDIATE")` blocks.
 
+### 1.4 SQLite Context Nesting and Connection Deadlocks
+- **Observation:** In batch processing scripts, wrapping an outer loop in `with get_db() as conn:` while calling internal services (such as `MemoryService.store()`) that invoke their own `with get_db()` write transactions creates uncommitted lock contention in SQLite on Windows, causing processes to hang indefinitely.
+- **Solution:** Pre-fetch any necessary read data (e.g., mapping dates to `daily_logs` IDs) in an isolated `get_db()` block and let it commit/close before iterating through service store calls.
+
 ---
 
 ## 2. ⚡ Hybrid RAG & Embeddings Learnings

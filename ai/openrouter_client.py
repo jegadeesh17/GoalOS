@@ -17,11 +17,12 @@ class OpenRouterClient:
 
   BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
   FREE_FALLBACK_MODELS = [
-    "nvidia/nemotron-3-super-120b-a12b:free",
-    "nvidia/nemotron-3.5-lightning:free",
-    "nex-agi/nex-n2.5-mini:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
     "nex-agi/nex-n2.5-pro:free",
-    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "nex-agi/nex-n2.5-mini:free",
+    "nvidia/nemotron-3.5-lightning:free",
+    "liquid/lfm-2.5-2.6b:free",
   ]
 
   def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
@@ -108,7 +109,7 @@ class OpenRouterClient:
       start = time.time()
       try:
         payload["model"] = current_model
-        with httpx.Client(timeout=18.0) as client:
+        with httpx.Client(timeout=12.0) as client:
           response = client.post(self.BASE_URL, headers=headers, json=payload)
           latency = time.time() - start
           logger.info(
@@ -147,15 +148,16 @@ class OpenRouterClient:
                 continue
             return self._error_response("model_not_found", f"Model not found: {current_model}", response_format)
 
-          if response.status_code in (429, 500, 502, 503):
+          if response.status_code in (429, 500, 502, 503, 504):
             last_status_code = response.status_code
             last_response_text = response.text or ""
-            if response.status_code == 429 and allow_fallback:
+            if allow_fallback:
               free_model = self._pick_next_free_model(current_model, tried_models)
               if free_model:
                 logger.warning(
-                  "Model %s is rate-limited. Retrying with free model %s.",
+                  "Model %s returned HTTP %d. Retrying immediately with free model %s.",
                   current_model,
+                  response.status_code,
                   free_model,
                 )
                 current_model = free_model
@@ -221,8 +223,20 @@ class OpenRouterClient:
 
       except Exception as e:
         last_error = e
+        logger.warning("OpenRouter error on %s (attempt %d): %s", current_model, attempt + 1, e)
+        if allow_fallback:
+          free_model = self._pick_next_free_model(current_model, tried_models)
+          if free_model:
+            logger.warning(
+              "OpenRouter request stalled or failed on %s (%s). Retrying immediately with fallback model %s.",
+              current_model,
+              type(e).__name__,
+              free_model,
+            )
+            current_model = free_model
+            tried_models.add(current_model)
+            continue
         wait = 2 ** attempt
-        logger.error("OpenRouter error (attempt %d): %s", attempt + 1, e)
         if attempt < max_retries - 1:
           time.sleep(wait)
 
@@ -371,7 +385,7 @@ class OpenRouterClient:
     for attempt in range(max_retries):
       payload["model"] = current_model
       try:
-        with httpx.Client(timeout=18.0) as client:
+        with httpx.Client(timeout=12.0) as client:
           response = client.post(self.BASE_URL, headers=headers, json=payload)
           if response.status_code == 401:
             return {"error": "invalid_api_key", "error_detail": "Key rejected by OpenRouter"}
@@ -389,14 +403,14 @@ class OpenRouterClient:
               tried_models.add(current_model)
               continue
             return {"error": "model_not_found", "error_detail": f"Model not found: {current_model}"}
-          if response.status_code in (429, 500, 502, 503):
+          if response.status_code in (429, 500, 502, 503, 504):
             last_status_code = response.status_code
-            if response.status_code == 429:
-              free_model = self._pick_next_free_model(current_model, tried_models)
-              if free_model:
-                current_model = free_model
-                tried_models.add(current_model)
-                continue
+            free_model = self._pick_next_free_model(current_model, tried_models)
+            if free_model:
+              logger.warning("Tool post status %d on %s. Retrying with free model %s.", response.status_code, current_model, free_model)
+              current_model = free_model
+              tried_models.add(current_model)
+              continue
             time.sleep(2 ** attempt)
             continue
           response.raise_for_status()
@@ -414,6 +428,13 @@ class OpenRouterClient:
           return data
       except Exception as e:
         last_error = e
+        logger.warning("OpenRouter tool post exception on %s: %s", current_model, e)
+        free_model = self._pick_next_free_model(current_model, tried_models)
+        if free_model:
+          logger.warning("Retrying tool post immediately with fallback model %s.", free_model)
+          current_model = free_model
+          tried_models.add(current_model)
+          continue
         if attempt < max_retries - 1:
           time.sleep(2 ** attempt)
 

@@ -14,7 +14,7 @@ def temp_db(monkeypatch):
   """Create a temporary database for each test."""
   import services.memory_service as ms
 
-  ms._COLLECTION = None
+  ms.clear_collection_cache()
 
   with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
     db_path = f.name
@@ -29,7 +29,7 @@ def temp_db(monkeypatch):
 
   run_migrations()
   yield db_path
-  ms._COLLECTION = None
+  ms.clear_collection_cache()
   try:
     os.unlink(db_path)
   except OSError:

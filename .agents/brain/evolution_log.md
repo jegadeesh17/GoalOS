@@ -4,6 +4,17 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-12 — AI Coach Model Upgrade (Gemma 4 31B) & Fast Timeout Auto-Failover
+
+- **Action:** Upgraded the primary coaching LLM from congested `nvidia/nemotron-3-super-120b-a12b:free` to `google/gemma-4-31b-it:free`, delivering rich, emotionally intelligent, articulate mentorship with sub-4s response latency.
+- **Architectural Fix:** 
+  1. Refactored `OpenRouterClient.complete()` and `_post_chat_completion()` to lower timeout from 18s to 12s and immediately auto-failover across healthy live free endpoints (`google/gemma-4-26b-a4b-it:free`, `nex-agi/nex-n2.5-pro:free`, `nex-agi/nex-n2.5-mini:free`, `nvidia/nemotron-3.5-lightning:free`) on timeouts, connection errors, or HTTP 5xx errors rather than retrying the same stalled endpoint for 57+ seconds.
+  2. Added a 45s safety timeout to the frontend Axios client in `frontend/src/api/client.ts` and enhanced loading feedback in `AICoachView.tsx`.
+  3. Fixed `tests/conftest.py` collection cache clearing (`ms.clear_collection_cache()`) and added unit test suite `tests/test_openrouter_failover.py`.
+- **Verification:** 3/3 tests passed in `tests/test_openrouter_failover.py` verifying failover on timeout and 502 errors; 6/6 tests passed in `tests/test_agent_coordinator_and_telemetry.py`.
+
+---
+
 ## 2026-09-11 — September 1-11 Journal Transcription, Ingestion & Cognitive Memory Indexing
 
 - **Action:** Transcribed handwritten journal entries from 11 photos in `data/Journal/September 2026/` into structured JSON (`data/Journal/september_2026_batch.json`). Appended all 11 days to `data/Journal/journal_data.csv`. Synchronized records into SQLite `daily_logs` via `scripts/import_journal_csv.py`. Extracted and dual-wrote 35 memories into SQLite `memories`, FTS5 `memory_fts`, and ChromaDB vector index via `scripts/extract_september_memories.py`.

@@ -468,7 +468,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'morning
               <div>
                 <h3 className="text-base font-bold text-slate-900">Synthesizing Coaching Guidance</h3>
                 <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto font-normal">
-                  Querying memory vector store, active goals, and multi-day patterns...
+                  Grounded in your goals, journals, and multi-day patterns (auto-routing across high-speed endpoints)...
                 </p>
               </div>
             </div>

@@ -57,6 +57,13 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 - **Solution:** Before assuming a prompt/grounding problem, check what the UI actually reads off the pipeline response versus what the pipeline actually returns — a field-name mismatch between backend and frontend is indistinguishable from bad AI output to the end user. Render each pipeline's real fields explicitly (`renderStructuredBody` in `AICoachView.tsx`) and only show the generic fallback when a result truly has none of the expected fields.
 - **Related:** This surfaced alongside a second bug — the chat's `remote_ai_consent` was never sent from `AICoachView`, so the backend's `True` default silently overrode a user who had switched remote AI off in Settings. Any boolean consent/privacy flag needs its storage-to-call-site path traced explicitly; a safe-looking backend default can defeat a toggle at just one missed call site.
 
+### 3.5 AI Coach Freeze & Timeout Auto-Failover
+- **Observation:** When using congested 120B parameter models (such as `nvidia/nemotron-3-super-120b-a12b:free`) on OpenRouter, endpoints frequently queued or hung past 18 seconds. `OpenRouterClient` retried the exact same stalled model 3 times (57s total delay) and never failed over on timeouts or network exceptions. Furthermore, `frontend/src/api/client.ts` Axios instance had no timeout (`timeout: 0`), resulting in indefinite UI hangs on the AI Coach tab.
+- **Solution:** 
+  1. Updated primary default model to `google/gemma-4-31b-it:free` (rich, articulate, high-EQ mentor persona with sub-4s response times).
+  2. Implemented immediate model rotation in `OpenRouterClient` on any `httpx.TimeoutException`, network error, or HTTP 5xx response, rotating through healthy candidate fallbacks (`google/gemma-4-26b-a4b-it:free`, `nex-agi/nex-n2.5-pro:free`, `nex-agi/nex-n2.5-mini:free`, `nvidia/nemotron-3.5-lightning:free`).
+  3. Added a 45s safety timeout to the frontend Axios instance and updated loading state feedback in `AICoachView.tsx`.
+
 ---
 
 ## 4. 🎨 Frontend & Design System Learnings

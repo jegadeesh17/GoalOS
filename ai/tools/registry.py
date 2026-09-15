@@ -80,6 +80,9 @@ class ToolRegistry:
       schemas.extend(tk.get_definitions())
     return schemas
 
+  def can_handle(self, name: str) -> bool:
+    return any(tk.can_handle(name) for tk in self._toolkits.values())
+
   def execute(self, name: str, args: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
     for tk in self._toolkits.values():
       if tk.can_handle(name):

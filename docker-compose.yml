@@ -1,8 +1,22 @@
 version: '3.8'
 
 services:
-  goalos:
+  api:
     build: .
+    container_name: goalos-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./goalos.db:/app/goalos.db
+      - ./chroma_db:/app/chroma_db
+    env_file:
+      - .env
+    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    restart: unless-stopped
+
+  ui:
+    build: .
+    container_name: goalos-ui
     ports:
       - "8501:8501"
     volumes:
@@ -10,5 +24,7 @@ services:
       - ./chroma_db:/app/chroma_db
     env_file:
       - .env
-    environment:
-      - STREAMLIT_SERVER_PORT=8501
+    command: ["streamlit", "run", "app/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    depends_on:
+      - api
+    restart: unless-stopped

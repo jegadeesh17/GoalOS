@@ -1,45 +1,5 @@
-"""Application configuration loaded from environment."""
+"""Backward-compatible re-export of central settings from configs.settings."""
 
-import os
-from pathlib import Path
+from configs.settings import _BASE_DIR, Settings, get_settings, settings
 
-from dotenv import load_dotenv
-
-_BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(_BASE_DIR / ".env")
-
-
-def _get_setting(name: str, default: str = "") -> str:
-  """Read from env first, then Streamlit secrets when available."""
-  value = os.getenv(name)
-  if value:
-    return value
-  secrets_paths = [
-    Path.home() / ".streamlit" / "secrets.toml",
-    _BASE_DIR / ".streamlit" / "secrets.toml",
-  ]
-  if any(p.exists() for p in secrets_paths):
-    try:
-      import streamlit as st
-      secret_value = st.secrets.get(name)
-      if secret_value is not None:
-        return str(secret_value)
-    except Exception:
-      pass
-  return default
-
-
-class Settings:
-  """Central configuration for GoalOS."""
-
-  OPENROUTER_API_KEY: str = _get_setting("OPENROUTER_API_KEY", "")
-  OPENROUTER_MODEL: str = _get_setting("OPENROUTER_MODEL", "anthropic/claude-sonnet-4")
-  DB_PATH: str = _get_setting("DB_PATH", str(_BASE_DIR / "goalos.db"))
-  CHROMA_PATH: str = _get_setting("CHROMA_PATH", str(_BASE_DIR / "chroma_db"))
-  LOG_LEVEL: str = _get_setting("LOG_LEVEL", "INFO")
-  LOG_FILE: str = str(_BASE_DIR / "goalos.log")
-  GOALOS_API_TOKEN: str = _get_setting("GOALOS_API_TOKEN", "")
-  ENVIRONMENT: str = _get_setting("ENVIRONMENT", "development")
-
-
-settings = Settings()
+__all__ = ["_BASE_DIR", "Settings", "get_settings", "settings"]

@@ -46,8 +46,13 @@ COPY --chown=appuser:appgroup services/ services/
 COPY --chown=appuser:appgroup scripts/ scripts/
 COPY --chown=appuser:appgroup utils.py utils.py
 COPY --chown=appuser:appgroup data/demo_seed.csv data/demo_seed.csv
+COPY --chown=appuser:appgroup data/demo_goalos.db /app/goalos.db
+COPY --chown=appuser:appgroup data/demo_goalos.db /app/data/demo_goalos.db
+COPY --chown=appuser:appgroup data/demo_chroma_db/ /app/chroma_db/
+COPY --chown=appuser:appgroup data/demo_chroma_db/ /app/data/demo_chroma_db/
 
-RUN mkdir -p /app/chroma_db && chown -R appuser:appgroup /app
+RUN chown -R appuser:appgroup /app
+
 
 USER appuser
 

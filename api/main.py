@@ -157,9 +157,9 @@ def startup() -> None:
     raise RuntimeError("GOALOS_API_TOKEN is required when ENVIRONMENT=production")
   run_migrations()
   try:
-    if LogRepository().count() == 0:
-      from scripts.import_journal_csv import run_import
-      run_import()
+    if settings.ENVIRONMENT.lower() == "demo" or LogRepository().count() == 0:
+      from services.demo_seeder import seed_demo_environment
+      seed_demo_environment()
   except Exception as e:
     logger.warning("Auto-seed demo data on startup skipped: %s", e)
 

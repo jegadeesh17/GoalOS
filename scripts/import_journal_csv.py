@@ -87,15 +87,28 @@ def parse_tasks_from_text(tasks_text: str):
     return json.dumps(task_objs), tasks_text.strip(), rate, top_priority_text
 
 
-def run_import(csv_path: str = "data/Journal/journal_data.csv", db_path: str = "goalos.db") -> int:
+def run_import(csv_path: str | None = None, db_path: str | None = None) -> int:
     """Read CSV and sync cleanly into SQLite daily_logs table."""
-    resolved_csv = Path(csv_path)
-    if not resolved_csv.is_absolute():
-        resolved_csv = ROOT_DIR / csv_path
+    from config.settings import settings
 
-    resolved_db = Path(db_path)
-    if not resolved_db.is_absolute():
-        resolved_db = ROOT_DIR / db_path
+    if db_path is None:
+        resolved_db = Path(settings.DB_PATH)
+    else:
+        resolved_db = Path(db_path)
+        if not resolved_db.is_absolute():
+            resolved_db = ROOT_DIR / db_path
+
+    if csv_path is None:
+        if settings.ENVIRONMENT.lower() == "demo":
+            resolved_csv = ROOT_DIR / "data" / "demo_seed.csv"
+        else:
+            resolved_csv = ROOT_DIR / "data" / "Journal" / "journal_data.csv"
+            if not resolved_csv.exists():
+                resolved_csv = ROOT_DIR / "data" / "demo_seed.csv"
+    else:
+        resolved_csv = Path(csv_path)
+        if not resolved_csv.is_absolute():
+            resolved_csv = ROOT_DIR / csv_path
 
     if not resolved_csv.exists():
         fallback_csv = ROOT_DIR / "data" / "demo_seed.csv"

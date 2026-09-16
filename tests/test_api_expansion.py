@@ -30,6 +30,17 @@ def test_calendar_summary(client):
   assert data["total_weeks"] > 0
 
 
+def test_api_calendar_summary(client):
+  response = client.get("/api/calendar/summary")
+  assert response.status_code == 200
+  data = response.json()
+  assert "total_weeks" in data
+  assert "weeks_lived" in data
+  assert "weeks_remaining" in data
+  assert "percentage_lived" in data
+  assert data["total_weeks"] > 0
+
+
 def test_calendar_grid(client):
   response = client.get("/calendar/grid")
   assert response.status_code == 200

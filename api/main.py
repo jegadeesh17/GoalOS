@@ -10,7 +10,7 @@ import sys
 from datetime import date, timedelta
 from typing import Any, Optional
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -69,6 +69,8 @@ app.add_middleware(
   allow_methods=["*"],
   allow_headers=["*"],
 )
+
+api_router = APIRouter()
 
 
 # ---------------------------------------------------------------------------
@@ -168,14 +170,13 @@ def startup() -> None:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/health")
-@app.get("/api/health")
+@api_router.get("/health")
 def health() -> dict:
   return {"status": "ok"}
 
 
 
-@app.get("/health/details", dependencies=[Depends(require_api_token)])
+@api_router.get("/health/details", dependencies=[Depends(require_api_token)])
 def health_details() -> dict:
   return {
     "status": "ok",
@@ -204,13 +205,13 @@ def _get_user_calendar_service() -> LifeCalendarService:
   return LifeCalendarService(birth_date=birth_str, target_age=int(target_age))
 
 
-@app.get("/calendar/summary", dependencies=[Depends(require_api_token)])
+@api_router.get("/calendar/summary", dependencies=[Depends(require_api_token)])
 def calendar_summary(reference_date: Optional[date] = None) -> dict:
   service = _get_user_calendar_service()
   return service.get_summary(reference_date=reference_date)
 
 
-@app.get("/calendar/grid", dependencies=[Depends(require_api_token)])
+@api_router.get("/calendar/grid", dependencies=[Depends(require_api_token)])
 def calendar_grid(reference_date: Optional[date] = None) -> list:
   service = _get_user_calendar_service()
   return service.get_grid_data(reference_date=reference_date)
@@ -221,7 +222,7 @@ def calendar_grid(reference_date: Optional[date] = None) -> list:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/journal/today", dependencies=[Depends(require_api_token)])
+@api_router.get("/journal/today", dependencies=[Depends(require_api_token)])
 def journal_today() -> dict:
   today = date.today()
   repo = LogRepository()
@@ -231,7 +232,7 @@ def journal_today() -> dict:
   return log.model_dump(mode="json")
 
 
-@app.get("/journal/date/{target_date}", dependencies=[Depends(require_api_token)])
+@api_router.get("/journal/date/{target_date}", dependencies=[Depends(require_api_token)])
 def journal_get_by_date(target_date: date) -> dict:
   repo = LogRepository()
   log = repo.get_by_date(target_date)
@@ -240,7 +241,7 @@ def journal_get_by_date(target_date: date) -> dict:
   return log.model_dump(mode="json")
 
 
-@app.post("/journal/upsert", dependencies=[Depends(require_api_token)])
+@api_router.post("/journal/upsert", dependencies=[Depends(require_api_token)])
 def journal_upsert(payload: dict) -> dict:
   target_date_str = payload.get("date")
   if not target_date_str:
@@ -266,7 +267,7 @@ def journal_upsert(payload: dict) -> dict:
   return log.model_dump(mode="json")
 
 
-@app.get("/journal/history", dependencies=[Depends(require_api_token)])
+@api_router.get("/journal/history", dependencies=[Depends(require_api_token)])
 def journal_history(limit: int = Query(default=30, ge=1, le=365)) -> list[dict]:
   logs = LogRepository().get_recent(last_n=limit)
   return [log.model_dump(mode="json") for log in logs]
@@ -277,7 +278,7 @@ def journal_history(limit: int = Query(default=30, ge=1, le=365)) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/goals", dependencies=[Depends(require_api_token)])
+@api_router.get("/goals", dependencies=[Depends(require_api_token)])
 def get_goals(
   status: Optional[str] = None,
   category: Optional[str] = None,
@@ -293,7 +294,7 @@ def get_goals(
   return result
 
 
-@app.get("/goals/horizons", dependencies=[Depends(require_api_token)])
+@api_router.get("/goals/horizons", dependencies=[Depends(require_api_token)])
 def get_goals_horizons() -> dict[str, list[dict]]:
   categorized = GoalRepository().get_by_horizons()
   milestone_repo = MilestoneRepository()
@@ -308,7 +309,7 @@ def get_goals_horizons() -> dict[str, list[dict]]:
   return output
 
 
-@app.get("/goals/{goal_id}", dependencies=[Depends(require_api_token)])
+@api_router.get("/goals/{goal_id}", dependencies=[Depends(require_api_token)])
 def get_goal(goal_id: int) -> dict:
   goal = GoalRepository().get_by_id(goal_id)
   if not goal:
@@ -318,13 +319,13 @@ def get_goal(goal_id: int) -> dict:
   return g_dict
 
 
-@app.post("/goals", dependencies=[Depends(require_api_token)])
+@api_router.post("/goals", dependencies=[Depends(require_api_token)])
 def create_goal(goal_in: GoalCreate) -> dict:
   created = GoalRepository().create(goal_in)
   return created.model_dump(mode="json")
 
 
-@app.put("/goals/{goal_id}", dependencies=[Depends(require_api_token)])
+@api_router.put("/goals/{goal_id}", dependencies=[Depends(require_api_token)])
 def update_goal(goal_id: int, goal_in: GoalUpdate) -> dict:
   updated = GoalRepository().update(goal_id, goal_in)
   if not updated:
@@ -332,7 +333,7 @@ def update_goal(goal_id: int, goal_in: GoalUpdate) -> dict:
   return updated.model_dump(mode="json")
 
 
-@app.delete("/goals/{goal_id}", dependencies=[Depends(require_api_token)])
+@api_router.delete("/goals/{goal_id}", dependencies=[Depends(require_api_token)])
 def delete_goal(goal_id: int) -> dict:
   success = GoalRepository().delete(goal_id)
   if not success:
@@ -340,7 +341,7 @@ def delete_goal(goal_id: int) -> dict:
   return {"success": True}
 
 
-@app.post("/goals/{goal_id}/milestones", dependencies=[Depends(require_api_token)])
+@api_router.post("/goals/{goal_id}/milestones", dependencies=[Depends(require_api_token)])
 def create_milestone(goal_id: int, milestone_in: MilestoneCreate) -> dict:
   if milestone_in.goal_id != goal_id:
     milestone_in.goal_id = goal_id
@@ -351,8 +352,8 @@ def create_milestone(goal_id: int, milestone_in: MilestoneCreate) -> dict:
     raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.put("/milestones/{milestone_id}", dependencies=[Depends(require_api_token)])
-@app.patch("/milestones/{milestone_id}", dependencies=[Depends(require_api_token)])
+@api_router.put("/milestones/{milestone_id}", dependencies=[Depends(require_api_token)])
+@api_router.patch("/milestones/{milestone_id}", dependencies=[Depends(require_api_token)])
 def update_milestone(milestone_id: int, milestone_in: MilestoneUpdate) -> dict:
   updated = MilestoneRepository().update(milestone_id, milestone_in)
   if not updated:
@@ -360,7 +361,7 @@ def update_milestone(milestone_id: int, milestone_in: MilestoneUpdate) -> dict:
   return updated.model_dump(mode="json")
 
 
-@app.delete("/milestones/{milestone_id}", dependencies=[Depends(require_api_token)])
+@api_router.delete("/milestones/{milestone_id}", dependencies=[Depends(require_api_token)])
 def delete_milestone(milestone_id: int) -> dict:
   success = MilestoneRepository().delete(milestone_id)
   if not success:
@@ -373,7 +374,7 @@ def delete_milestone(milestone_id: int) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@app.post("/coach/morning", dependencies=[Depends(require_api_token)])
+@api_router.post("/coach/morning", dependencies=[Depends(require_api_token)])
 def coach_morning(req: MorningCoachRequest) -> dict:
   target_date = req.target_date or date.today()
   try:
@@ -400,7 +401,7 @@ def coach_morning(req: MorningCoachRequest) -> dict:
     raise HTTPException(status_code=500, detail="Unable to generate coaching right now") from None
 
 
-@app.post("/coach/evening", dependencies=[Depends(require_api_token)])
+@api_router.post("/coach/evening", dependencies=[Depends(require_api_token)])
 def coach_evening(req: EveningCoachRequest) -> dict:
   target_date = req.target_date or date.today()
   try:
@@ -424,7 +425,7 @@ def coach_evening(req: EveningCoachRequest) -> dict:
     raise HTTPException(status_code=500, detail="Unable to generate evening coaching right now") from None
 
 
-@app.post("/coach/weekly", dependencies=[Depends(require_api_token)])
+@api_router.post("/coach/weekly", dependencies=[Depends(require_api_token)])
 def coach_weekly(payload: dict) -> dict:
   week_date_str = payload.get("week_start_date")
   week_start = date.fromisoformat(week_date_str) if week_date_str else date.today()
@@ -435,7 +436,7 @@ def coach_weekly(payload: dict) -> dict:
     raise HTTPException(status_code=500, detail="Unable to generate weekly review coaching") from None
 
 
-@app.post("/coach/future-self", dependencies=[Depends(require_api_token)])
+@api_router.post("/coach/future-self", dependencies=[Depends(require_api_token)])
 def coach_future_self(payload: dict) -> dict:
   target_date_str = payload.get("date")
   target_date = date.fromisoformat(target_date_str) if target_date_str else date.today()
@@ -446,7 +447,7 @@ def coach_future_self(payload: dict) -> dict:
     raise HTTPException(status_code=500, detail="Unable to generate future self coaching") from None
 
 
-@app.post("/coach/goal-alignment", dependencies=[Depends(require_api_token)])
+@api_router.post("/coach/goal-alignment", dependencies=[Depends(require_api_token)])
 def coach_goal_alignment(payload: dict) -> dict:
   goal_id = payload.get("goal_id")
   if not goal_id:
@@ -466,7 +467,7 @@ def coach_goal_alignment(payload: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@app.post("/coach/chat", dependencies=[Depends(require_api_token)], response_model=CoachChatResponse)
+@api_router.post("/coach/chat", dependencies=[Depends(require_api_token)], response_model=CoachChatResponse)
 def coach_chat(req: CoachChatRequest) -> CoachChatResponse:
   """Conversational coordinator agent with multi-agent triage and scoped tools."""
   try:
@@ -477,13 +478,13 @@ def coach_chat(req: CoachChatRequest) -> CoachChatResponse:
     raise HTTPException(status_code=500, detail="Coordinator coaching failed") from None
 
 
-@app.get("/coach/sessions", dependencies=[Depends(require_api_token)], response_model=list[CoachSessionRead])
+@api_router.get("/coach/sessions", dependencies=[Depends(require_api_token)], response_model=list[CoachSessionRead])
 def list_coach_sessions(limit: int = Query(default=30, ge=1, le=100)) -> list[CoachSessionRead]:
   """List recent persistent coaching sessions."""
   return CoachSessionRepository().list_sessions(limit=limit)
 
 
-@app.post("/coach/sessions", dependencies=[Depends(require_api_token)], response_model=CoachSessionRead)
+@api_router.post("/coach/sessions", dependencies=[Depends(require_api_token)], response_model=CoachSessionRead)
 def create_coach_session(req: CoachSessionCreate) -> CoachSessionRead:
   """Create a new conversational coaching session with optional blackboard state."""
   return CoachSessionRepository().create_session(
@@ -494,7 +495,7 @@ def create_coach_session(req: CoachSessionCreate) -> CoachSessionRead:
   )
 
 
-@app.get("/coach/sessions/{session_id}", dependencies=[Depends(require_api_token)], response_model=CoachSessionRead)
+@api_router.get("/coach/sessions/{session_id}", dependencies=[Depends(require_api_token)], response_model=CoachSessionRead)
 def get_coach_session(session_id: str) -> CoachSessionRead:
   """Get full session conversation history and blackboard state."""
   session = CoachSessionRepository().get_session(session_id)
@@ -503,7 +504,7 @@ def get_coach_session(session_id: str) -> CoachSessionRead:
   return session
 
 
-@app.delete("/coach/sessions/{session_id}", dependencies=[Depends(require_api_token)])
+@api_router.delete("/coach/sessions/{session_id}", dependencies=[Depends(require_api_token)])
 def delete_coach_session(session_id: str) -> dict:
   """Delete a coaching session and its message history."""
   deleted = CoachSessionRepository().delete_session(session_id)
@@ -517,13 +518,13 @@ def delete_coach_session(session_id: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/coach/telemetry/summary", dependencies=[Depends(require_api_token)], response_model=TelemetrySummaryResponse)
+@api_router.get("/coach/telemetry/summary", dependencies=[Depends(require_api_token)], response_model=TelemetrySummaryResponse)
 def get_telemetry_summary(days: int = Query(default=30, ge=1, le=365)) -> TelemetrySummaryResponse:
   """Get aggregated AI token consumption, latency, and estimated USD spend."""
   return ObservabilityService().get_summary(days=days)
 
 
-@app.get("/coach/telemetry/traces", dependencies=[Depends(require_api_token)], response_model=list[TelemetrySpan])
+@api_router.get("/coach/telemetry/traces", dependencies=[Depends(require_api_token)], response_model=list[TelemetrySpan])
 def get_telemetry_traces(limit: int = Query(default=25, ge=1, le=100)) -> list[TelemetrySpan]:
   """Get recent AI execution spans and latency metrics."""
   return ObservabilityService().get_recent_traces(limit=limit)
@@ -534,7 +535,7 @@ def get_telemetry_traces(limit: int = Query(default=25, ge=1, le=100)) -> list[T
 # ---------------------------------------------------------------------------
 
 
-@app.get("/memories/search", dependencies=[Depends(require_api_token)])
+@api_router.get("/memories/search", dependencies=[Depends(require_api_token)])
 def memories_search(q: str = Query(min_length=1), limit: int = Query(default=10, ge=1, le=50)) -> list[dict]:
   try:
     results = MemoryService().hybrid_search(q, top_k=limit)
@@ -544,7 +545,7 @@ def memories_search(q: str = Query(min_length=1), limit: int = Query(default=10,
     return []
 
 
-@app.get("/memories", dependencies=[Depends(require_api_token)])
+@api_router.get("/memories", dependencies=[Depends(require_api_token)])
 def memories_list(
   limit: int = Query(default=50, ge=1, le=200),
   memory_type: Optional[str] = None,
@@ -553,7 +554,7 @@ def memories_list(
   return [m.model_dump(mode="json") for m in memories]
 
 
-@app.post("/memories", dependencies=[Depends(require_api_token)])
+@api_router.post("/memories", dependencies=[Depends(require_api_token)])
 def memories_create(req: MemoryStoreRequest) -> dict:
   mem = MemoryService().store(
     text=req.text,
@@ -566,7 +567,7 @@ def memories_create(req: MemoryStoreRequest) -> dict:
   return mem.model_dump(mode="json")
 
 
-@app.delete("/memories/{memory_id}", dependencies=[Depends(require_api_token)])
+@api_router.delete("/memories/{memory_id}", dependencies=[Depends(require_api_token)])
 def memories_delete(memory_id: int) -> dict:
   success = MemoryRepository().delete(memory_id)
   if not success:
@@ -579,7 +580,7 @@ def memories_delete(memory_id: int) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/analytics/dashboard", dependencies=[Depends(require_api_token)])
+@api_router.get("/analytics/dashboard", dependencies=[Depends(require_api_token)])
 def analytics_dashboard() -> dict:
   log_repo = LogRepository()
   score_repo = ScoreRepository()
@@ -634,7 +635,7 @@ def analytics_dashboard() -> dict:
   }
 
 
-@app.get("/analytics/scores", dependencies=[Depends(require_api_token)])
+@api_router.get("/analytics/scores", dependencies=[Depends(require_api_token)])
 def analytics_scores(limit: int = Query(default=30, ge=1, le=180)) -> list[dict]:
   scores = ScoreRepository().get_recent(last_n=limit)
   return [s.model_dump(mode="json") for s in scores]
@@ -645,7 +646,7 @@ def analytics_scores(limit: int = Query(default=30, ge=1, le=180)) -> list[dict]
 # ---------------------------------------------------------------------------
 
 
-@app.get("/settings", dependencies=[Depends(require_api_token)])
+@api_router.get("/settings", dependencies=[Depends(require_api_token)])
 def get_user_settings() -> dict:
   with get_db() as conn:
     row = conn.execute("SELECT * FROM user WHERE id = 1").fetchone()
@@ -657,7 +658,7 @@ def get_user_settings() -> dict:
   return user_dict
 
 
-@app.post("/settings", dependencies=[Depends(require_api_token)])
+@api_router.post("/settings", dependencies=[Depends(require_api_token)])
 def update_user_settings(req: UserSettingsUpdate) -> dict:
   settings_service = SettingsService()
   if req.remote_ai_consent is not None:
@@ -693,18 +694,25 @@ def update_user_settings(req: UserSettingsUpdate) -> dict:
   return get_user_settings()
 
 
-@app.get("/export", dependencies=[Depends(require_api_token)])
+@api_router.get("/export", dependencies=[Depends(require_api_token)])
 def export_data() -> JSONResponse:
   return JSONResponse(content=DataPortabilityService().export_payload())
 
 
-@app.post("/export/reset", dependencies=[Depends(require_api_token)])
+@api_router.post("/export/reset", dependencies=[Depends(require_api_token)])
 def factory_reset(payload: dict) -> dict:
   confirmation = payload.get("confirmation", "")
   if confirmation != "RESET":
     raise HTTPException(status_code=400, detail="Confirmation phrase 'RESET' is required")
   backup_path = DataPortabilityService().safe_factory_reset()
   return {"success": True, "backup_created": str(backup_path)}
+
+
+# ---------------------------------------------------------------------------
+# Mount API Router (Canonical /api and Root Compatibility)
+# ---------------------------------------------------------------------------
+app.include_router(api_router, prefix="/api")
+app.include_router(api_router, include_in_schema=False)
 
 
 # ---------------------------------------------------------------------------

@@ -32,8 +32,15 @@ This document outlines the current project status, active features, technical he
 - [x] Fix `AICoachView` rendering only a hardcoded directive (`mentor_rule`/`rule`/`core_insight`/`coaching`) for every pipeline — now renders each pipeline's real fields (future-self `message`, goal-alignment `alignment_narrative`/`aligned_goals`/`neglected_goals`) and only falls back when a pipeline truly returns nothing.
 - [x] Ingest the remaining August 2026 journal days (16–31) so coaching pipelines are grounded on the full month, not just the first half.
 
-### Sprint 3: Extended AI Coach Observability (Upcoming)
-- [ ] Implement live latency tracking for OpenRouter tool-calling rounds (telemetry tables exist; dashboard surface is not yet built).
+### Sprint 3: Route Prefix Normalization & Cloud Run Alignment (Completed Sept 16, 2026)
+- [x] Debug live Cloud Run instance (`https://goalos-api-242711953247.asia-south1.run.app/app`) 404 API loading errors.
+- [x] Transition FastAPI surface in `api/main.py` to `api_router` with dual mounting (`prefix="/api"` canonical and `prefix=""` legacy alias).
+- [x] Remove path rewrite in `frontend/vite.config.ts` so development and production environments behave identically.
+- [x] Add dual-route test assertions in `tests/test_api.py` and `tests/test_api_expansion.py` (100% tests passing).
+- [x] Compile master `implementation_plan.md` documenting current state, ADR-006, and future roadmap.
+
+### Sprint 4: Extended AI Coach Observability & Telemetry Surface (Upcoming)
+- [ ] Implement live latency and cost dashboard in React frontend consuming `/api/coach/telemetry/summary` and `/api/coach/telemetry/traces`.
 - [ ] Add interactive prompt playground in Settings for custom coaching persona prompts.
 - [ ] Extend Weekly Sync pipeline with automated visual PDF report generation.
 

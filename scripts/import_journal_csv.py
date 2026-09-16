@@ -98,8 +98,12 @@ def run_import(csv_path: str = "data/Journal/journal_data.csv", db_path: str = "
         resolved_db = ROOT_DIR / db_path
 
     if not resolved_csv.exists():
-        print(f"Error: CSV file not found at {resolved_csv}")
-        return 0
+        fallback_csv = ROOT_DIR / "data" / "demo_seed.csv"
+        if fallback_csv.exists():
+            resolved_csv = fallback_csv
+        else:
+            print(f"Error: CSV file not found at {resolved_csv}")
+            return 0
 
     conn = sqlite3.connect(str(resolved_db))
     conn.row_factory = sqlite3.Row

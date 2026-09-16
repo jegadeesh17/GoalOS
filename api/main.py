@@ -699,3 +699,32 @@ def factory_reset(payload: dict) -> dict:
     raise HTTPException(status_code=400, detail="Confirmation phrase 'RESET' is required")
   backup_path = DataPortabilityService().safe_factory_reset()
   return {"success": True, "backup_created": str(backup_path)}
+
+
+# ---------------------------------------------------------------------------
+# Frontend Static Mount (/app) & Root Redirect
+# ---------------------------------------------------------------------------
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, RedirectResponse
+
+FRONTEND_DIST = os.path.join(ROOT, "frontend", "dist")
+if os.path.exists(FRONTEND_DIST):
+  assets_dir = os.path.join(FRONTEND_DIST, "assets")
+  if os.path.exists(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+  @app.get("/app", include_in_schema=False)
+  @app.get("/app/{full_path:path}", include_in_schema=False)
+  def serve_frontend(full_path: str = ""):
+    index_file = os.path.join(FRONTEND_DIST, "index.html")
+    if os.path.exists(index_file):
+      return FileResponse(index_file)
+    raise HTTPException(status_code=404, detail="UI not found")
+
+
+@app.get("/", include_in_schema=False)
+def root_redirect():
+  if os.path.exists(os.path.join(ROOT, "frontend", "dist", "index.html")):
+    return RedirectResponse(url="/app")
+  return RedirectResponse(url="/docs")
+

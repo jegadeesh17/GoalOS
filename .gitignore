@@ -43,6 +43,10 @@ api/routes/
 static/
 web/
 
+# Tool caches
+.mypy_cache/
+.ruff_cache/
+
 # DVC and Model artifacts
 .dvc/
 *.pth

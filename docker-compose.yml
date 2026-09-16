@@ -11,9 +11,16 @@ services:
       - ./chroma_db:/app/chroma_db
     env_file:
       - .env
-    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      - PORT=8000
     restart: unless-stopped
 
+  # NOTE: this service builds from the same image as `api`, which bakes in a
+  # HEALTHCHECK that curls /health -- a route this Streamlit app (port 8501)
+  # doesn't serve. `docker ps` will likely show this container as
+  # "unhealthy"; that's expected and harmless for local dev, not a real
+  # problem, and doesn't affect the Cloud Run deployment (which doesn't use
+  # docker-compose or this healthcheck).
   ui:
     build: .
     container_name: goalos-ui

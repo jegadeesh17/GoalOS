@@ -31,14 +31,11 @@ class OpenRouterClient:
 
   def refresh_config(self) -> None:
     """Reload API key and model from .env (after Settings save)."""
-    import os
+    from config.settings import reload_settings
 
-    from dotenv import load_dotenv
-
-    from config.settings import _BASE_DIR
-    load_dotenv(_BASE_DIR / ".env", override=True)
-    self.api_key = os.getenv("OPENROUTER_API_KEY", "") or ""
-    self.model = os.getenv("OPENROUTER_MODEL", self.model) or self.model
+    fresh = reload_settings()
+    self.api_key = fresh.OPENROUTER_API_KEY or ""
+    self.model = fresh.OPENROUTER_MODEL or self.model
 
   def test_connection(self, allow_fallback: bool = False) -> dict:
     """Quick ping to verify OpenRouter key + model work."""

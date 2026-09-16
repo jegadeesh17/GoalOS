@@ -8,7 +8,6 @@ respecting free-tier rate limits.
 import argparse
 import json
 import logging
-import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -294,7 +293,7 @@ def main():
   parser.add_argument("--apply-best", action="store_true", help="Automatically set winning model in settings/.env")
   args = parser.parse_args()
 
-  api_key = settings.OPENROUTER_API_KEY or os.getenv("OPENROUTER_API_KEY", "")
+  api_key = settings.OPENROUTER_API_KEY
   if not api_key:
     logger.error("❌ No OPENROUTER_API_KEY found in .env or settings. Please provide an OpenRouter API key.")
     sys.exit(1)

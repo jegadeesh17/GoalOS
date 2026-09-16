@@ -53,26 +53,15 @@ def goal_alignment_score(
   tasks_text = " ".join(tasks)
   goals_text = " ".join(f"{g.title} {g.description or ''} {g.reason or ''}" for g in goals)
   
-  if embedding_fn is None:
-    try:
-      from services.embedding_service import EmbeddingService
-      embedder = EmbeddingService()
-      embedding_fn = embedder.similarity
-    except Exception:
-      embedding_fn = None
-
+  kw_sim = _text_similarity(tasks_text, goals_text)
   if embedding_fn:
     try:
       similarity = embedding_fn(tasks_text, goals_text)
+      combined_sim = max(similarity, kw_sim * 1.2)
+      return min(max(combined_sim * 100, 0.0), 100.0)
     except Exception:
-      similarity = _text_similarity(tasks_text, goals_text)
-  else:
-    similarity = _text_similarity(tasks_text, goals_text)
-  
-  # Boost with keyword overlap so both semantic & exact keyword hits count
-  kw_sim = _text_similarity(tasks_text, goals_text)
-  combined_sim = max(similarity, kw_sim * 1.2)
-  return min(max(combined_sim * 100, 0.0), 100.0)
+      pass
+  return min(max(kw_sim * 100, 0.0), 100.0)
 
 
 def consistency_score(logs_30d: list[DailyLog]) -> float:

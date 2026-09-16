@@ -130,10 +130,30 @@ export interface UserSettings {
   life_vision?: string;
   one_year_vision?: string;
   five_year_vision?: string;
+  custom_coach_prompt?: string | null;
+  preferred_tone?: string | null;
   remote_ai_consent?: boolean;
   openrouter_configured?: boolean;
   environment?: string;
 }
+
+export const COACH_TONE_PRESETS: { value: string; label: string; blurb: string }[] = [
+  {
+    value: 'executive_mentor',
+    label: 'Executive Mentor',
+    blurb: 'Calm, strategic, focused on leverage and sequencing.',
+  },
+  {
+    value: 'socratic_inquirer',
+    label: 'Socratic Inquirer',
+    blurb: 'Leads with diagnostic questions before conclusions.',
+  },
+  {
+    value: 'direct_accountability',
+    label: 'Direct Accountability Partner',
+    blurb: 'Blunt about slippage; asks for a concrete commitment.',
+  },
+];
 
 export interface AnalyticsDashboardData {
   total_logs: number;
@@ -179,6 +199,33 @@ export interface CoachChatResponse {
   trace_id: string;
   latency_ms: number;
   fallback_reason?: string | null;
+}
+
+export interface TelemetrySpan {
+  id?: number;
+  trace_id: string;
+  span_name: string;
+  session_id?: string | null;
+  model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  estimated_cost_usd: number;
+  latency_ms: number;
+  status: string;
+  error_message?: string | null;
+  created_at?: string | null;
+}
+
+export interface TelemetrySummary {
+  total_calls: number;
+  total_tokens: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_cost_usd: number;
+  avg_latency_ms: number;
+  p95_latency_ms: number;
+  model_breakdown: Record<string, Record<string, any>>;
 }
 
 export const goalOSApi = {
@@ -309,6 +356,16 @@ export const goalOSApi = {
     return res.data;
   },
 
+  // Observability & Cost Telemetry
+  getTelemetrySummary: async (days = 30): Promise<TelemetrySummary> => {
+    const res = await api.get<TelemetrySummary>(`/coach/telemetry/summary?days=${days}`);
+    return res.data;
+  },
+  getTelemetryTraces: async (limit = 25): Promise<TelemetrySpan[]> => {
+    const res = await api.get<TelemetrySpan[]>(`/coach/telemetry/traces?limit=${limit}`);
+    return res.data;
+  },
+
   // Memories
   searchMemories: async (q: string, limit = 10): Promise<any[]> => {
     const res = await api.get<any[]>(`/memories/search?q=${encodeURIComponent(q)}&limit=${limit}`);
@@ -351,6 +408,20 @@ export const goalOSApi = {
   exportData: async (): Promise<any> => {
     const res = await api.get('/export');
     return res.data;
+  },
+  getWeeklyReportMarkdown: async (weekStartDate?: string): Promise<string> => {
+    const params = new URLSearchParams({ format: 'markdown' });
+    if (weekStartDate) params.append('week_start_date', weekStartDate);
+    const res = await api.get<string>(`/export/weekly-report?${params.toString()}`, {
+      responseType: 'text',
+      transformResponse: [(d) => d],
+    });
+    return res.data;
+  },
+  weeklyReportUrl: (weekStartDate?: string): string => {
+    const params = new URLSearchParams({ format: 'html' });
+    if (weekStartDate) params.append('week_start_date', weekStartDate);
+    return `/api/export/weekly-report?${params.toString()}`;
   },
   factoryReset: async (): Promise<{ success: boolean; backup_created: string }> => {
     const res = await api.post('/export/reset', { confirmation: 'RESET' });

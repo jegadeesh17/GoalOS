@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hmac
-import json
 import logging
 import os
 import sys
@@ -12,37 +11,34 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
   sys.path.insert(0, ROOT)
 
+from ai.pipelines.coordinator import CoordinatorPipeline
 from config.settings import settings
 from database.connection import get_db
 from database.migrations import run_migrations
-from database.repositories.coach_repository import CoachRepository
 from database.repositories.coach_session_repository import CoachSessionRepository
 from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from database.repositories.memory_repository import MemoryRepository
 from database.repositories.milestone_repository import MilestoneRepository
 from database.repositories.score_repository import ScoreRepository
-from database.repositories.telemetry_repository import TelemetryRepository
 from models.coach_session import (
   CoachChatRequest,
   CoachChatResponse,
-  CoachMessageRead,
   CoachSessionCreate,
   CoachSessionRead,
   TelemetrySpan,
   TelemetrySummaryResponse,
 )
 from models.daily_log import DailyLog, DailyLogUpdate
-from models.goal import Goal, GoalCreate, GoalUpdate
-from models.milestone import Milestone, MilestoneCreate, MilestoneUpdate
-from ai.pipelines.coordinator import CoordinatorPipeline
+from models.goal import GoalCreate, GoalUpdate
+from models.milestone import MilestoneCreate, MilestoneUpdate
 from services.coach_service import CoachService
 from services.data_portability_service import DataPortabilityService
 from services.journal_helpers import serialize_journal_fields
@@ -50,6 +46,7 @@ from services.life_calendar_service import LifeCalendarService
 from services.memory_service import MemoryService
 from services.observability_service import ObservabilityService
 from services.pattern_service import PatternService
+from services.report_service import ReportService
 from services.settings_service import SettingsService
 
 logger = logging.getLogger(__name__)
@@ -131,6 +128,8 @@ class UserSettingsUpdate(BaseModel):
   life_vision: Optional[str] = None
   one_year_vision: Optional[str] = None
   five_year_vision: Optional[str] = None
+  custom_coach_prompt: Optional[str] = Field(default=None, max_length=2000)
+  preferred_tone: Optional[str] = None
   remote_ai_consent: Optional[bool] = None
 
 
@@ -664,8 +663,8 @@ def update_user_settings(req: UserSettingsUpdate) -> dict:
   if req.remote_ai_consent is not None:
     settings_service.set_remote_ai_allowed(req.remote_ai_consent)
 
-  updates = []
-  params = []
+  updates: list[str] = []
+  params: list[Any] = []
   if req.name is not None:
     updates.append("name = ?")
     params.append(req.name)
@@ -684,6 +683,12 @@ def update_user_settings(req: UserSettingsUpdate) -> dict:
   if req.five_year_vision is not None:
     updates.append("five_year_vision = ?")
     params.append(req.five_year_vision)
+  if req.custom_coach_prompt is not None:
+    updates.append("custom_coach_prompt = ?")
+    params.append(req.custom_coach_prompt.strip() or None)
+  if req.preferred_tone is not None:
+    updates.append("preferred_tone = ?")
+    params.append(req.preferred_tone.strip() or None)
 
   if updates:
     updates.append("updated_at = CURRENT_TIMESTAMP")
@@ -697,6 +702,39 @@ def update_user_settings(req: UserSettingsUpdate) -> dict:
 @api_router.get("/export", dependencies=[Depends(require_api_token)])
 def export_data() -> JSONResponse:
   return JSONResponse(content=DataPortabilityService().export_payload())
+
+
+@api_router.get("/export/weekly-report", dependencies=[Depends(require_api_token)])
+def export_weekly_report(
+  week_start_date: Optional[str] = Query(default=None),
+  format: str = Query(default="markdown", pattern="^(markdown|html|json)$"),
+):
+  """Compile a 7-day retrospective digest as Markdown, printable HTML, or raw JSON."""
+  try:
+    week_start = date.fromisoformat(week_start_date) if week_start_date else None
+  except ValueError:
+    raise HTTPException(status_code=400, detail="week_start_date must be an ISO date (YYYY-MM-DD)") from None
+
+  service = ReportService()
+  try:
+    report = service.build_report(week_start)
+  except Exception:
+    logger.exception("weekly_report_failed event=api")
+    raise HTTPException(status_code=500, detail="Unable to compile the weekly digest") from None
+
+  filename = f"goalos_weekly_digest_{report['week_start']}"
+  if format == "json":
+    return JSONResponse(content=report)
+  if format == "html":
+    return HTMLResponse(
+      content=service.render_html(report),
+      headers={"Content-Disposition": f'inline; filename="{filename}.html"'},
+    )
+  return PlainTextResponse(
+    content=service.render_markdown(report),
+    media_type="text/markdown; charset=utf-8",
+    headers={"Content-Disposition": f'attachment; filename="{filename}.md"'},
+  )
 
 
 @api_router.post("/export/reset", dependencies=[Depends(require_api_token)])
@@ -718,14 +756,29 @@ app.include_router(api_router, include_in_schema=False)
 # ---------------------------------------------------------------------------
 # Frontend Static Mount (/app) & Root Redirect
 # ---------------------------------------------------------------------------
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 FRONTEND_DIST = os.path.join(ROOT, "frontend", "dist")
 if os.path.exists(FRONTEND_DIST):
   assets_dir = os.path.join(FRONTEND_DIST, "assets")
   if os.path.exists(assets_dir):
     app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+  # The SPA lives at /app but its bundles live at /assets, so the PWA service
+  # worker and manifest must be served from root to get root scope.
+  @app.get("/sw.js", include_in_schema=False)
+  @app.get("/registerSW.js", include_in_schema=False)
+  @app.get("/index.html", include_in_schema=False)
+  @app.get("/workbox-{suffix}.js", include_in_schema=False)
+  @app.get("/manifest.webmanifest", include_in_schema=False)
+  @app.get("/favicon.svg", include_in_schema=False)
+  def serve_pwa_root_file(request: Request, suffix: str = ""):
+    candidate = os.path.normpath(os.path.join(FRONTEND_DIST, request.url.path.lstrip("/")))
+    if not candidate.startswith(FRONTEND_DIST) or not os.path.isfile(candidate):
+      raise HTTPException(status_code=404, detail="Not found")
+    headers = {"Service-Worker-Allowed": "/"} if candidate.endswith(".js") else None
+    return FileResponse(candidate, headers=headers)
 
   @app.get("/app", include_in_schema=False)
   @app.get("/app/{full_path:path}", include_in_schema=False)

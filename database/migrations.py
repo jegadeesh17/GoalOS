@@ -280,12 +280,19 @@ def _migration_5_agentic_sessions_and_telemetry(conn: sqlite3.Connection) -> Non
   conn.execute("CREATE INDEX IF NOT EXISTS ix_ai_telemetry_trace ON ai_telemetry(trace_id)")
 
 
+def _migration_6_coach_persona(conn: sqlite3.Connection) -> None:
+  """Add user-tunable coach persona: free-form prompt directives and a preset tone."""
+  _add_column(conn, "user", "custom_coach_prompt TEXT")
+  _add_column(conn, "user", "preferred_tone TEXT")
+
+
 MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
   (1, _migration_1_integrity),
   (2, _migration_2_memory_search),
   (3, _migration_3_weekly_sync_and_life_calendar),
   (4, _migration_4_awake_range),
   (5, _migration_5_agentic_sessions_and_telemetry),
+  (6, _migration_6_coach_persona),
 ]
 
 

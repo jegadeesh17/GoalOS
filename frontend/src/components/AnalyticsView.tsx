@@ -1,21 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { AnalyticsDashboardData, goalOSApi } from '../api/client';
-import { 
-  TrendingUp, 
-  Clock, 
-  Moon, 
-  Smile, 
-  AlertTriangle, 
-  CheckCircle2, 
+import { AnalyticsDashboardData, TelemetrySpan, TelemetrySummary, goalOSApi } from '../api/client';
+import {
+  TrendingUp,
+  Clock,
+  Moon,
+  Smile,
+  AlertTriangle,
+  CheckCircle2,
   Flame,
   Activity,
-  BarChart3
+  BarChart3,
+  Cpu,
+  Coins,
+  Gauge,
+  Timer
 } from 'lucide-react';
+
+const formatCount = (value: number): string => (value || 0).toLocaleString();
+
+const formatLatency = (ms: number): string => {
+  const value = ms || 0;
+  return value >= 1000 ? `${(value / 1000).toFixed(2)}s` : `${Math.round(value)}ms`;
+};
+
+const formatCostUsd = (usd: number): string => {
+  const value = usd || 0;
+  // Sub-cent spend is common on small local models; keep it visible instead of rounding to $0.00.
+  return value > 0 && value < 0.01 ? '<$0.01' : `$${value.toFixed(2)}`;
+};
 
 export const AnalyticsView: React.FC = () => {
   const [data, setData] = useState<AnalyticsDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [telemetry, setTelemetry] = useState<TelemetrySummary | null>(null);
+  const [traces, setTraces] = useState<TelemetrySpan[]>([]);
 
   useEffect(() => {
     goalOSApi.getAnalyticsDashboard()
@@ -27,6 +46,18 @@ export const AnalyticsView: React.FC = () => {
         console.error('Failed to load analytics dashboard:', err);
         setError('Unable to load analytics data right now.');
         setLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    // Telemetry is supplementary: failures here must never blank the analytics page.
+    Promise.all([goalOSApi.getTelemetrySummary(30), goalOSApi.getTelemetryTraces(15)])
+      .then(([summary, recentTraces]) => {
+        setTelemetry(summary);
+        setTraces(recentTraces);
+      })
+      .catch((err) => {
+        console.error('Failed to load AI telemetry:', err);
       });
   }, []);
 
@@ -152,6 +183,113 @@ export const AnalyticsView: React.FC = () => {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* AI Observability & APM */}
+      {telemetry && (
+        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-3.5 shadow-forest border border-emerald-100/70">
+          <div>
+            <h3 className="font-bold text-sm text-slate-900 flex items-center space-x-2">
+              <Cpu className="w-4 h-4 text-emerald-700" />
+              <span>AI Observability &amp; APM</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5 font-normal">
+              Token consumption, estimated spend, and latency across the last 30 days of coach calls.
+            </p>
+          </div>
+
+          {telemetry.total_calls === 0 ? (
+            <p className="text-xs text-slate-400 italic py-2">
+              No AI calls recorded yet. Telemetry appears once the coach runs with remote AI enabled.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="p-3.5 rounded-2xl bg-white/80 border border-emerald-100/70 shadow-forest-xs">
+                  <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <Activity className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Total Calls</span>
+                  </div>
+                  <p className="text-lg font-bold text-slate-900 mt-1.5">{formatCount(telemetry.total_calls)}</p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white/80 border border-emerald-100/70 shadow-forest-xs">
+                  <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <BarChart3 className="w-3.5 h-3.5 text-teal-700" />
+                    <span>Prompt Tokens</span>
+                  </div>
+                  <p className="text-lg font-bold text-teal-800 mt-1.5">{formatCount(telemetry.prompt_tokens)}</p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white/80 border border-emerald-100/70 shadow-forest-xs">
+                  <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <BarChart3 className="w-3.5 h-3.5 text-forest-600" />
+                    <span>Completion Tokens</span>
+                  </div>
+                  <p className="text-lg font-bold text-forest-700 mt-1.5">{formatCount(telemetry.completion_tokens)}</p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white/80 border border-emerald-100/70 shadow-forest-xs">
+                  <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <Coins className="w-3.5 h-3.5 text-earth-amber" />
+                    <span>Est. Cost</span>
+                  </div>
+                  <p className="text-lg font-bold text-slate-900 mt-1.5">{formatCostUsd(telemetry.total_cost_usd)}</p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white/80 border border-emerald-100/70 shadow-forest-xs">
+                  <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <Gauge className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Latency</span>
+                  </div>
+                  <p className="text-lg font-bold text-emerald-800 mt-1.5">{formatLatency(telemetry.avg_latency_ms)}</p>
+                  <p className="text-xs text-slate-400 mt-0.5 font-normal flex items-center space-x-1">
+                    <Timer className="w-3 h-3" />
+                    <span>P95 {formatLatency(telemetry.p95_latency_ms)}</span>
+                  </p>
+                </div>
+              </div>
+
+              {traces.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="border-b border-emerald-100 text-slate-500 font-semibold uppercase tracking-wider">
+                        <th className="pb-2.5 pr-4">Span</th>
+                        <th className="pb-2.5 px-3">Model</th>
+                        <th className="pb-2.5 px-3">Tokens</th>
+                        <th className="pb-2.5 px-3">Latency</th>
+                        <th className="pb-2.5 pl-3 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-emerald-50/80">
+                      {traces.map((span) => (
+                        <tr key={span.id ?? span.trace_id} className="hover:bg-white/90 font-mono text-slate-700 transition-colors">
+                          <td className="py-3 pr-4 font-sans font-semibold text-slate-900">{span.span_name}</td>
+                          <td className="py-3 px-3 truncate max-w-[14rem]" title={span.model}>{span.model}</td>
+                          <td className="py-3 px-3">{formatCount(span.total_tokens)}</td>
+                          <td className="py-3 px-3">{formatLatency(span.latency_ms)}</td>
+                          <td className="py-3 pl-3 text-right">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-full font-sans font-semibold border ${
+                                span.status === 'success'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : 'bg-amber-50 text-amber-900 border-amber-200'
+                              }`}
+                              title={span.error_message || undefined}
+                            >
+                              {span.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

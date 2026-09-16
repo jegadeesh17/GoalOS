@@ -8,13 +8,13 @@ import uuid
 from typing import Any, Optional
 
 from ai.openrouter_client import OpenRouterClient
-from ai.tools import get_scoped_tool_definitions, make_tool_executor
 from database.repositories.coach_session_repository import CoachSessionRepository
 from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from models.coach_session import CoachChatRequest, CoachChatResponse
 from services.life_calendar_service import LifeCalendarService
 from services.memory_service import MemoryService
+from services.persona_service import PersonaService
 
 
 class CoordinatorPipeline:
@@ -28,6 +28,7 @@ class CoordinatorPipeline:
     goal_repo: Optional[GoalRepository] = None,
     log_repo: Optional[LogRepository] = None,
     calendar_service: Optional[LifeCalendarService] = None,
+    persona_service: Optional[PersonaService] = None,
   ) -> None:
     self.session_repo = session_repo or CoachSessionRepository()
     self.client = openrouter_client or OpenRouterClient()
@@ -35,6 +36,7 @@ class CoordinatorPipeline:
     self.goal_repo = goal_repo or GoalRepository()
     self.log_repo = log_repo or LogRepository()
     self.calendar_service = calendar_service or LifeCalendarService()
+    self.persona_service = persona_service or PersonaService()
 
   def classify_intent(self, message: str, preferred_domain: Optional[str] = None) -> tuple[str, list[str]]:
     """Determine domain intent and relevant tool namespaces."""
@@ -253,12 +255,18 @@ class CoordinatorPipeline:
     bb_text = json.dumps(blackboard, default=str)
     context_section = f"\nREAL-TIME GROUNDED USER DATA:\n{grounded_context}\n" if grounded_context else ""
 
+    try:
+      persona_section = self.persona_service.build_directives()
+    except Exception:
+      # Persona is a preference layer; never let it block a coaching turn.
+      persona_section = ""
+
     return f"""You are the GoalOS Executive AI Coordinator.
 You supervise multi-horizon goal pacing, morning/evening daily execution, cognitive memory retrieval, and 70-year lifespan awareness.
 
 CURRENT INTENT: {intent.upper()}
 SHARED SESSION BLACKBOARD: {bb_text}
-{context_section}
+{context_section}{persona_section}
 RECENT CONVERSATION HISTORY:
 {recent_history_text}
 
@@ -293,7 +301,7 @@ OPERATING PRINCIPLES:
     )
 
     reply_lines = [
-      f"**[GoalOS Local Executive Rule Engine]**",
+      "**[GoalOS Local Executive Rule Engine]**",
       f"• **Intent:** {intent.replace('_', ' ').title()}",
       f"• **Lifespan Awareness:** {lifespan['weeks_lived']}/{lifespan['total_weeks']} weeks lived ({round(lifespan['percentage_lived'], 1)}%). {lifespan['weeks_remaining']} weeks remaining.",
       f"• **7-Day Task Completion:** {round(avg_completion, 1)}%",

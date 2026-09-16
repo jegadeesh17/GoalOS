@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { UserSettings, goalOSApi } from '../api/client';
+import { COACH_TONE_PRESETS, UserSettings, goalOSApi } from '../api/client';
 import { 
   Save, 
   Download, 
   AlertOctagon, 
   User, 
   Lock,
+  Sparkles,
   Settings as SettingsIcon
 } from 'lucide-react';
 
@@ -21,6 +22,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
     life_vision: '',
     five_year_vision: '',
     one_year_vision: '',
+    custom_coach_prompt: '',
+    preferred_tone: 'executive_mentor',
     remote_ai_consent: false,
   });
   const [loading, setLoading] = useState(true);
@@ -195,6 +198,61 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
                 className="w-full text-sm p-3 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs resize-none font-sans text-slate-900"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Coach Persona & Prompt Tuning */}
+        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-3.5 shadow-forest border border-emerald-100/70">
+          <div>
+            <h3 className="font-bold text-sm text-slate-900 flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-emerald-700" />
+              <span>Coach Persona &amp; Prompt Tuning</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5 font-normal">
+              Shape how the coordinator speaks to you. Persona affects delivery only — coaching stays grounded in your real data.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Preferred Tone</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {COACH_TONE_PRESETS.map((preset) => {
+                const active = (settings.preferred_tone || '') === preset.value;
+                return (
+                  <button
+                    key={preset.value}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, preferred_tone: active ? '' : preset.value })}
+                    aria-pressed={active}
+                    className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer shadow-forest-xs ${
+                      active
+                        ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-300 ring-2 ring-emerald-600/30'
+                        : 'bg-white/90 border-emerald-100 hover:border-emerald-200'
+                    }`}
+                  >
+                    <span className="block text-xs font-bold text-slate-900">{preset.label}</span>
+                    <span className="block text-xs text-slate-500 mt-0.5 font-normal leading-relaxed">{preset.blurb}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Custom Coach Directives
+            </label>
+            <textarea
+              rows={4}
+              maxLength={2000}
+              placeholder="e.g. Always open with the single highest-leverage action. Never use motivational cliches. Reference my 5-year vision when I drift."
+              value={settings.custom_coach_prompt || ''}
+              onChange={(e) => setSettings({ ...settings, custom_coach_prompt: e.target.value })}
+              className="w-full text-sm p-3 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs resize-none font-sans text-slate-900"
+            />
+            <p className="text-xs text-slate-400 mt-1 font-normal text-right">
+              {(settings.custom_coach_prompt || '').length} / 2000
+            </p>
           </div>
         </div>
 

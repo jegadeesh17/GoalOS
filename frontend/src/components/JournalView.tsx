@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DailyLog, TaskItem, TimeBlockItem, goalOSApi, Goal } from '../api/client';
+import { cacheLog, flushPendingWrites, queueWrite, readCachedLog } from '../offline/journalStash';
 import { 
   CheckCircle2, 
   Circle, 
@@ -11,7 +12,8 @@ import {
   ChevronRight, 
   Clock, 
   Dumbbell,
-  BookOpen
+  BookOpen,
+  FileDown
 } from 'lucide-react';
 
 interface JournalViewProps {
@@ -26,6 +28,8 @@ export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach }) => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
 
   // New item inputs
   const [newTaskText, setNewTaskText] = useState('');
@@ -45,6 +49,8 @@ export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach }) => {
         ]);
         setLog(logData);
         setGoals(goalsData);
+        setOfflineNotice(null);
+        cacheLog(logData);
 
         // Parse planned tasks
         if (logData.planned_tasks) {
@@ -97,11 +103,34 @@ export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach }) => {
         }
       } catch (err) {
         console.error('Failed to load journal log:', err);
+        // Fall back to the local stash so the day is still readable offline.
+        const cached = await readCachedLog(currentDate);
+        if (cached) {
+          setLog(cached);
+          setOfflineNotice('Offline — showing your locally cached copy of this day.');
+        }
       } finally {
         setLoading(false);
       }
     };
     loadData();
+  }, [currentDate]);
+
+  // Replay anything queued while offline, on mount and whenever the browser reconnects.
+  useEffect(() => {
+    const sync = async () => {
+      const synced = await flushPendingWrites(goalOSApi.upsertJournal);
+      if (synced > 0) {
+        setOfflineNotice(null);
+        setSaveStatus(`Synced ${synced} offline journal ${synced === 1 ? 'entry' : 'entries'}`);
+        setTimeout(() => setSaveStatus(null), 4000);
+        const refreshed = await goalOSApi.getJournalByDate(currentDate).catch(() => null);
+        if (refreshed) setLog(refreshed);
+      }
+    };
+    sync();
+    window.addEventListener('online', sync);
+    return () => window.removeEventListener('online', sync);
   }, [currentDate]);
 
   const handleDateChange = (offsetDays: number) => {
@@ -112,28 +141,35 @@ export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach }) => {
 
   const handleSave = async () => {
     if (!log) return;
+
+    const calculatedWorkHours = timeBlocks
+      .filter((b) => b.is_work)
+      .reduce((sum, b) => sum + (Number(b.hours) || 0), 0);
+
+    const payload: Partial<DailyLog> & { date: string } = {
+      ...log,
+      date: currentDate,
+      planned_tasks: JSON.stringify(tasks),
+      time_blocks: JSON.stringify(timeBlocks),
+      deep_work_hours: calculatedWorkHours > 0 ? calculatedWorkHours : (log.deep_work_hours || 0),
+      task_completion_rate: tasks.length > 0 ? tasks.filter((t) => t.completed).length / tasks.length : 0,
+    };
+
     try {
       setSaveStatus('Saving to SQLite...');
-      const calculatedWorkHours = timeBlocks
-        .filter((b) => b.is_work)
-        .reduce((sum, b) => sum + (Number(b.hours) || 0), 0);
-
-      const payload: Partial<DailyLog> & { date: string } = {
-        ...log,
-        date: currentDate,
-        planned_tasks: JSON.stringify(tasks),
-        time_blocks: JSON.stringify(timeBlocks),
-        deep_work_hours: calculatedWorkHours > 0 ? calculatedWorkHours : (log.deep_work_hours || 0),
-        task_completion_rate: tasks.length > 0 ? tasks.filter((t) => t.completed).length / tasks.length : 0,
-      };
       const updated = await goalOSApi.upsertJournal(payload);
       setLog(updated);
+      cacheLog(updated);
+      setOfflineNotice(null);
       const timeStr = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric' }).format(new Date());
       setSaveStatus(`Journal Saved at ${timeStr}`);
       setTimeout(() => setSaveStatus(null), 4000);
     } catch (err) {
+      // Never drop the edit: stash it locally and replay it on reconnect.
       console.error('Failed to save journal:', err);
-      setSaveStatus('Failed to save log');
+      await queueWrite(payload);
+      setSaveStatus('Offline — saved locally, will sync on reconnect');
+      setOfflineNotice('This entry is queued in your browser and syncs automatically when you reconnect.');
     }
   };
 
@@ -211,8 +247,42 @@ export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach }) => {
 
   const isToday = currentDate === new Date().toISOString().split('T')[0];
 
+  // Monday of the week containing the currently viewed date.
+  const weekStartFor = (dateStr: string): string => {
+    const d = new Date(`${dateStr}T00:00:00`);
+    const offset = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - offset);
+    return d.toISOString().split('T')[0];
+  };
+
+  const handleExportDigest = async () => {
+    const weekStart = weekStartFor(currentDate);
+    try {
+      setExportStatus('Compiling weekly digest...');
+      const markdown = await goalOSApi.getWeeklyReportMarkdown(weekStart);
+      const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `goalos_weekly_digest_${weekStart}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setExportStatus(null);
+    } catch (err) {
+      console.error('Weekly digest export failed:', err);
+      setExportStatus('Digest export failed');
+      setTimeout(() => setExportStatus(null), 3000);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {offlineNotice && (
+        <div className="bg-amber-50/90 border border-amber-200 text-amber-950 text-xs font-medium px-4 py-2.5 rounded-2xl shadow-forest-xs">
+          {offlineNotice}
+        </div>
+      )}
+
       {/* Top Header Controls */}
       <div className="glass-panel rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-forest border border-emerald-100/70">
         <div className="flex items-center space-x-3">
@@ -252,6 +322,15 @@ export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach }) => {
 
         {/* Header Actions */}
         <div className="flex items-center space-x-3">
+          <button
+            onClick={handleExportDigest}
+            title="Export a 7-day retrospective for the week containing this date"
+            className="flex items-center space-x-1.5 border border-emerald-200/80 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-950 px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-forest-xs cursor-pointer"
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            <span>{exportStatus || 'Export Weekly Digest'}</span>
+          </button>
+
           {onTriggerCoach && (
             <button
               onClick={() => {

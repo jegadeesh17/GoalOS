@@ -155,13 +155,13 @@ async def limit_request_body(request: Request, call_next):
 def startup() -> None:
   if settings.ENVIRONMENT.lower() == "production" and not settings.GOALOS_API_TOKEN:
     raise RuntimeError("GOALOS_API_TOKEN is required when ENVIRONMENT=production")
-  run_migrations()
   try:
-    if settings.ENVIRONMENT.lower() == "demo" or LogRepository().count() == 0:
-      from services.demo_seeder import seed_demo_environment
-      seed_demo_environment()
+    from services.demo_seeder import seed_demo_environment
+    seed_demo_environment()
   except Exception as e:
-    logger.warning("Auto-seed demo data on startup skipped: %s", e)
+    logger.warning("Authentic demo initialization on startup skipped: %s", e)
+  run_migrations()
+
 
 
 # ---------------------------------------------------------------------------

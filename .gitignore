@@ -20,6 +20,11 @@ data/**/*.jpeg
 *.csv
 !data/demo_seed.csv
 
+# Whitelist sanitized demo data for container deployment
+!data/demo_goalos.db
+!data/demo_chroma_db/
+!data/demo_chroma_db/**
+
 
 # Frontend build & dependencies
 node_modules/

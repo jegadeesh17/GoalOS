@@ -41,9 +41,30 @@ def test_health(client):
     assert body == {"status": "ok"}
 
 
+def test_api_health(client):
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+
+
 def test_coach_morning_schema(client):
     response = client.post(
         "/coach/morning",
+        json={
+            "gratitude": "Focused morning",
+            "tasks": [{"text": "Deep work", "priority": 1}],
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "mentor_rule" in body
+    assert body["tools_used"] == ["search_memories", "get_active_goals"]
+
+
+def test_api_coach_morning_schema(client):
+    response = client.post(
+        "/api/coach/morning",
         json={
             "gratitude": "Focused morning",
             "tasks": [{"text": "Deep work", "priority": 1}],

@@ -100,3 +100,23 @@ Implement a Supervisor-Coordinator architecture modeled on enterprise-grade agen
 - **Pros:** 40-50% prompt token reduction, zero out-of-domain tool hallucinations, stateful multi-turn coaching sessions, live USD spend observability, and guaranteed offline availability.
 - **Cons:** Requires schema migration for session and telemetry tables and maintaining domain toolkit mappings.
 
+---
+
+## ADR-006: Canonical /api Dual Mount & Route Normalization
+
+### Status
+**Accepted**
+
+### Context
+In local development, Vite proxied `/api` requests to FastAPI while stripping the `/api` prefix, masking a routing mismatch. In production on GCP Cloud Run, FastAPI directly serves the compiled React single-page application at `/app`. The React Axios client (`frontend/src/api/client.ts`) initiates all network requests with `baseURL: '/api'`, causing all production API calls (`/api/calendar/summary`, `/api/settings`, etc.) to return HTTP 404 Not Found.
+
+### Decision
+1. Refactor all FastAPI endpoints into an `APIRouter` (`api_router`).
+2. Mount `api_router` canonically at `prefix="/api"` (documented in OpenAPI / Swagger schema).
+3. Mount `api_router` simultaneously at root `prefix=""` with `include_in_schema=False` to preserve backward compatibility for direct test suites, scripts, and legacy callers.
+4. Normalize `frontend/vite.config.ts` proxy to preserve the `/api` path in local development.
+
+### Consequences
+- **Pros:** Completely fixes production SPA data loading, prevents test suite regressions, avoids OpenAPI schema duplication, and aligns local development routing with production Cloud Run routing.
+- **Cons:** Requires endpoints to be registered via router instead of directly on `app`.
+

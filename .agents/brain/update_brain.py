@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import datetime
-import os
 import sys
 from pathlib import Path
 
@@ -55,7 +54,7 @@ def log_evolution(action: str, rationale: str = "", reflection: str = "") -> Non
 
   if first_marker != -1:
     idx = first_marker + len(marker)
-    updated = content[:idx] + entry.lstrip("\n---\n\n") + "\n" + content[idx:]
+    updated = content[:idx] + entry.removeprefix("\n---\n\n") + "\n" + content[idx:]
   else:
     updated = content + entry
 

@@ -1,6 +1,7 @@
 """Test OpenRouterClient fast timeout and multi-model failover behavior."""
 
 from unittest.mock import MagicMock, patch
+
 import httpx
 
 from ai.openrouter_client import OpenRouterClient

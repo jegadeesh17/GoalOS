@@ -10,6 +10,7 @@ import html
 import os
 import xml.etree.ElementTree as ET
 
+
 def sanitize(text: str) -> str:
     return html.escape(text).replace("\n", "<br>")
 
@@ -87,7 +88,6 @@ def build_drawio_xml() -> str:
 
     # Shared Style Palettes (Forest Mist Paper Glass Theme)
     style_header = "text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Plus Jakarta Sans,sans-serif;"
-    style_container = "swimlane;fontStyle=1;align=left;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=32;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;whiteSpace=wrap;rounded=1;shadow=1;strokeWidth=1.5;"
     
     style_c_green = "rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontColor=#14532D;fontStyle=1;strokeWidth=1.5;shadow=0;"
     style_c_teal = "rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDFA;strokeColor=#0D9488;fontColor=#115E59;fontStyle=1;strokeWidth=1.5;shadow=0;"

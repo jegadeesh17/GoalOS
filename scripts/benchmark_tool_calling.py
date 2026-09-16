@@ -23,10 +23,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from ai.tools import (
-    TOOL_DEFINITIONS,
     build_default_registry,
-    execute_tool,
-    get_scoped_tool_definitions,
 )
 
 REPORT_MD = PROJECT_ROOT / "reports" / "TOOL_CALLING_BENCHMARK.md"

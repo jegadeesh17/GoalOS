@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
 from ai.pipelines.coordinator import CoordinatorPipeline
-from ai.tools import get_scoped_tool_definitions, execute_tool
+from ai.tools import execute_tool, get_scoped_tool_definitions
+from api.main import app
 from database.repositories.coach_session_repository import CoachSessionRepository
 from database.repositories.goal_repository import GoalRepository
-from database.repositories.telemetry_repository import TelemetryRepository
 from models.coach_session import CoachChatRequest
 from models.goal import GoalCreate
 from services.observability_service import ObservabilityService
-
 
 client = TestClient(app)
 

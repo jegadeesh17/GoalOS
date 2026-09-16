@@ -1,8 +1,5 @@
 """Unit tests for the GoalOS AI Evaluation Framework & Vision Metrics."""
 
-import json
-from pathlib import Path
-from unittest.mock import MagicMock
 
 from ai.eval.evaluator import GoalOSEvaluator
 from ai.eval.metrics import (

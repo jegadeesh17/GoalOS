@@ -3,7 +3,7 @@
 import logging
 import random
 import time
-from typing import Any, Callable, TypeVar
+from typing import Callable, TypeVar
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T")

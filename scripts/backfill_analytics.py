@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import json
 import re
-import sqlite3
 import sys
-from datetime import date, datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -134,8 +132,8 @@ def run_backfill(db_path: str = "goalos.db") -> dict[str, int]:
   goals = goal_repo.get_active()
   scores_generated = 0
 
-  print(f"Calculating and persisting daily growth scores...")
-  for idx, log in enumerate(refreshed_logs):
+  print("Calculating and persisting daily growth scores...")
+  for log in refreshed_logs:
     start_date = log.date - timedelta(days=30)
     logs_30d = [l for l in refreshed_logs if start_date <= l.date <= log.date]
     

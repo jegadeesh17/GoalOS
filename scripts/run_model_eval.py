@@ -157,20 +157,20 @@ def run_evaluation(
   logger.info(f"🚀 Starting GoalOS AI Evaluation: {len(models)} models × {len(scenarios)} scenarios = {total_evals} total calls (Rate Limit: {rpm} RPM)")
 
   for model_idx, model in enumerate(models, 1):
-    logger.info(f"\n========================================================")
+    logger.info("\n========================================================")
     logger.info(f"🤖 Evaluating Model [{model_idx}/{len(models)}]: {model}")
-    logger.info(f"========================================================")
+    logger.info("========================================================")
 
     client = OpenRouterClient(api_key=api_key, model=model)
     scenario_results: list[ScenarioResult] = []
 
-    for s_idx, scenario in enumerate(scenarios, 1):
+    for scenario in scenarios:
       current_eval += 1
       s_id = scenario.get("id")
       s_title = scenario.get("title")
       logger.info(f"[{current_eval}/{total_evals}] Testing {s_id}: '{s_title}' on {model}...")
 
-      def _call_api():
+      def _call_api(client=client, scenario=scenario):
         return execute_pipeline_call(client, scenario)
 
       try:

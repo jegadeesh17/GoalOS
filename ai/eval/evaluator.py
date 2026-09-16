@@ -1,8 +1,7 @@
 """Multi-factor evaluation engine for GoalOS AI models."""
 
-import json
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from ai.eval.metrics import (

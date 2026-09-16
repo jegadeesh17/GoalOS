@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import time
 import uuid
-from typing import Any, Optional
+from typing import Optional
 
 from database.repositories.telemetry_repository import TelemetryRepository
 from models.coach_session import TelemetrySpan, TelemetrySummaryResponse

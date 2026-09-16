@@ -5,7 +5,6 @@ import logging
 from datetime import date, timedelta
 
 from ai.openrouter_client import OpenRouterClient
-from ai.pipelines.agent_morning_coach import run_agent_morning_coach
 from ai.pipelines.evening_coach import run_evening_coach
 from ai.pipelines.future_self_coach import run_future_self_coach
 from ai.pipelines.goal_alignment_coach import run_goal_alignment_coach

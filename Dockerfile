@@ -23,6 +23,7 @@ RUN python -m venv /opt/venv && \
 FROM python:3.11-slim AS runner
 WORKDIR /app
 ENV PATH=/opt/venv/bin:$PATH \
+    PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PORT=8080
@@ -38,10 +39,12 @@ COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 COPY --chown=appuser:appgroup ai/ ai/
 COPY --chown=appuser:appgroup api/ api/
 COPY --chown=appuser:appgroup config/ config/
+COPY --chown=appuser:appgroup configs/ configs/
 COPY --chown=appuser:appgroup database/ database/
 COPY --chown=appuser:appgroup models/ models/
 COPY --chown=appuser:appgroup services/ services/
 COPY --chown=appuser:appgroup scripts/ scripts/
+COPY --chown=appuser:appgroup utils.py utils.py
 COPY --chown=appuser:appgroup data/demo_seed.csv data/demo_seed.csv
 
 RUN mkdir -p /app/chroma_db && chown -R appuser:appgroup /app

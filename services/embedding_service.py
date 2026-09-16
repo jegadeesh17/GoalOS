@@ -15,6 +15,10 @@ def _get_model():
   global _MODEL
   if _MODEL is None:
     try:
+      from config.settings import settings
+      if settings.ENVIRONMENT.lower() == "demo":
+        _MODEL = "fallback"
+        return _MODEL
       from sentence_transformers import SentenceTransformer
       _MODEL = SentenceTransformer("all-MiniLM-L6-v2")
     except Exception as e:

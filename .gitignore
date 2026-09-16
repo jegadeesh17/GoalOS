@@ -4,13 +4,22 @@ __pycache__/
 *.pyc
 desktop.ini
 
-# Local app data/logs
+# Local app data/logs & private journal
 goalos.db
 goalos.log
 chroma_db/
 backups/
+data/Journal/
+data/journal_data.csv
+data/journal_history.json
 data/**/*.jpg
+data/**/*.png
+data/**/*.jpeg
 *.jpg
+*.png
+*.csv
+!data/demo_seed.csv
+
 
 # Frontend build & dependencies
 node_modules/

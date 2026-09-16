@@ -1,41 +1,56 @@
-# Multi-stage production container build for GoalOS adhering to PRODUCTION_ENGINEERING_STANDARDS
-# Stage 1: Builder
-FROM python:3.11-slim AS builder
+# ============================================================================
+# Multi-Stage Production Dockerfile for GoalOS (React + FastAPI on GCP Cloud Run)
+# ============================================================================
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# --- Stage 1: Build React Vite Frontend ---
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
 
+# --- Stage 2: Python Dependency Builder ---
+FROM python:3.11-slim AS python-builder
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential curl && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt ./
+RUN python -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    sqlite3 \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
-
-# Stage 2: Runner
+# --- Stage 3: Minimal Production Runner ---
 FROM python:3.11-slim AS runner
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PATH=/home/appuser/.local/bin:$PATH
-
 WORKDIR /app
+ENV PATH=/opt/venv/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8080
 
-# Security: create and switch to unprivileged user
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+RUN apt-get update && apt-get install -y --no-install-recommends curl sqlite3 && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /root/.local /home/appuser/.local
-COPY --chown=appuser:appgroup . .
+RUN groupadd -g 10001 appgroup && \
+    useradd -u 10001 -g appgroup -s /bin/bash -m appuser
+
+COPY --from=python-builder /opt/venv /opt/venv
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
+
+COPY --chown=appuser:appgroup ai/ ai/
+COPY --chown=appuser:appgroup api/ api/
+COPY --chown=appuser:appgroup config/ config/
+COPY --chown=appuser:appgroup database/ database/
+COPY --chown=appuser:appgroup models/ models/
+COPY --chown=appuser:appgroup services/ services/
+COPY --chown=appuser:appgroup scripts/ scripts/
+COPY --chown=appuser:appgroup data/demo_seed.csv data/demo_seed.csv
+
+RUN mkdir -p /app/chroma_db && chown -R appuser:appgroup /app
 
 USER appuser
 
-EXPOSE 8000
-EXPOSE 8501
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8080}"]

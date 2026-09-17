@@ -1,9 +1,9 @@
 # GoalOS Agent Tool-Calling Reliability Benchmark
 
-> **Timestamp**: `2026-09-16 23:35:21`  
+> **Timestamp**: `2026-09-17 10:15:32`  
 > **Schema Standard**: Pydantic / OpenAPI Function Calling Compatible  
 > **Overall Reliability Rate**: **100.0%** (7/7 test scenarios passing)  
-> **Avg Routing & Execution Latency**: **4176.5 ms** (P95: `29218.62 ms`)
+> **Avg Routing & Execution Latency**: **3679.04 ms** (P95: `25739.15 ms`)
 
 ---
 
@@ -24,12 +24,12 @@ GoalOS partitions agent tools into isolated domain namespaces to minimize contex
 
 | Test ID | Domain | Target Tool Name | Result | Routing & Validation Behavior | Latency |
 | :--- | :--- | :--- | :---: | :--- | :---: |
-| `TC-01` | `memory` | `search_memories` | ✅ PASSED | Schema validated and executed cleanly | `29218.62 ms` |
-| `TC-02` | `goals` | `get_active_goals` | ✅ PASSED | Schema validated and executed cleanly | `1.66 ms` |
-| `TC-03` | `goals` | `get_horizon_pacing` | ✅ PASSED | Schema validated and executed cleanly | `2.02 ms` |
-| `TC-04` | `journal` | `get_recent_logs` | ✅ PASSED | Schema validated and executed cleanly | `3.23 ms` |
-| `TC-05` | `journal` | `get_monthly_progress` | ✅ PASSED | Schema validated and executed cleanly | `9.89 ms` |
-| `TC-06` | `calendar` | `get_lifespan_stats` | ✅ PASSED | Schema validated and executed cleanly | `0.05 ms` |
+| `TC-01` | `memory` | `search_memories` | ✅ PASSED | Schema validated and executed cleanly | `25739.15 ms` |
+| `TC-02` | `goals` | `get_active_goals` | ✅ PASSED | Schema validated and executed cleanly | `1.43 ms` |
+| `TC-03` | `goals` | `get_horizon_pacing` | ✅ PASSED | Schema validated and executed cleanly | `1.18 ms` |
+| `TC-04` | `journal` | `get_recent_logs` | ✅ PASSED | Schema validated and executed cleanly | `2.31 ms` |
+| `TC-05` | `journal` | `get_monthly_progress` | ✅ PASSED | Schema validated and executed cleanly | `9.18 ms` |
+| `TC-06` | `calendar` | `get_lifespan_stats` | ✅ PASSED | Schema validated and executed cleanly | `0.04 ms` |
 | `TC-07-NEG` | `security` | `UNKNOWN_TOOL` | ✅ PASSED | Correctly rejected unauthorized tool | `0.0 ms` |
 
 ---

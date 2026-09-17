@@ -8,7 +8,7 @@
 [![Vector DB](https://img.shields.io/badge/Vector%20Store-ChromaDB-purple.svg)](https://www.trychroma.com/)
 [![Database](https://img.shields.io/badge/Database-SQLite%203%20%2B%20FTS5-003B57.svg)](https://www.sqlite.org/)
 [![Validation](https://img.shields.io/badge/Schema-Pydantic%20v2-E92063.svg)](https://docs.pydantic.dev/)
-[![Tests](https://img.shields.io/badge/Tests-pytest%20(106%20passing)-green.svg)](https://docs.pytest.org/)
+[![Tests](https://img.shields.io/badge/Tests-pytest%20(130%20passing)-green.svg)](https://docs.pytest.org/)
 [![License](https://img.shields.io/badge/License-MIT-gray.svg)](LICENSE)
 
 ---
@@ -139,6 +139,25 @@ flowchart TD
 
 ---
 
+## 🛠️ Agentic AI Coaching & Tool Calling
+
+`CoordinatorPipeline` exposes 6 tools across 4 isolated domain namespaces, each behind a strict Pydantic/OpenAPI-compatible function schema:
+
+| Domain | Registered Tools |
+| :--- | :--- |
+| `memory` | `search_memories` |
+| `goals` | `get_active_goals`, `get_horizon_pacing` |
+| `journal` | `get_recent_logs`, `get_monthly_progress` |
+| `calendar` | `get_lifespan_stats` |
+
+**Tool-calling reliability benchmark** (`scripts/benchmark_tool_calling.py`, results in [`reports/TOOL_CALLING_BENCHMARK.md`](reports/TOOL_CALLING_BENCHMARK.md)):
+- 7 test scenarios: one execution case per registered tool (6 across the 4 domains), plus 1 negative security case verifying that a call to an unregistered tool (`UNKNOWN_TOOL`) is correctly rejected.
+- Each positive case asserts the target tool is registered in its domain (`registry.can_handle`) and executes against representative arguments without a schema or runtime error. The negative case asserts the registry returns an `unknown_tool` error instead of executing.
+- **Result:** 7/7 (100%) scenarios passing; average execution latency 4176.5 ms (P95 29218.62 ms, dominated by the memory-search case — all other calls resolve in under 10 ms).
+- **Scope:** this benchmark validates tool registration, parameter-schema compliance, execution reliability, and rejection of unauthorized tools. Each test case's target tool is pre-specified and directly invoked rather than chosen by a model, and each case is a single tool call rather than a multi-step task chain — it does not, by itself, measure an LLM's tool-*selection* accuracy from a natural-language query. Live LLM-driven intent classification and routing happens in `CoordinatorPipeline` during real coaching sessions but is a separate concern from what this benchmark scores.
+
+---
+
 ## 🚀 Installation & Quickstart
 
 ### Prerequisites
@@ -245,7 +264,7 @@ Run the comprehensive pytest test suite:
 ```bash
 pytest
 ```
-**Results:** **106/106 tests passing (100%)**.
+**Results:** **130/130 tests passing (100%)**.
 
 Run frontend typecheck and build validation:
 ```bash

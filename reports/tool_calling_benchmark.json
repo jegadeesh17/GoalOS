@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-09-16 23:35:21",
+  "timestamp": "2026-09-17 10:15:32",
   "total_cases": 7,
   "passed_cases": 7,
   "accuracy_pct": 100.0,
-  "avg_latency_ms": 4176.5,
-  "p95_latency_ms": 29218.62,
+  "avg_latency_ms": 3679.04,
+  "p95_latency_ms": 25739.15,
   "test_results": [
     {
       "id": "TC-01",
@@ -12,7 +12,7 @@
       "tool": "search_memories",
       "status": "PASSED",
       "behavior": "Schema validated and executed cleanly",
-      "latency_ms": 29218.62
+      "latency_ms": 25739.15
     },
     {
       "id": "TC-02",
@@ -20,7 +20,7 @@
       "tool": "get_active_goals",
       "status": "PASSED",
       "behavior": "Schema validated and executed cleanly",
-      "latency_ms": 1.66
+      "latency_ms": 1.43
     },
     {
       "id": "TC-03",
@@ -28,7 +28,7 @@
       "tool": "get_horizon_pacing",
       "status": "PASSED",
       "behavior": "Schema validated and executed cleanly",
-      "latency_ms": 2.02
+      "latency_ms": 1.18
     },
     {
       "id": "TC-04",
@@ -36,7 +36,7 @@
       "tool": "get_recent_logs",
       "status": "PASSED",
       "behavior": "Schema validated and executed cleanly",
-      "latency_ms": 3.23
+      "latency_ms": 2.31
     },
     {
       "id": "TC-05",
@@ -44,7 +44,7 @@
       "tool": "get_monthly_progress",
       "status": "PASSED",
       "behavior": "Schema validated and executed cleanly",
-      "latency_ms": 9.89
+      "latency_ms": 9.18
     },
     {
       "id": "TC-06",
@@ -52,7 +52,7 @@
       "tool": "get_lifespan_stats",
       "status": "PASSED",
       "behavior": "Schema validated and executed cleanly",
-      "latency_ms": 0.05
+      "latency_ms": 0.04
     },
     {
       "id": "TC-07-NEG",

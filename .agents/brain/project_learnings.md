@@ -96,3 +96,6 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 
 ### 5.2 Autonomous Git Execution Invariant
 - **Rule:** Upon completing any meaningful code edit or feature milestone, the AI agent must autonomously inspect `git status`, verify cleanliness, stage modified files, and execute Conventional Commits (`feat:`, `style:`, `refactor:`, `docs:`, `fix:`) without waiting for explicit user prompts.
+
+### 5.3 Cloud Run Production Isolation & Branching Policy
+- **Rule:** Branch `main` is wired directly to Google Cloud Run continuous deployment via `.github/workflows/deploy.yml`. Branch `dev` is dedicated to ongoing local development and personal customizations. Never merge untested or experimental personal changes into `main` without explicit user sign-off to ensure the public resume deployment remains unaffected and stable.

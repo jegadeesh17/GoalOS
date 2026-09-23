@@ -18,10 +18,18 @@ import {
 
 interface JournalViewProps {
   onTriggerCoach?: (mode: 'morning' | 'evening') => void;
+  initialDate?: string;
 }
 
-export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach }) => {
-  const [currentDate, setCurrentDate] = useState<string>(new Date().toISOString().split('T')[0]);
+export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach, initialDate }) => {
+  const [currentDate, setCurrentDate] = useState<string>(initialDate || new Date().toISOString().split('T')[0]);
+
+  useEffect(() => {
+    if (initialDate) {
+      setCurrentDate(initialDate);
+    }
+  }, [initialDate]);
+
   const [log, setLog] = useState<DailyLog | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlockItem[]>([]);

@@ -4,6 +4,19 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-23 — Front Page Transformation: Current Year Productivity Calendar & Structured Day Inspector
+
+- **Action:** Transformed the GoalOS front page from the static 70-year lifespan calendar (3,640 week blocks) into an interactive **Current Year Daily Productivity Calendar** (365/366 day circles), tracking productive days, streaks, and monthly execution.
+- **Architectural Implementation:**
+  1. **Backend (`services/life_calendar_service.py`):** Added `get_year_productivity_grid(year, reference_date)` evaluating Rule 1 (Smart Composite: productivity score $\ge 50$, deep work $\ge 1.5$h, task completion $\ge 50\%$ with tasks, or morning+evening routine completion). Computes year elapsed, remaining, productive days count, current streak, best streak, and 12-month breakdowns. Exposed via `GET /api/calendar/year`.
+  2. **Frontend UI (`YearProductivityCalendar.tsx` & `DayDetailDrawer.tsx`):** Built 12-Month Grouped Grid (Option A) displaying all 365 days aligned by weekday with monthly completion badges. Built slide-over `DayDetailDrawer` displaying structured morning priorities, planned task checklists, evening reflection/wins, sleep/energy metrics, and one-click jump to `JournalView`.
+  3. **Banner Transformation (`LifeProgressBanner.tsx`):** Replaced static weeks-lived banner with the **Year Productivity Horizon Banner** displaying productive days, productivity rate %, active streak, and dual-layer progress bar, while maintaining a perspective toggle to the 70-year Memento Mori lifespan view on demand.
+  4. **State Navigation (`App.tsx` & `JournalView.tsx`):** Added `initialDate` prop support to `JournalView`, enabling instant seamless editing of any inspected date directly from the calendar.
+- **Verification:**
+  - Automated tests: 4/4 passed in `tests/test_year_productivity_calendar.py` covering leap year handling, smart composite rules, streaks, and API endpoint; 8/8 regression tests passed in `tests/test_life_calendar_and_weekly_sync.py` and `tests/test_api.py`.
+  - Frontend verification: TypeScript build (`tsc && vite build`) passed with zero errors, bundling production assets cleanly.
+
+
 ## 2026-09-12 — AI Coach Model Upgrade (Gemma 4 31B) & Fast Timeout Auto-Failover
 
 - **Action:** Upgraded the primary coaching LLM from congested `nvidia/nemotron-3-super-120b-a12b:free` to `google/gemma-4-31b-it:free`, delivering rich, emotionally intelligent, articulate mentorship with sub-4s response latency.

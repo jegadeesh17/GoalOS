@@ -87,6 +87,10 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
   - Paired with **Newsreader** editorial serif typography for mentor directives, life visions, and reflective insights.
   - Replaced aggressive uppercase labels with calm, readable title-case / sentence-case labels and subpixel antialiasing (`-webkit-font-smoothing: antialiased`).
 
+### 4.5 365-Day Productivity Grid & Calendar Alignment
+- **Observation:** Visualizing a full year of 365/366 days in a single continuous matrix can feel disorienting and makes finding specific calendar dates difficult.
+- **Solution:** Structured the year into a 12-month grouped grid with 7-column weekday alignment (M-T-W-T-F-S-S) and leading day offsets. Each circle represents a discrete calendar day with visual tiers (high productivity gradient $\ge 70$, solid emerald for standard productive, subtle rings for unlogged past days, amber pulse for today, and dashed rings for future days). Connected every circle to a dedicated slide-over `DayDetailDrawer` showing structured journal data, tasks, reflections, and deep work hours with one-click navigation to the journal.
+
 ---
 
 ## 5. 🛠️ Autonomous Operational Discipline & Memory Retention

@@ -103,3 +103,7 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 
 ### 5.3 Cloud Run Production Isolation & Branching Policy
 - **Rule:** Branch `main` is wired directly to Google Cloud Run continuous deployment via `.github/workflows/deploy.yml`. Branch `dev` is dedicated to ongoing local development and personal customizations. Never merge untested or experimental personal changes into `main` without explicit user sign-off to ensure the public resume deployment remains unaffected and stable.
+
+### 5.4 Antigravity CLI Customization & Global Marketplace Plugins
+- **Observation:** Global plugins in Google Antigravity CLI (`agy`) reside at `~/.gemini/config/plugins/<name>` and are indexed via `~/.gemini/config/import_manifest.json`. The `wshobson/agents` marketplace generates harness-native plugins via `python tools/generate.py --harness antigravity` and imports them cleanly using `agy plugin install <plugin_path>`.
+- **User Preference:** User focuses strictly on Python, backend engineering, architecture, testing, and debugging workflows, excluding JavaScript/TypeScript packages.

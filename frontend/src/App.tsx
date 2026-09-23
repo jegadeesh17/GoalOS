@@ -1,33 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { LifeProgressBanner } from './components/LifeProgressBanner';
-import { LifeCalendar } from './components/LifeCalendar';
+import { YearProductivityCalendar } from './components/YearProductivityCalendar';
 import { JournalView } from './components/JournalView';
 import { GoalsView } from './components/GoalsView';
 import { AICoachView } from './components/AICoachView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { MemoriesView } from './components/MemoriesView';
 import { SettingsView } from './components/SettingsView';
-import { LifeSummary, goalOSApi } from './api/client';
+import { LifeSummary, YearProductivityData, goalOSApi } from './api/client';
 import { ShieldCheck, Database, Compass, Sparkle } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('calendar');
   const [coachInitialMode, setCoachInitialMode] = useState<'morning' | 'evening' | 'weekly' | 'future-self' | 'goal-alignment'>('morning');
   const [lifeSummary, setLifeSummary] = useState<LifeSummary | null>(null);
+  const [yearSummary, setYearSummary] = useState<YearProductivityData | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(true);
+  const [journalTargetDate, setJournalTargetDate] = useState<string | undefined>(undefined);
   const [healthStatus, setHealthStatus] = useState<{ log_count?: number; memory_count?: number; openrouter_configured?: boolean } | null>(null);
 
   const fetchSummary = async () => {
     try {
       setLoadingSummary(true);
-      const [summary, health] = await Promise.all([
+      const [summary, yearData, health] = await Promise.all([
         goalOSApi.getCalendarSummary(),
+        goalOSApi.getYearProductivity().catch((err) => {
+          console.warn('Failed to load year productivity summary:', err);
+          return null;
+        }),
         goalOSApi.getSettings().then((s) => ({
           openrouter_configured: s.openrouter_configured,
         })).catch(() => null),
       ]);
       setLifeSummary(summary);
+      if (yearData) setYearSummary(yearData);
       if (health) setHealthStatus(health);
     } catch (err) {
       console.error('Failed to load initial summary:', err);
@@ -45,6 +52,11 @@ export const App: React.FC = () => {
     setActiveTab('coach');
   };
 
+  const handleNavigateToJournalWithDate = (dateStr: string) => {
+    setJournalTargetDate(dateStr);
+    setActiveTab('journal');
+  };
+
   return (
     <div className="min-h-screen flex flex-col text-slate-900 selection:bg-emerald-100 selection:text-emerald-950 relative overflow-x-hidden bg-[#f7f9f7]">
       {/* Floating Sticky Header Navigation */}
@@ -58,18 +70,33 @@ export const App: React.FC = () => {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
         {/* Life Horizon Progress Banner on top of Calendar, Journal & Goals */}
         {(activeTab === 'calendar' || activeTab === 'journal' || activeTab === 'goals') && (
-          <LifeProgressBanner summary={lifeSummary} loading={loadingSummary} />
+          <LifeProgressBanner
+            summary={lifeSummary}
+            yearSummary={yearSummary}
+            loading={loadingSummary}
+          />
         )}
 
         {/* Tab Routed Views */}
-        {activeTab === 'calendar' && <LifeCalendar summary={lifeSummary} />}
-        {activeTab === 'journal' && <JournalView onTriggerCoach={handleTriggerCoachFromJournal} />}
+        {activeTab === 'calendar' && (
+          <YearProductivityCalendar
+            summary={lifeSummary}
+            onNavigateToJournal={handleNavigateToJournalWithDate}
+          />
+        )}
+        {activeTab === 'journal' && (
+          <JournalView
+            initialDate={journalTargetDate}
+            onTriggerCoach={handleTriggerCoachFromJournal}
+          />
+        )}
         {activeTab === 'goals' && <GoalsView />}
         {activeTab === 'coach' && <AICoachView initialMode={coachInitialMode} />}
         {activeTab === 'analytics' && <AnalyticsView />}
         {activeTab === 'memories' && <MemoriesView />}
         {activeTab === 'settings' && <SettingsView onSettingsSaved={fetchSummary} />}
       </main>
+
 
       {/* Footer */}
       <footer className="mt-auto border-t border-emerald-100/70 glass-panel py-6">

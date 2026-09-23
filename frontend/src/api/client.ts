@@ -32,6 +32,53 @@ export interface YearGridRow {
   weeks: WeekBlock[];
 }
 
+export interface YearDayBlock {
+  date: string;
+  day_of_year: number;
+  day_of_week: number;
+  month: number;
+  day: number;
+  status: 'past' | 'today' | 'future';
+  has_log: boolean;
+  is_productive: boolean;
+  productivity_score?: number | null;
+  overall_growth_score?: number | null;
+  deep_work_hours?: number | null;
+  task_completion_rate?: number | null;
+  tasks_completed_count?: number;
+  tasks_total_count?: number;
+  top_priority?: string | null;
+  one_win?: string | null;
+  morning_completed?: boolean;
+  evening_completed?: boolean;
+}
+
+export interface YearMonthSummary {
+  month: number;
+  name: string;
+  short_name: string;
+  total_days: number;
+  productive_days: number;
+  days_elapsed: number;
+  productivity_rate: number;
+}
+
+export interface YearProductivityData {
+  year: number;
+  total_days: number;
+  days_elapsed: number;
+  days_remaining: number;
+  productive_days_count: number;
+  unproductive_days_count: number;
+  unlogged_days_count: number;
+  productivity_rate: number;
+  current_streak: number;
+  best_streak: number;
+  days: YearDayBlock[];
+  months: YearMonthSummary[];
+}
+
+
 export interface TaskItem {
   id?: string;
   text: string;
@@ -238,6 +285,12 @@ export const goalOSApi = {
     const res = await api.get<YearGridRow[]>('/calendar/grid');
     return res.data;
   },
+  getYearProductivity: async (year?: number): Promise<YearProductivityData> => {
+    const params = year ? `?year=${year}` : '';
+    const res = await api.get<YearProductivityData>(`/calendar/year${params}`);
+    return res.data;
+  },
+
 
   // Journal
   getTodayJournal: async (): Promise<DailyLog> => {

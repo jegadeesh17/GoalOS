@@ -216,6 +216,15 @@ def calendar_grid(reference_date: Optional[date] = None) -> list:
   return service.get_grid_data(reference_date=reference_date)
 
 
+@api_router.get("/calendar/year", dependencies=[Depends(require_api_token)])
+def calendar_year(
+  year: Optional[int] = None, reference_date: Optional[date] = None
+) -> dict:
+  service = _get_user_calendar_service()
+  return service.get_year_productivity_grid(year=year, reference_date=reference_date)
+
+
+
 # ---------------------------------------------------------------------------
 # Journal & Daily Logs
 # ---------------------------------------------------------------------------

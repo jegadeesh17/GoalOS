@@ -91,6 +91,15 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 - **Observation:** Visualizing a full year of 365/366 days in a single continuous matrix can feel disorienting and makes finding specific calendar dates difficult.
 - **Solution:** Structured the year into a 12-month grouped grid with 7-column weekday alignment (M-T-W-T-F-S-S) and leading day offsets. Each circle represents a discrete calendar day with visual tiers (high productivity gradient $\ge 70$, solid emerald for standard productive, subtle rings for unlogged past days, amber pulse for today, and dashed rings for future days). Connected every circle to a dedicated slide-over `DayDetailDrawer` showing structured journal data, tasks, reflections, and deep work hours with one-click navigation to the journal.
 
+### 4.6 "Magical, Simple & Light" Design Direction (User Preference, 2026-09-24)
+- **User Preference:** Keep the Forest Mist Paper Glass theme (palette, paper surfaces, Plus Jakarta Sans + Newsreader) — no major theme changes. Improvements must make the app feel *magical* yet *simple and light*: magic comes from a few moments that respond to the user (the day dot, the serif voice, the mist), lightness comes from subtraction (fewer repeated metrics, fewer nested cards, fewer uppercase eyebrows).
+- **Critique baseline (Impeccable, dual-agent):** 20/40 Nielsen; snapshot in `.impeccable/critique/`. Top issues: horizon banner repeated on 3 views with every number stated twice; the theme's own magic switched off; the user's own words (goal motivations, memories, reflections) rendered as small-sans data instead of Newsreader voice; generic SaaS scaffolding; Analytics as a wall of amber warnings + APM table.
+
+### 4.7 Tailwind 3 Silently Drops Unsupported Utility Values
+- **Observation:** `bg-white/88`, `bg-white/86`, `scale-130`, `scale-140`, `ring-3`, `shadow-xs`, `backdrop-blur-xs`, `animate-in slide-in-from-right`, `animate-fadeIn`, and `bg-canvas` never compile under Tailwind 3 (opacity modifiers must come from the opacity scale, e.g. `/90` or `/95`; the others are Tailwind 4 or `tailwindcss-animate` names, or undefined tokens). Consequence: the sticky navbar rendered *transparent* with a 40px `backdrop-blur-2xl` (the runtime-blur cost 4.1 banned), and the drawer/toast entrance animations never played.
+- **Solution:** Use only scale values (`/90`, `/95`) or bracket syntax (`bg-white/[.88]`), define custom keyframes in `tailwind.config.js`, and verify a new class by grepping the compiled CSS (`curl -s http://localhost:5173/src/index.css | grep -o '\.bg-white[^ {]*'`).
+- **Also:** The root `App.tsx` wrapper's opaque `bg-[#f7f9f7]` paints over the body's watercolor radial washes, so the mist is never visible.
+
 ---
 
 ## 5. 🛠️ Autonomous Operational Discipline & Memory Retention

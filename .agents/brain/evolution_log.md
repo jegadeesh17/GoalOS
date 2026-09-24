@@ -4,6 +4,23 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-24 — Impeccable Design Critique: "Magical, Simple & Light" Without a Theme Change
+
+- **Action:** Ran a dual-agent Impeccable critique of the whole React SPA (an isolated design review plus an isolated detector and headless-Playwright pass, at desktop 1440 and mobile 390). Scored 20/40 on Nielsen's heuristics, with 0 P0 and 3 P1 issues. The snapshot is `.impeccable/critique/2026-09-24T17-38-23Z__frontend-src-app-tsx.md`.
+- **User Direction:** Improve toward "magical yet simple and light" without major theme changes (see project_learnings 4.6).
+- **Key Findings:**
+  - The horizon banner is repeated on 3 views with duplicate metrics.
+  - The watercolor mist is hidden by the root wrapper's opaque background.
+  - Several Tailwind classes never compile, which left the navbar transparent under a 40px blur and killed the entrance animations (4.7).
+  - Newsreader carries almost none of the user's own words.
+  - 28 uppercase labels run against the sentence-case rule.
+  - Analytics is a wall of amber warnings.
+  - A real bug: Journal "today" uses a UTC `toISOString()`, so in IST between 00:00 and 05:30 it opens the previous day.
+- **Detector:** The CLI found 5 issues. The browser pass produced 210 finding lines: low-contrast from the slate-400 10px weekday letters, nested cards, emerald→teal gradients, and idle glow/pulse loops. It also produced false positives from `selection:` and `hover:` variants.
+- **Status:** The report was delivered and the user was asked to choose the scope. No UI code has changed yet.
+
+---
+
 ## 2026-09-23 — Antigravity Global Agent & Plugin Marketplace Deployment
 
 - **Action:** Deployed 11 curated, production-ready plugins from the [wshobson/agents](https://github.com/wshobson/agents) marketplace globally into Google Antigravity CLI (`agy`).

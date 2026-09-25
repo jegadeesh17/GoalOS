@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar, ActiveTab } from './components/Navbar';
-import { LifeProgressBanner } from './components/LifeProgressBanner';
 import { YearProductivityCalendar } from './components/YearProductivityCalendar';
 import { JournalView } from './components/JournalView';
 import { GoalsView } from './components/GoalsView';
@@ -9,7 +8,7 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { MemoriesView } from './components/MemoriesView';
 import { SettingsView } from './components/SettingsView';
 import { LifeSummary, YearProductivityData, goalOSApi } from './api/client';
-import { ShieldCheck, Database, Compass, Sparkle } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('calendar');
@@ -18,34 +17,33 @@ export const App: React.FC = () => {
   const [yearSummary, setYearSummary] = useState<YearProductivityData | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [journalTargetDate, setJournalTargetDate] = useState<string | undefined>(undefined);
-  const [healthStatus, setHealthStatus] = useState<{ log_count?: number; memory_count?: number; openrouter_configured?: boolean } | null>(null);
+  const [aiConnected, setAiConnected] = useState(false);
 
-  const fetchSummary = async () => {
+  // Only the first load shows a skeleton; later refreshes update the numbers in place.
+  const fetchSummary = useCallback(async () => {
     try {
-      setLoadingSummary(true);
-      const [summary, yearData, health] = await Promise.all([
+      const [summary, yearData, settings] = await Promise.all([
         goalOSApi.getCalendarSummary(),
         goalOSApi.getYearProductivity().catch((err) => {
           console.warn('Failed to load year productivity summary:', err);
           return null;
         }),
-        goalOSApi.getSettings().then((s) => ({
-          openrouter_configured: s.openrouter_configured,
-        })).catch(() => null),
+        goalOSApi.getSettings().catch(() => null),
       ]);
       setLifeSummary(summary);
       if (yearData) setYearSummary(yearData);
-      if (health) setHealthStatus(health);
+      if (settings) setAiConnected(!!settings.openrouter_configured);
     } catch (err) {
       console.error('Failed to load initial summary:', err);
     } finally {
       setLoadingSummary(false);
     }
-  };
-
-  useEffect(() => {
-    fetchSummary();
   }, []);
+
+  // Refresh whenever the calendar comes back into view, so journal edits show up in the horizon line.
+  useEffect(() => {
+    if (activeTab === 'calendar') fetchSummary();
+  }, [activeTab, fetchSummary]);
 
   const handleTriggerCoachFromJournal = (mode: 'morning' | 'evening') => {
     setCoachInitialMode(mode);
@@ -58,29 +56,15 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col text-slate-900 selection:bg-emerald-100 selection:text-emerald-950 relative overflow-x-hidden bg-[#f7f9f7]">
-      {/* Floating Sticky Header Navigation */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        lifeSummary={lifeSummary}
-      />
+    <div className="min-h-screen flex flex-col text-slate-900 relative overflow-x-hidden">
+      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Main Workspace */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-        {/* Life Horizon Progress Banner on top of Calendar, Journal & Goals */}
-        {(activeTab === 'calendar' || activeTab === 'journal' || activeTab === 'goals') && (
-          <LifeProgressBanner
-            summary={lifeSummary}
-            yearSummary={yearSummary}
-            loading={loadingSummary}
-          />
-        )}
-
-        {/* Tab Routed Views */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-10 space-y-6">
         {activeTab === 'calendar' && (
           <YearProductivityCalendar
             summary={lifeSummary}
+            yearSummary={yearSummary}
+            loadingSummary={loadingSummary}
             onNavigateToJournal={handleNavigateToJournalWithDate}
           />
         )}
@@ -97,38 +81,16 @@ export const App: React.FC = () => {
         {activeTab === 'settings' && <SettingsView onSettingsSaved={fetchSummary} />}
       </main>
 
-
-      {/* Footer */}
-      <footer className="mt-auto border-t border-emerald-100/70 glass-panel py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <div className="flex items-center space-x-3">
-            <span className="flex items-center space-x-1.5 font-bold text-slate-900">
-              <Compass className="w-4 h-4 text-emerald-700" />
-              <span>GoalOS v2.1</span>
-            </span>
-            <span className="text-slate-300">|</span>
-            <span className="flex items-center space-x-1 text-slate-600 font-medium">
-              <Database className="w-3.5 h-3.5 text-emerald-600/70" />
-              <span>Local SQLite & ChromaDB Vector Storage</span>
-            </span>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <span className="flex items-center space-x-1.5 text-emerald-800 font-bold bg-emerald-50/80 px-3 py-1 rounded-full border border-emerald-200/80 shadow-forest-xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Local-First Grounded</span>
-            </span>
-            {healthStatus?.openrouter_configured ? (
-              <span className="text-[11px] font-mono font-bold text-emerald-900 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-1 rounded-full border border-emerald-200/80 shadow-forest-xs flex items-center space-x-1">
-                <Sparkle className="w-2.5 h-2.5 text-amber-500 fill-amber-400" />
-                <span>AI Coach Online</span>
-              </span>
-            ) : (
-              <span className="text-[11px] font-mono text-slate-600 bg-slate-100/90 px-3 py-1 rounded-full border border-slate-200/60">
-                Deterministic Mode
-              </span>
-            )}
-          </div>
+      <footer className="mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+          <span className="inline-flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+            Stored privately on this device
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${aiConnected ? 'bg-emerald-500' : 'bg-slate-300'}`} aria-hidden="true" />
+            {aiConnected ? 'AI coach connected' : 'Coaching from local rules'}
+          </span>
         </div>
       </footer>
     </div>

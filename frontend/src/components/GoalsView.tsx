@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Goal, Milestone, goalOSApi } from '../api/client';
 import { GoalFormModal } from './GoalFormModal';
+import { PageHeader } from './PageHeader';
 import {
   Plus,
   CheckCircle2,
   Circle,
   Trash2,
-  Flag,
   Pencil,
   Target,
   Calendar,
   Compass
 } from 'lucide-react';
+
+const HORIZON_COLUMNS = [
+  { key: '1-month', title: '1-month sprints', desc: 'What you’re building momentum on now', icon: Target },
+  { key: '1-year', title: '1-year horizons', desc: 'Milestones that compound over the year', icon: Calendar },
+  { key: '5-year', title: '5-year vision', desc: 'The life you’re growing toward', icon: Compass },
+];
 
 export const GoalsView: React.FC = () => {
   const [horizons, setHorizons] = useState<Record<string, Goal[]>>({
@@ -22,7 +28,8 @@ export const GoalsView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
-  const [newMilestoneText, setNewMilestoneText] = useState<Record<number, string>>({});
+  const [addingMilestoneFor, setAddingMilestoneFor] = useState<number | null>(null);
+  const [newMilestoneText, setNewMilestoneText] = useState('');
 
   const loadGoals = async () => {
     try {
@@ -81,16 +88,16 @@ export const GoalsView: React.FC = () => {
   };
 
   const handleAddMilestone = async (goalId: number) => {
-    const text = newMilestoneText[goalId];
-    if (!text || !text.trim()) return;
+    const text = newMilestoneText.trim();
+    if (!text) return;
     try {
       await goalOSApi.createMilestone(goalId, {
         goal_id: goalId,
-        title: text.trim(),
+        title: text,
         status: 'active',
         progress: 0.0,
       });
-      setNewMilestoneText({ ...newMilestoneText, [goalId]: '' });
+      setNewMilestoneText('');
       loadGoals();
     } catch (err) {
       console.error('Failed to add milestone:', err);
@@ -111,240 +118,219 @@ export const GoalsView: React.FC = () => {
     }
   };
 
-  const horizonColumns = [
-    { 
-      key: '1-month', 
-      title: '1-Month Sprints', 
-      desc: 'Immediate tactical focus & habit momentum', 
-      icon: Target,
-      gradient: 'from-emerald-600 to-teal-600'
-    },
-    { 
-      key: '1-year', 
-      title: '1-Year Horizons', 
-      desc: 'Strategic compounding milestones & skill expansion', 
-      icon: Calendar,
-      gradient: 'from-teal-600 to-emerald-700'
-    },
-    { 
-      key: '5-year', 
-      title: '5-Year Vision', 
-      desc: 'Long-term life trajectory & identity architecture', 
-      icon: Compass,
-      gradient: 'from-earth-amber to-emerald-600'
-    },
-  ];
-
-  if (loading) {
-    return (
-      <div className="glass-panel rounded-3xl p-8 animate-pulse space-y-6">
-        <div className="h-5 bg-slate-100 rounded-full w-1/4"></div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="h-96 bg-slate-50/60 rounded-2xl"></div>
-          <div className="h-96 bg-slate-50/60 rounded-2xl"></div>
-          <div className="h-96 bg-slate-50/60 rounded-2xl"></div>
-        </div>
-      </div>
-    );
-  }
+  const closeMilestoneInput = () => {
+    setAddingMilestoneFor(null);
+    setNewMilestoneText('');
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header & Create Action */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-7 shadow-forest border border-emerald-100/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-forest-700 mb-1">
-            <span className="flex items-center space-x-1 bg-emerald-50/90 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200/70 shadow-forest-xs font-semibold">
-              <Target className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Multi-Horizon Architecture</span>
-            </span>
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Goals & Horizons Board</h2>
-          <p className="text-xs text-slate-500 mt-0.5 font-normal">
-            Bridge 5-year life vision down to daily 1-month execution sprints.
-          </p>
+    <div className="space-y-8">
+      <PageHeader
+        title="Goals"
+        subtitle="From your five-year vision down to this month’s sprint."
+        actions={
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen(true)}
+            className="flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-forest-xs transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            New goal
+          </button>
+        }
+      />
+
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 motion-safe:animate-pulse" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-96 bg-white/60 rounded-3xl" />
+          ))}
         </div>
-
-        <button
-          onClick={() => setIsCreateOpen(true)}
-          className="flex items-center justify-center space-x-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-forest-xs transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Goal</span>
-        </button>
-      </div>
-
-      {/* 3 Horizon Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {horizonColumns.map((col) => {
-          const columnGoals = horizons[col.key] || [];
-          const Icon = col.icon;
-          return (
-            <div key={col.key} className="space-y-4">
-              {/* Column Header */}
-              <div className="glass-panel rounded-3xl p-4 sm:p-5 shadow-forest border border-emerald-100/70">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/60">
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <h3 className="font-bold text-sm text-slate-900">{col.title}</h3>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {HORIZON_COLUMNS.map((col) => {
+            const columnGoals = horizons[col.key] || [];
+            const Icon = col.icon;
+            return (
+              <section key={col.key} className="space-y-4" aria-labelledby={`horizon-${col.key}`}>
+                <div className="px-1">
+                  <div className="flex items-center justify-between">
+                    <h2 id={`horizon-${col.key}`} className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                      <Icon className="w-4 h-4 text-emerald-700" />
+                      {col.title}
+                    </h2>
+                    <span className="text-xs font-medium text-slate-500 tabular-nums">{columnGoals.length}</span>
                   </div>
-                  <span className="text-xs font-semibold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200/70">
-                    {columnGoals.length}
-                  </span>
+                  <p className="text-xs text-slate-500 mt-0.5">{col.desc}</p>
                 </div>
-                <p className="text-xs text-slate-500 mt-1 font-normal">{col.desc}</p>
-              </div>
 
-              {/* Goal Cards List */}
-              <div className="space-y-3.5">
                 {columnGoals.length === 0 ? (
-                  <div className="glass-panel rounded-3xl border border-dashed border-emerald-200/70 p-6 text-center text-xs text-slate-400 font-normal">
-                    No active goals in this horizon.
+                  <div className="rounded-3xl border border-dashed border-emerald-200 px-5 py-8 text-center text-sm text-slate-500">
+                    Nothing here yet.
                   </div>
                 ) : (
                   columnGoals.map((goal) => {
                     const milestones = goal.milestones || [];
                     const completedMilestones = milestones.filter((m) => m.status === 'completed');
-                    const progressPercent = milestones.length > 0 
-                      ? Math.round((completedMilestones.length / milestones.length) * 100)
-                      : Math.round(goal.progress * 100);
+                    const progressPercent =
+                      milestones.length > 0
+                        ? Math.round((completedMilestones.length / milestones.length) * 100)
+                        : Math.round(goal.progress * 100);
+                    const isAdding = addingMilestoneFor === goal.id;
 
                     return (
-                      <div
-                        key={goal.id}
-                        className="glass-card-interactive rounded-3xl p-5 space-y-3 border border-emerald-100/80 shadow-forest"
-                      >
-                        {/* Title & Category Badge */}
+                      <article key={goal.id} className="glass-panel rounded-3xl p-5 space-y-4 shadow-forest">
                         <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="text-xs uppercase font-semibold bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-900 px-2 py-0.5 rounded-md border border-emerald-200/80">
-                                {goal.category}
-                              </span>
-                              <span className="text-xs font-mono text-slate-400">P{goal.priority}</span>
-                            </div>
-                            <h4 className="font-bold text-sm text-slate-900 leading-snug">{goal.title}</h4>
+                          <div className="min-w-0">
+                            <span className="inline-block text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full mb-1.5">
+                              {(goal.category || 'General').charAt(0).toUpperCase() + (goal.category || 'General').slice(1).toLowerCase()}
+                            </span>
+                            <h3 className="font-bold text-[15px] text-slate-900 leading-snug">{goal.title}</h3>
                           </div>
 
-                          <div className="flex items-center space-x-0.5 flex-shrink-0">
+                          <div className="flex items-center flex-shrink-0 -mr-1">
                             <button
                               type="button"
                               onClick={() => setEditingGoal(goal)}
-                              className="text-slate-400 hover:text-emerald-700 transition-colors p-1 cursor-pointer"
-                              title="Edit goal"
+                              className="text-slate-400 hover:text-emerald-700 transition-colors p-1.5 rounded-full cursor-pointer"
+                              aria-label={`Edit ${goal.title}`}
                             >
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteGoal(goal.id)}
-                              className="text-slate-400 hover:text-rose-600 transition-colors p-1 cursor-pointer"
-                              title="Delete goal"
+                              className="text-slate-400 hover:text-rose-600 transition-colors p-1.5 rounded-full cursor-pointer"
+                              aria-label={`Delete ${goal.title}`}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
 
-                        {goal.reason && (
-                          <p className="text-xs text-slate-700 bg-white/90 p-2.5 rounded-xl border border-emerald-100/70 leading-relaxed">
-                            <strong className="text-slate-900 font-semibold">Motivation:</strong> {goal.reason}
-                          </p>
-                        )}
+                        {goal.reason && <p className="voice italic text-[15px] text-forest-900">{goal.reason}</p>}
 
-                        {/* Progress Bar */}
                         <div>
-                          <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                          <div className="flex justify-between text-xs font-medium text-slate-600 mb-1.5">
                             <span>Progress</span>
-                            <span className="text-emerald-800 font-bold">{progressPercent}%</span>
+                            <span className="text-emerald-800 font-semibold tabular-nums">{progressPercent}%</span>
                           </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden p-0.5 border border-emerald-100">
+                          <div
+                            className="w-full h-1.5 rounded-full bg-emerald-50 ring-1 ring-inset ring-emerald-100 overflow-hidden"
+                            role="progressbar"
+                            aria-valuenow={progressPercent}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label={`${goal.title} progress`}
+                          >
                             <div
-                              className={`bg-gradient-to-r ${col.gradient} h-full rounded-full transition-all duration-500`}
+                              className="h-full rounded-full bg-emerald-600 transition-[width] duration-500"
                               style={{ width: `${progressPercent}%` }}
-                            ></div>
+                            />
                           </div>
                         </div>
 
-                        {/* Milestones Checklist */}
-                        <div className="space-y-1.5 pt-2.5 border-t border-emerald-100/60">
-                          <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-                            <span className="flex items-center space-x-1">
-                              <Flag className="w-3.5 h-3.5 text-emerald-700" />
-                              <span>Milestones</span>
-                            </span>
-                            <span className="text-xs text-emerald-700 font-medium">
-                              {completedMilestones.length}/{milestones.length}
-                            </span>
-                          </div>
+                        <div className="pt-3 border-t border-emerald-100/70 space-y-1.5">
+                          {milestones.length > 0 && (
+                            <>
+                              <p className="text-xs font-medium text-slate-600">
+                                Milestones{' '}
+                                <span className="text-slate-500 tabular-nums">
+                                  · {completedMilestones.length} of {milestones.length}
+                                </span>
+                              </p>
+                              <ul className="space-y-0.5">
+                                {milestones.map((ms) => {
+                                  const isCompleted = ms.status === 'completed';
+                                  return (
+                                    <li
+                                      key={ms.id}
+                                      className="flex items-center justify-between text-sm px-1.5 py-1 -mx-1.5 rounded-lg hover:bg-emerald-50/50 transition-colors group/ms"
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleMilestone(ms)}
+                                        className="flex items-center gap-2 text-left flex-1 min-w-0 cursor-pointer"
+                                        aria-pressed={isCompleted}
+                                      >
+                                        {isCompleted ? (
+                                          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                        ) : (
+                                          <Circle className="w-4 h-4 text-emerald-300 flex-shrink-0" />
+                                        )}
+                                        <span className={`truncate ${isCompleted ? 'line-through text-slate-500' : 'text-slate-800'}`}>
+                                          {ms.title}
+                                        </span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteMilestone(ms.id)}
+                                        aria-label={`Delete milestone ${ms.title}`}
+                                        className="text-slate-400 hover:text-rose-600 transition-opacity p-1 flex-shrink-0 opacity-0 group-hover/ms:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </>
+                          )}
 
-                          <div className="space-y-1">
-                            {milestones.map((ms) => {
-                              const isCompleted = ms.status === 'completed';
-                              return (
-                                <div
-                                  key={ms.id}
-                                  className="flex items-center justify-between text-xs p-1.5 rounded-lg hover:bg-white transition-all group/ms"
-                                >
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleMilestone(ms)}
-                                    className="flex items-center space-x-2 text-left flex-1 min-w-0 cursor-pointer"
-                                  >
-                                    {isCompleted ? (
-                                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                                    ) : (
-                                      <Circle className="w-4 h-4 text-emerald-300 flex-shrink-0" />
-                                    )}
-                                    <span className={`truncate ${isCompleted ? 'line-through text-slate-400' : 'text-slate-800 font-normal'}`}>
-                                      {ms.title}
-                                    </span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteMilestone(ms.id)}
-                                    title="Delete milestone"
-                                    className="text-slate-300 hover:text-rose-600 transition-colors p-1 flex-shrink-0 opacity-0 group-hover/ms:opacity-100 cursor-pointer"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          {/* Add milestone inline input */}
-                          <div className="flex items-center space-x-1.5 pt-1">
-                            <input
-                              type="text"
-                              placeholder="New milestone..."
-                              value={newMilestoneText[goal.id] || ''}
-                              onChange={(e) => setNewMilestoneText({ ...newMilestoneText, [goal.id]: e.target.value })}
-                              onKeyDown={(e) => e.key === 'Enter' && handleAddMilestone(goal.id)}
-                              className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-emerald-100 bg-white/95 focus:ring-1 focus:ring-emerald-600 shadow-xs text-slate-900"
-                            />
+                          {isAdding ? (
+                            <div className="flex items-center gap-1.5 pt-1">
+                              <input
+                                type="text"
+                                autoFocus
+                                aria-label={`New milestone for ${goal.title}`}
+                                placeholder="Name the next milestone"
+                                value={newMilestoneText}
+                                onChange={(e) => setNewMilestoneText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleAddMilestone(goal.id);
+                                  if (e.key === 'Escape') closeMilestoneInput();
+                                }}
+                                className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-emerald-200 bg-white text-slate-900 placeholder:text-slate-500"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleAddMilestone(goal.id)}
+                                className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold cursor-pointer"
+                              >
+                                Add
+                              </button>
+                              <button
+                                type="button"
+                                onClick={closeMilestoneInput}
+                                className="px-2 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
                             <button
                               type="button"
-                              onClick={() => handleAddMilestone(goal.id)}
-                              className="p-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-950 rounded-lg text-xs font-semibold border border-emerald-200/80 cursor-pointer"
+                              onClick={() => {
+                                setAddingMilestoneFor(goal.id);
+                                setNewMilestoneText('');
+                              }}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 hover:text-emerald-950 pt-0.5 cursor-pointer"
                             >
                               <Plus className="w-3.5 h-3.5" />
+                              Add milestone
                             </button>
-                          </div>
+                          )}
                         </div>
-                      </div>
+                      </article>
                     );
                   })
                 )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Create Goal Modal */}
       {isCreateOpen && (
         <GoalFormModal
           mode="create"
@@ -354,7 +340,6 @@ export const GoalsView: React.FC = () => {
         />
       )}
 
-      {/* Edit Goal Modal */}
       {editingGoal && (
         <GoalFormModal
           mode="edit"

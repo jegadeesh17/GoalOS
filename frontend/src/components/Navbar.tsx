@@ -1,11 +1,11 @@
-import React from 'react';
-import { 
-  Calendar, 
-  BookOpen, 
-  Target, 
-  Sparkles, 
-  BarChart3, 
-  Brain, 
+import React, { useEffect, useRef } from 'react';
+import {
+  Calendar,
+  BookOpen,
+  Target,
+  Sparkles,
+  BarChart3,
+  Brain,
   Settings as SettingsIcon,
   Compass
 } from 'lucide-react';
@@ -15,62 +15,64 @@ export type ActiveTab = 'calendar' | 'journal' | 'goals' | 'coach' | 'analytics'
 interface NavbarProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
-  lifeSummary?: {
-    age_years: number;
-    percentage_lived: number;
-    weeks_remaining: number;
-  } | null;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
-  const navItems = [
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
-    { id: 'journal', label: 'Journal', icon: BookOpen },
-    { id: 'goals', label: 'Goals', icon: Target },
-    { id: 'coach', label: 'AI Coach', icon: Sparkles },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'memories', label: 'Memories', icon: Brain },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
-  ] as const;
+const NAV_ITEMS = [
+  { id: 'calendar', label: 'Calendar', icon: Calendar },
+  { id: 'journal', label: 'Journal', icon: BookOpen },
+  { id: 'goals', label: 'Goals', icon: Target },
+  { id: 'coach', label: 'AI Coach', icon: Sparkles },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'memories', label: 'Memories', icon: Brain },
+  { id: 'settings', label: 'Settings', icon: SettingsIcon },
+] as const;
 
-  const todayFormatted = new Intl.DateTimeFormat('en-US', { 
-    weekday: 'short', 
-    month: 'short', 
-    day: 'numeric' 
+export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
+  const mobileRefs = useRef(new Map<string, HTMLButtonElement>());
+
+  // Keep the active tab visible in the scrolling phone row.
+  useEffect(() => {
+    mobileRefs.current.get(activeTab)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [activeTab]);
+
+  const todayFormatted = new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
   }).format(new Date());
 
   return (
-    <header className="sticky top-3 z-50 px-4 sm:px-6 max-w-7xl mx-auto w-full">
-      <div className="bg-white/88 backdrop-blur-2xl rounded-full px-5 py-2 shadow-forest border border-emerald-100/80 transition-all">
+    <header className="sticky top-3 z-40 px-4 sm:px-6 max-w-7xl mx-auto w-full">
+      <div className="bg-white/95 rounded-3xl lg:rounded-full px-4 sm:px-5 py-2 shadow-forest border border-emerald-100/80">
         <div className="flex items-center justify-between gap-4">
-          {/* Left Cluster: Brand Logo (flex-1) */}
           <div className="flex items-center flex-1 min-w-0">
-            <div 
-              className="flex items-center space-x-2.5 cursor-pointer group" 
+            <button
+              type="button"
+              className="flex items-center gap-2.5 cursor-pointer group rounded-xl"
               onClick={() => setActiveTab('calendar')}
+              aria-label="GoalOS, go to calendar"
             >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-700 to-teal-600 flex items-center justify-center text-white shadow-forest-xs group-hover:scale-105 transition-all flex-shrink-0">
+              <span className="w-8 h-8 rounded-xl bg-emerald-700 flex items-center justify-center text-white shadow-forest-xs motion-safe:group-hover:scale-105 transition-transform flex-shrink-0">
                 <Compass className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-lg text-slate-900 tracking-tight">
-                GoalOS
               </span>
-            </div>
+              <span className="font-bold text-lg text-slate-900 tracking-tight">GoalOS</span>
+            </button>
           </div>
 
-          {/* Center Cluster: Symmetrically Centered Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1 bg-slate-100/70 p-1 rounded-full border border-emerald-100/60 shadow-inner flex-shrink-0">
-            {navItems.map((item) => {
+          <nav aria-label="Primary" className="hidden lg:flex items-center gap-1 bg-slate-100/70 p-1 rounded-full flex-shrink-0">
+            {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
+                  type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors duration-150 cursor-pointer ${
                     isActive
                       ? 'bg-emerald-700 text-white shadow-forest-xs'
-                      : 'text-slate-700 hover:text-emerald-950 hover:bg-white/90'
+                      : 'text-slate-700 hover:text-emerald-950 hover:bg-white'
                   }`}
                 >
                   <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
@@ -80,28 +82,32 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             })}
           </nav>
 
-          {/* Right Cluster: Date Indicator (flex-1 justify-end) */}
           <div className="hidden sm:flex items-center justify-end flex-1 min-w-0">
-            <div className="flex items-center space-x-2 text-xs font-medium text-slate-700 bg-emerald-50/80 px-3.5 py-1.5 rounded-full border border-emerald-100/90 shadow-forest-xs whitespace-nowrap">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 ring-4 ring-emerald-200/70 animate-pulse flex-shrink-0"></span>
-              <span className="font-semibold text-slate-800">{todayFormatted}</span>
-            </div>
+            <p className="flex items-center gap-2 text-xs font-semibold text-slate-700 whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-amber-400" aria-hidden="true" />
+              {todayFormatted}
+            </p>
           </div>
         </div>
 
-        {/* Mobile Navigation Row */}
-        <div className="lg:hidden flex items-center space-x-1 pt-2 pb-1 overflow-x-auto border-t border-emerald-50 mt-2">
-          {navItems.map((item) => {
+        <nav aria-label="Primary" className="lg:hidden flex items-center gap-1 pt-2 pb-1 mt-2 border-t border-emerald-50 overflow-x-auto scroll-fade-x">
+          {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
+                ref={(el) => {
+                  if (el) mobileRefs.current.set(item.id, el);
+                  else mobileRefs.current.delete(item.id);
+                }}
+                type="button"
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors cursor-pointer ${
                   isActive
                     ? 'bg-emerald-700 text-white font-semibold shadow-forest-xs'
-                    : 'text-slate-700 hover:bg-white bg-slate-100/70'
+                    : 'text-slate-700 font-medium hover:bg-slate-100'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -109,7 +115,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
               </button>
             );
           })}
-        </div>
+          <span className="w-6 shrink-0" aria-hidden="true" />
+        </nav>
       </div>
     </header>
   );

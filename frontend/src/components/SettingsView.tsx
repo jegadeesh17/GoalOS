@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { COACH_TONE_PRESETS, UserSettings, goalOSApi } from '../api/client';
+import { PageHeader } from './PageHeader';
+import { DiagnosticsPanel } from './DiagnosticsPanel';
+import { localDateStr } from '../lib/date';
 import { 
   Save, 
   Download, 
   AlertOctagon, 
   User, 
   Lock,
-  Sparkles,
-  Settings as SettingsIcon
+  Sparkles
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -44,15 +46,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      setSaveStatus('Saving settings to SQLite...');
+      setSaveStatus('Saving…');
       const updated = await goalOSApi.updateSettings(settings);
       setSettings(updated);
-      setSaveStatus('Settings Saved Successfully!');
+      setSaveStatus('Settings saved.');
       setTimeout(() => setSaveStatus(null), 3000);
       if (onSettingsSaved) onSettingsSaved();
     } catch (err) {
       console.error('Failed to update settings:', err);
-      setSaveStatus('Error saving settings');
+      setSaveStatus('Settings couldn’t be saved. Check that GoalOS is running, then try again.');
     }
   };
 
@@ -63,7 +65,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `goalos_export_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `goalos_export_${localDateStr()}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -102,22 +104,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-7 shadow-forest border border-emerald-100/70">
-        <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-forest-700 mb-1">
-          <span className="flex items-center space-x-1 bg-emerald-50/90 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200/70 shadow-forest-xs font-semibold">
-            <SettingsIcon className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Profile & Configuration</span>
-          </span>
-        </div>
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Settings & Privacy</h2>
-        <p className="text-xs text-slate-500 mt-0.5 font-normal">
-          Configure your profile, life horizons, AI privacy guardrails, and data exports.
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        subtitle="Your profile, life horizons, coach persona, privacy and data."
+      />
 
       {saveStatus && (
-        <div className="bg-emerald-50/90 border border-emerald-200 text-emerald-950 text-xs font-medium px-4 py-2.5 rounded-2xl flex items-center justify-between shadow-forest-xs animate-fadeIn">
+        <div role="status" className="bg-emerald-50/90 border border-emerald-200 text-emerald-950 text-xs font-medium px-4 py-2.5 rounded-2xl flex items-center justify-between animate-fade-up">
           <span>{saveStatus}</span>
         </div>
       )}
@@ -128,38 +121,38 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
         <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-4 shadow-forest border border-emerald-100/70">
           <h3 className="font-bold text-sm text-slate-900 flex items-center space-x-2">
             <User className="w-4 h-4 text-emerald-700" />
-            <span>Profile & Life Horizon Parameters</span>
+            <span>Profile &amp; life horizon</span>
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Your Name
+                Your name
               </label>
               <input
                 type="text"
                 value={settings.name || ''}
                 onChange={(e) => setSettings({ ...settings, name: e.target.value })}
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs font-medium text-slate-900"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 font-medium text-slate-900"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Birth Date *
+                Birth date *
               </label>
               <input
                 type="date"
                 required
                 value={settings.birth_date || '2002-06-17'}
                 onChange={(e) => setSettings({ ...settings, birth_date: e.target.value })}
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs font-medium cursor-pointer text-slate-900"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 font-medium cursor-pointer text-slate-900"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Target Horizon (Years)
+                Horizon (years)
               </label>
               <input
                 type="number"
@@ -167,7 +160,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
                 max="120"
                 value={settings.target_age || 70}
                 onChange={(e) => setSettings({ ...settings, target_age: parseInt(e.target.value) || 70 })}
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs font-medium text-slate-900"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 font-medium text-slate-900"
               />
             </div>
           </div>
@@ -175,27 +168,27 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
           <div className="space-y-3.5 pt-1">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                10-Year Vision & Long-Term Identity
+                10-year vision
               </label>
               <textarea
                 rows={2}
                 placeholder="What is your ultimate 10-year horizon vision?"
                 value={settings.life_vision || ''}
                 onChange={(e) => setSettings({ ...settings, life_vision: e.target.value })}
-                className="w-full text-sm p-3 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs resize-none font-sans text-slate-900"
+                className="w-full text-sm p-3 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 resize-none font-sans text-slate-900"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                5-Year Strategic Goals
+                5-year goals
               </label>
               <textarea
                 rows={2}
                 placeholder="Where must you be 5 years from now to align with your life vision?"
                 value={settings.five_year_vision || ''}
                 onChange={(e) => setSettings({ ...settings, five_year_vision: e.target.value })}
-                className="w-full text-sm p-3 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs resize-none font-sans text-slate-900"
+                className="w-full text-sm p-3 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 resize-none font-sans text-slate-900"
               />
             </div>
           </div>
@@ -206,7 +199,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
           <div>
             <h3 className="font-bold text-sm text-slate-900 flex items-center space-x-2">
               <Sparkles className="w-4 h-4 text-emerald-700" />
-              <span>Coach Persona &amp; Prompt Tuning</span>
+              <span>Coach persona</span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5 font-normal">
               Shape how the coordinator speaks to you. Persona affects delivery only — coaching stays grounded in your real data.
@@ -214,7 +207,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Preferred Tone</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Preferred tone</label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {COACH_TONE_PRESETS.map((preset) => {
                 const active = (settings.preferred_tone || '') === preset.value;
@@ -240,7 +233,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Custom Coach Directives
+              Custom coach directives
             </label>
             <textarea
               rows={4}
@@ -248,9 +241,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
               placeholder="e.g. Always open with the single highest-leverage action. Never use motivational cliches. Reference my 5-year vision when I drift."
               value={settings.custom_coach_prompt || ''}
               onChange={(e) => setSettings({ ...settings, custom_coach_prompt: e.target.value })}
-              className="w-full text-sm p-3 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs resize-none font-sans text-slate-900"
+              className="w-full text-sm p-3 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 resize-none font-sans text-slate-900"
             />
-            <p className="text-xs text-slate-400 mt-1 font-normal text-right">
+            <p className="text-xs text-slate-500 mt-1 font-normal text-right">
               {(settings.custom_coach_prompt || '').length} / 2000
             </p>
           </div>
@@ -260,12 +253,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
         <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-3.5 shadow-forest border border-emerald-100/70">
           <h3 className="font-bold text-sm text-slate-900 flex items-center space-x-2">
             <Lock className="w-4 h-4 text-emerald-700" />
-            <span>Privacy & AI Connectivity</span>
+            <span>Privacy &amp; AI</span>
           </h3>
 
           <div className="bg-gradient-to-r from-white via-emerald-50/40 to-teal-50/30 p-4 rounded-2xl border border-emerald-100 flex items-start justify-between gap-4 shadow-forest-xs">
             <div className="space-y-0.5">
-              <span className="text-xs font-bold text-slate-900 block">Allow Remote AI Coaching (OpenRouter)</span>
+              <span className="text-xs font-bold text-slate-900 block">Allow remote AI coaching (OpenRouter)</span>
               <p className="text-xs text-slate-600 font-normal leading-relaxed">
                 When enabled and an OpenRouter key is present in <code className="bg-white px-1 py-0.5 rounded border border-emerald-200 text-xs font-mono text-emerald-800">.env</code>, AI coaching queries use remote LLMs. When disabled, GoalOS operates strictly on local rules.
               </p>
@@ -289,7 +282,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
             className="flex items-center space-x-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2.5 rounded-full text-xs font-semibold shadow-forest-xs transition-all cursor-pointer"
           >
             <Save className="w-4 h-4" />
-            <span>Save Settings</span>
+            <span>Save settings</span>
           </button>
         </div>
       </form>
@@ -298,13 +291,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
       <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-4 shadow-forest border border-emerald-100/70">
         <h3 className="font-bold text-sm text-slate-900 flex items-center space-x-2">
           <Download className="w-4 h-4 text-emerald-700" />
-          <span>Data Portability & Database</span>
+          <span>Your data</span>
         </h3>
 
         {/* Export Card */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-2xl border border-emerald-100 bg-white/90 gap-3 shadow-forest-xs">
           <div>
-            <h4 className="text-xs font-bold text-slate-900">Export JSON Data</h4>
+            <h4 className="text-xs font-bold text-slate-900">Export everything</h4>
             <p className="text-xs text-slate-500 mt-0.5 font-normal">
               Download all goals, daily logs, memories, and scores in a portable JSON file.
             </p>
@@ -323,7 +316,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
         <div className="p-4 rounded-2xl border border-rose-200 bg-rose-50/40 space-y-2.5 shadow-forest-xs">
           <div className="flex items-center space-x-2 text-rose-700 font-bold text-xs">
             <AlertOctagon className="w-4 h-4" />
-            <span>Factory Reset (Auto-Backup)</span>
+            <span>Factory reset (backs up first)</span>
           </div>
           <p className="text-xs text-slate-600 font-normal">
             Creates an automatic timestamped backup in your database directory, then clears all logs and memories.
@@ -335,7 +328,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
               placeholder="Type RESET to confirm"
               value={resetConfirm}
               onChange={(e) => setResetConfirm(e.target.value)}
-              className="text-xs px-3.5 py-2 rounded-xl border border-rose-200 bg-white focus:ring-2 focus:ring-rose-500 w-full sm:w-44 font-mono shadow-xs"
+              className="text-xs px-3.5 py-2 rounded-xl border border-rose-200 bg-white focus:ring-2 focus:ring-rose-500 w-full sm:w-44 font-mono"
             />
             <button
               type="button"
@@ -343,7 +336,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
               onClick={handleReset}
               className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white px-4 py-2 rounded-full text-xs font-semibold transition-all shadow-forest-xs cursor-pointer"
             >
-              Execute Reset
+              Reset everything
             </button>
           </div>
 
@@ -352,6 +345,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
           )}
         </div>
       </div>
+
+      <DiagnosticsPanel />
     </div>
   );
 };

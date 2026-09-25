@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Memory, goalOSApi } from '../api/client';
-import { 
-  Search, 
-  Plus, 
-  Trash2, 
-  Sparkles,
-  Brain,
+import { PageHeader } from './PageHeader';
+import { localDateStr, relativeDay, formatDate } from '../lib/date';
+import {
+  Search,
+  Plus,
+  Trash2,
   Table as TableIcon,
   LayoutGrid,
-  Calendar,
   Layers,
   Lightbulb,
   BookOpen,
@@ -16,12 +15,30 @@ import {
   Fingerprint
 } from 'lucide-react';
 
+const TYPE_STYLES: Record<string, { label: string; icon: typeof Lightbulb; tone: string }> = {
+  principle: { label: 'Principle', icon: Award, tone: 'bg-amber-50 text-amber-900' },
+  lesson: { label: 'Lesson', icon: BookOpen, tone: 'bg-emerald-50 text-emerald-900' },
+  identity: { label: 'Identity', icon: Fingerprint, tone: 'bg-teal-50 text-teal-900' },
+  insight: { label: 'Insight', icon: Lightbulb, tone: 'bg-emerald-50/70 text-forest-900' },
+};
+
+const TypeBadge: React.FC<{ type: string }> = ({ type }) => {
+  const style = TYPE_STYLES[(type || 'insight').toLowerCase()] ?? TYPE_STYLES.insight;
+  const Icon = style.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${style.tone}`}>
+      <Icon className="w-3 h-3" />
+      {style.label}
+    </span>
+  );
+};
+
 export const MemoriesView: React.FC = () => {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [newMemoryText, setNewMemoryText] = useState('');
@@ -69,7 +86,7 @@ export const MemoriesView: React.FC = () => {
         text: newMemoryText.trim(),
         memory_type: newMemoryType,
         importance: newMemoryImportance,
-        source_date: new Date().toISOString().split('T')[0],
+        source_date: localDateStr(),
       });
       setNewMemoryText('');
       loadMemories();
@@ -91,122 +108,94 @@ export const MemoriesView: React.FC = () => {
     }
   };
 
+  const clearSearch = () => {
+    setSearchResults(null);
+    setSearchQuery('');
+  };
+
   const displayedList = useMemo(() => {
     const rawList = searchResults !== null ? searchResults : memories;
     if (selectedType === 'all') return rawList;
     return rawList.filter((m) => (m.memory_type || '').toLowerCase() === selectedType.toLowerCase());
   }, [searchResults, memories, selectedType]);
 
-  const getTypeBadge = (type: string) => {
-    const t = (type || 'insight').toLowerCase();
-    switch (t) {
-      case 'principle':
-        return (
-          <span className="inline-flex items-center space-x-1 text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200/80 px-2.5 py-0.5 rounded-full shadow-forest-xs">
-            <Award className="w-3 h-3 text-amber-600" />
-            <span className="capitalize">Principle</span>
-          </span>
-        );
-      case 'lesson':
-        return (
-          <span className="inline-flex items-center space-x-1 text-[11px] font-semibold bg-emerald-50 text-emerald-900 border border-emerald-200/80 px-2.5 py-0.5 rounded-full shadow-forest-xs">
-            <BookOpen className="w-3 h-3 text-emerald-700" />
-            <span className="capitalize">Lesson</span>
-          </span>
-        );
-      case 'identity':
-        return (
-          <span className="inline-flex items-center space-x-1 text-[11px] font-semibold bg-teal-50 text-teal-900 border border-teal-200/80 px-2.5 py-0.5 rounded-full shadow-forest-xs">
-            <Fingerprint className="w-3 h-3 text-teal-700" />
-            <span className="capitalize">Identity</span>
-          </span>
-        );
-      case 'insight':
-      default:
-        return (
-          <span className="inline-flex items-center space-x-1 text-[11px] font-semibold bg-emerald-50/70 text-forest-900 border border-emerald-200/60 px-2.5 py-0.5 rounded-full shadow-forest-xs">
-            <Lightbulb className="w-3 h-3 text-emerald-700" />
-            <span className="capitalize">Insight</span>
-          </span>
-        );
-    }
-  };
-
+  const deleteButton = (mem: Memory) =>
+    mem.id ? (
+      <button
+        type="button"
+        onClick={() => handleDelete(mem.id)}
+        aria-label="Delete memory"
+        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    ) : null;
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-7 shadow-forest border border-emerald-100/70">
-        <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-forest-700 mb-1">
-          <span className="flex items-center space-x-1 bg-emerald-50/90 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200/70 shadow-forest-xs font-semibold">
-            <Brain className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Personal Memory Bank</span>
-          </span>
+      <PageHeader
+        title="Memories"
+        subtitle="Lessons, principles and insights from your journals. The coach draws on these when it guides you."
+      />
+
+      <form onSubmit={handleSearch} className="flex gap-2" role="search">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            type="search"
+            aria-label="Search memories"
+            placeholder="Search your lessons, principles and breakthroughs…"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (!e.target.value.trim()) setSearchResults(null);
+            }}
+            className="w-full text-sm pl-11 pr-4 py-2.5 rounded-full border border-emerald-100 bg-white text-slate-900 placeholder:text-slate-500 shadow-forest-xs"
+          />
         </div>
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Memories & Lessons</h2>
-        <p className="text-xs text-slate-500 mt-0.5 font-normal">
-          Saved insights, commitments, and lessons from your journals that guide future AI coaching.
-        </p>
+        <button
+          type="submit"
+          disabled={isSearching}
+          className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white px-5 py-2.5 rounded-full text-xs font-semibold shadow-forest-xs transition-colors cursor-pointer"
+        >
+          {isSearching ? 'Searching…' : 'Search'}
+        </button>
+      </form>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="mt-4 flex gap-2">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search past insights, mental models, lessons, and breakthroughs..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                if (!e.target.value.trim()) setSearchResults(null);
-              }}
-              className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-full border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs text-slate-900 transition-all"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isSearching}
-            className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white px-5 py-2.5 rounded-full text-xs font-semibold shadow-forest-xs flex items-center space-x-1.5 transition-all cursor-pointer"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{isSearching ? 'Searching...' : 'Search'}</span>
-          </button>
-        </form>
-      </div>
-
-      {/* Main Layout: Record Insight Form + Table View */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Add Memory Form */}
-        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-3.5 shadow-forest border border-emerald-100/70 h-fit">
-          <h3 className="font-bold text-sm text-slate-900 flex items-center space-x-2">
+        {/* Record a new memory */}
+        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-3.5 shadow-forest h-fit">
+          <h2 className="font-bold text-sm text-slate-900 flex items-center gap-2">
             <Plus className="w-4 h-4 text-emerald-700" />
-            <span>Record New Insight</span>
-          </h3>
+            Record something you learned
+          </h2>
 
           <form onSubmit={handleCreateMemory} className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Insight / Principle / Lesson *
+              <label htmlFor="memory-text" className="block text-xs font-semibold text-slate-700 mb-1">
+                In your words
               </label>
               <textarea
+                id="memory-text"
                 rows={4}
                 required
-                placeholder="Write an operating principle, rule of thumb, or key realization..."
+                placeholder="A principle, a rule of thumb, or something you realized…"
                 value={newMemoryText}
                 onChange={(e) => setNewMemoryText(e.target.value)}
-                className="w-full text-sm p-3 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 shadow-xs resize-none font-sans text-slate-900"
+                className="voice w-full text-base p-3 rounded-xl border border-emerald-100 bg-white resize-none placeholder:text-slate-500 placeholder:italic"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label htmlFor="memory-type" className="block text-xs font-semibold text-slate-700 mb-1">
                   Type
                 </label>
                 <select
+                  id="memory-type"
                   value={newMemoryType}
                   onChange={(e) => setNewMemoryType(e.target.value)}
-                  className="w-full text-xs p-2.5 rounded-xl border border-emerald-100 bg-white/95 text-slate-800 shadow-xs font-medium"
+                  className="w-full text-xs p-2.5 rounded-xl border border-emerald-100 bg-white text-slate-800 font-medium"
                 >
                   <option value="insight">Insight</option>
                   <option value="principle">Principle</option>
@@ -216,10 +205,11 @@ export const MemoriesView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label htmlFor="memory-importance" className="block text-xs font-semibold text-slate-700 mb-1">
                   Importance ({newMemoryImportance})
                 </label>
                 <input
+                  id="memory-importance"
                   type="range"
                   min="0.1"
                   max="1.0"
@@ -233,45 +223,42 @@ export const MemoriesView: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-2.5 rounded-full text-xs font-semibold shadow-forest-xs transition-all cursor-pointer"
+              className="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-2.5 rounded-full text-xs font-semibold shadow-forest-xs transition-colors cursor-pointer"
             >
-              Save Memory
+              Save memory
             </button>
           </form>
         </div>
 
-        {/* Right: Table / List */}
-        <div className="lg:col-span-2 space-y-3.5">
-          {/* Controls Bar */}
-          <div className="glass-panel rounded-2xl px-4 py-3 border border-emerald-100/70 shadow-forest flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-sm text-slate-900">
-                {searchResults ? `Search Results (${displayedList.length})` : `Saved Memories (${displayedList.length})`}
-              </span>
+        {/* Saved memories */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+            <div className="flex items-center gap-3">
+              <h2 className="font-bold text-sm text-slate-900">
+                {searchResults ? 'Search results' : 'Saved memories'}{' '}
+                <span className="font-medium text-slate-500 tabular-nums">· {displayedList.length}</span>
+              </h2>
               {searchResults && (
                 <button
-                  onClick={() => {
-                    setSearchResults(null);
-                    setSearchQuery('');
-                  }}
-                  className="text-xs text-emerald-800 hover:underline font-semibold ml-2 cursor-pointer"
+                  type="button"
+                  onClick={clearSearch}
+                  className="text-xs text-emerald-800 hover:text-emerald-950 font-semibold cursor-pointer"
                 >
-                  Clear Search
+                  Clear search
                 </button>
               )}
             </div>
 
-            {/* Type Filters & View Mode Toggles */}
-            <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-              <div className="flex items-center bg-slate-100/90 rounded-lg p-0.5 text-xs">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center bg-slate-100/90 rounded-full p-0.5 text-xs" role="group" aria-label="Filter by type">
                 {(['all', 'insight', 'principle', 'lesson', 'identity'] as const).map((type) => (
                   <button
                     key={type}
+                    type="button"
                     onClick={() => setSelectedType(type)}
-                    className={`px-2.5 py-1 rounded-md capitalize font-medium transition-all cursor-pointer ${
-                      selectedType === type
-                        ? 'bg-white text-emerald-950 shadow-xs font-semibold'
-                        : 'text-slate-600 hover:text-slate-900'
+                    aria-pressed={selectedType === type}
+                    className={`px-2.5 py-1 rounded-full capitalize transition-colors cursor-pointer ${
+                      selectedType === type ? 'bg-white text-emerald-950 font-semibold shadow-forest-xs' : 'text-slate-600 font-medium hover:text-slate-900'
                     }`}
                   >
                     {type}
@@ -279,178 +266,111 @@ export const MemoriesView: React.FC = () => {
                 ))}
               </div>
 
-              {/* View Toggle */}
-              <div className="flex items-center bg-slate-100/90 rounded-lg p-0.5">
+              <div className="flex items-center bg-slate-100/90 rounded-full p-0.5" role="group" aria-label="Layout">
                 <button
-                  onClick={() => setViewMode('table')}
-                  title="Table View"
-                  className={`p-1.5 rounded-md transition-all cursor-pointer ${
-                    viewMode === 'table' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-400 hover:text-slate-700'
-                  }`}
-                >
-                  <TableIcon className="w-3.5 h-3.5" />
-                </button>
-                <button
+                  type="button"
                   onClick={() => setViewMode('cards')}
-                  title="Card View"
-                  className={`p-1.5 rounded-md transition-all cursor-pointer ${
-                    viewMode === 'cards' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-400 hover:text-slate-700'
+                  aria-label="Card view"
+                  aria-pressed={viewMode === 'cards'}
+                  className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                    viewMode === 'cards' ? 'bg-white text-emerald-800 shadow-forest-xs' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('table')}
+                  aria-label="Table view"
+                  aria-pressed={viewMode === 'table'}
+                  className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                    viewMode === 'table' ? 'bg-white text-emerald-800 shadow-forest-xs' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <TableIcon className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Data Container */}
           {loading ? (
-            <div className="glass-panel rounded-3xl p-8 animate-pulse text-center text-xs text-slate-400">
-              Loading memories...
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 motion-safe:animate-pulse" aria-hidden="true">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-36 bg-white/60 rounded-3xl" />
+              ))}
             </div>
           ) : displayedList.length === 0 ? (
-            <div className="glass-panel rounded-3xl border border-dashed border-emerald-200 p-8 text-center text-xs text-slate-400">
-              <Layers className="w-8 h-8 text-emerald-300 mx-auto mb-2 opacity-60" />
-              <p className="font-medium text-slate-700">No memories found</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                {searchResults ? 'Try a different search term or clear the filter.' : 'Record a new insight to get started.'}
+            <div className="rounded-3xl border border-dashed border-emerald-200 p-10 text-center">
+              <Layers className="w-8 h-8 text-emerald-300 mx-auto mb-2" />
+              <p className="voice text-lg">Nothing here yet.</p>
+              <p className="text-xs text-slate-600 mt-1">
+                {searchResults ? 'Try other words, or clear the search.' : 'Record something you learned to start your memory bank.'}
               </p>
             </div>
-          ) : viewMode === 'table' ? (
-            /* Table View */
-            <div className="glass-panel rounded-3xl shadow-forest border border-emerald-100/70 overflow-hidden">
+          ) : viewMode === 'cards' ? (
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {displayedList.map((mem, idx) => (
+                <li key={mem.id || idx} className="glass-panel rounded-3xl p-5 flex flex-col gap-4 shadow-forest group">
+                  <blockquote className="voice text-[16.5px] flex-1">{mem.text}</blockquote>
+                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <TypeBadge type={mem.memory_type} />
+                      {mem.source_date && (
+                        <time dateTime={mem.source_date} title={formatDate(mem.source_date, { month: 'long', day: 'numeric', year: 'numeric' })}>
+                          {relativeDay(mem.source_date)}
+                        </time>
+                      )}
+                      {mem.score !== undefined && (
+                        <span className="font-semibold text-emerald-800 tabular-nums">{(mem.score * 100).toFixed(0)}% match</span>
+                      )}
+                    </div>
+                    <span className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+                      {deleteButton(mem)}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="glass-panel rounded-3xl shadow-forest overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50/90 border-b border-emerald-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                      <th className="py-3 px-4 w-12 text-center">#</th>
-                      <th className="py-3 px-4">Memory / Insight</th>
+                    <tr className="bg-slate-50/90 border-b border-emerald-100 text-xs font-semibold text-slate-600">
+                      <th className="py-3 px-4">Memory</th>
                       <th className="py-3 px-3 w-28">Type</th>
                       <th className="py-3 px-3 w-28">Date</th>
-                      <th className="py-3 px-3 w-28">Importance</th>
-                      {searchResults && <th className="py-3 px-3 w-24">Match</th>}
-                      <th className="py-3 px-3 w-14 text-center">Action</th>
+                      <th className="py-3 px-3 w-24">Importance</th>
+                      {searchResults && <th className="py-3 px-3 w-20">Match</th>}
+                      <th className="py-3 px-3 w-12"><span className="sr-only">Actions</span></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
+                  <tbody className="divide-y divide-slate-100 text-sm">
                     {displayedList.map((mem, idx) => (
-                      <tr 
-                        key={mem.id || idx}
-                        className="hover:bg-emerald-50/40 transition-colors group"
-                      >
-                        {/* Index */}
-                        <td className="py-3 px-4 text-center font-mono text-[11px] text-slate-400">
-                          {idx + 1}
-                        </td>
-
-                        {/* Memory Text */}
+                      <tr key={mem.id || idx} className="hover:bg-emerald-50/40 transition-colors align-top">
                         <td className="py-3 px-4">
-                          <p className="font-medium text-slate-800 leading-relaxed break-words line-clamp-3 group-hover:line-clamp-none transition-all">
-                            {mem.text}
-                          </p>
+                          <p className="text-slate-800 leading-relaxed break-words">{mem.text}</p>
                         </td>
-
-                        {/* Type */}
                         <td className="py-3 px-3 whitespace-nowrap">
-                          {getTypeBadge(mem.memory_type)}
+                          <TypeBadge type={mem.memory_type} />
                         </td>
-
-                        {/* Date */}
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-500 font-mono text-[11px]">
-                          {mem.source_date ? (
-                            <span className="flex items-center space-x-1">
-                              <Calendar className="w-3 h-3 text-slate-400" />
-                              <span>{mem.source_date}</span>
-                            </span>
-                          ) : (
-                            <span className="text-slate-300">-</span>
-                          )}
+                        <td className="py-3 px-3 whitespace-nowrap text-xs text-slate-600 tabular-nums">
+                          {mem.source_date || '–'}
                         </td>
-
-                        {/* Importance */}
-                        <td className="py-3 px-3 whitespace-nowrap">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[10px] font-semibold text-slate-600">
-                              <span>{(mem.importance ?? 0.8).toFixed(1)}</span>
-                            </div>
-                            <div className="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                              <div
-                                className="bg-gradient-to-r from-emerald-600 to-teal-600 h-full rounded-full"
-                                style={{ width: `${Math.min(100, Math.max(0, (mem.importance ?? 0.8) * 100))}%` }}
-                              />
-                            </div>
-                          </div>
+                        <td className="py-3 px-3 whitespace-nowrap text-xs text-slate-600 tabular-nums">
+                          {(mem.importance ?? 0.8).toFixed(1)}
                         </td>
-
-                        {/* Match Score (if search active) */}
                         {searchResults && (
-                          <td className="py-3 px-3 whitespace-nowrap">
-                            {mem.score !== undefined ? (
-                              <span className="inline-block text-[11px] font-mono font-bold bg-emerald-50 text-emerald-900 px-2 py-0.5 rounded-md border border-emerald-200">
-                                {(mem.score * 100).toFixed(0)}%
-                              </span>
-                            ) : (
-                              <span className="text-slate-300">-</span>
-                            )}
+                          <td className="py-3 px-3 whitespace-nowrap text-xs font-semibold text-emerald-800 tabular-nums">
+                            {mem.score !== undefined ? `${(mem.score * 100).toFixed(0)}%` : '–'}
                           </td>
                         )}
-
-                        {/* Delete Action */}
-                        <td className="py-3 px-3 text-center">
-                          {mem.id ? (
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(mem.id)}
-                              title="Delete Memory"
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          ) : null}
-                        </td>
+                        <td className="py-2 px-3 text-center">{deleteButton(mem)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-          ) : (
-            /* Cards View */
-            <div className="space-y-3">
-              {displayedList.map((mem, idx) => (
-                <div
-                  key={mem.id || idx}
-                  className="glass-card-interactive rounded-3xl p-4 space-y-2 border border-emerald-100/70 shadow-forest"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-xs font-medium text-slate-900 leading-relaxed">{mem.text}</p>
-                    {mem.id && (
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(mem.id)}
-                        className="text-slate-400 hover:text-rose-600 transition-colors p-1 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-emerald-50 font-normal">
-                    <div className="flex items-center space-x-2">
-                      {getTypeBadge(mem.memory_type)}
-                      {mem.source_date && <span>Date: {mem.source_date}</span>}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span>Importance: {mem.importance}</span>
-                      {mem.score !== undefined && (
-                        <span className="text-[11px] font-mono font-bold bg-emerald-50 text-emerald-900 px-2 py-0.5 rounded-md border border-emerald-200">
-                          Match: {(mem.score * 100).toFixed(0)}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           )}
         </div>
@@ -458,4 +378,3 @@ export const MemoriesView: React.FC = () => {
     </div>
   );
 };
-

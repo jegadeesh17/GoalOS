@@ -3,23 +3,38 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    color-scheme: light;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     background-color: #f7f9f7;
-    background-image: 
-      radial-gradient(ellipse at 5% 5%, rgba(227, 237, 231, 0.55) 0px, transparent 48%),
-      radial-gradient(ellipse at 95% 5%, rgba(237, 242, 226, 0.45) 0px, transparent 48%),
-      radial-gradient(circle at 50% 50%, rgba(254, 243, 199, 0.2) 0px, transparent 55%),
-      radial-gradient(ellipse at 95% 95%, rgba(225, 235, 231, 0.45) 0px, transparent 48%),
-      radial-gradient(ellipse at 5% 95%, rgba(242, 247, 244, 0.6) 0px, transparent 48%);
-    background-attachment: fixed;
     color: #112217;
+    caret-color: #047857;
     line-height: 1.6;
     letter-spacing: -0.011em;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  }
+
+  /* Forest mist: pre-computed watercolor washes on one fixed, composited layer.
+     No runtime blur and no repaint on scroll (see brain learning 4.1). */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(ellipse 60% 55% at 4% 0%, rgba(209, 231, 218, 0.75) 0%, transparent 70%),
+      radial-gradient(ellipse 45% 40% at 96% 4%, rgba(236, 242, 214, 0.7) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 45% at 62% 52%, rgba(254, 243, 199, 0.28) 0%, transparent 70%),
+      radial-gradient(ellipse 55% 50% at 98% 98%, rgba(214, 232, 226, 0.7) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 45% at 2% 96%, rgba(226, 238, 230, 0.75) 0%, transparent 70%);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -34,88 +49,194 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  ::selection {
+    background: #d1fae5;
+    color: #064e3b;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  summary:focus-visible,
+  [tabindex]:focus-visible,
+  input[type='checkbox']:focus-visible,
+  input[type='range']:focus-visible {
+    outline: 2px solid rgba(4, 120, 87, 0.6);
+    outline-offset: 2px;
+  }
+
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+    border-color: #6ee7b7;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16);
+  }
+
+  summary {
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
 }
 
-/* Editorial Wisdom & Mentor Quote Typography */
-.editorial-quote {
-  font-family: 'Newsreader', Georgia, serif;
-  letter-spacing: -0.015em;
-  line-height: 1.5;
-  font-style: italic;
+@layer components {
+  /* The owner's own words and the coach's voice: Newsreader, set for reading. */
+  .voice {
+    font-family: 'Newsreader', Georgia, serif;
+    font-optical-sizing: auto;
+    line-height: 1.55;
+    letter-spacing: -0.004em;
+    color: #0f291e;
+  }
+
+  /* Horizontal scrollers that fade out at the edge instead of showing a scrollbar. */
+  .scroll-fade-x {
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+
+  .scroll-fade-x::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-/* Ultra-Performance Paper Glassmorphism Panels */
+/* Paper glass: near-opaque, no backdrop blur. Deliberately unlayered so it
+   keeps winning over Tailwind background/border utilities, as it always has. */
 .glass-panel {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(227, 237, 231, 0.95);
-  box-shadow: 
-    0 8px 24px -4px rgba(20, 47, 31, 0.04), 
+  box-shadow:
+    0 8px 24px -4px rgba(20, 47, 31, 0.04),
     0 1px 3px 0 rgba(0, 0, 0, 0.02),
     inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
 }
 
+/* Only for things you can click: it lifts on hover. */
 .glass-card-interactive {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(227, 237, 231, 0.9);
-  box-shadow: 
+  box-shadow:
     0 3px 12px -2px rgba(20, 47, 31, 0.03),
     inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    transform 0.18s var(--ease-out-expo),
+    box-shadow 0.18s var(--ease-out-expo),
+    border-color 0.18s var(--ease-out-expo);
 }
 
 .glass-card-interactive:hover {
   transform: translateY(-2px);
   background: #ffffff;
   border-color: rgba(163, 196, 177, 0.8);
-  box-shadow: 
-    0 10px 24px -4px rgba(20, 47, 31, 0.07), 
+  box-shadow:
+    0 10px 24px -4px rgba(20, 47, 31, 0.07),
     0 2px 6px -1px rgba(0, 0, 0, 0.02);
 }
 
-/* Liquid Pill Button & Badges */
-.liquid-pill {
+@media (prefers-reduced-motion: reduce) {
+  .glass-card-interactive:hover {
+    transform: none;
+  }
+}
+
+/* ---------- Motion: answers actions, never idles ---------- */
+
+@keyframes drawer-in {
+  from { transform: translateX(28px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes veil-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-up {
+  from { transform: translateY(6px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* Today rises: a thin amber ring breathes outward twice, then rests. */
+@keyframes sunrise {
+  from { transform: scale(1); opacity: 0.7; }
+  to { transform: scale(2.3); opacity: 0; }
+}
+
+/* Writing fills the day: the dot swells like ink meeting paper. */
+@keyframes ink-bloom {
+  0% { transform: scale(0.55); }
+  55% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ink-ring {
+  from { transform: scale(1); opacity: 0.6; }
+  to { transform: scale(2.6); opacity: 0; }
+}
+
+@keyframes ring-fade {
+  from { opacity: 0.6; }
+  to { opacity: 0; }
+}
+
+.animate-drawer-in { animation: drawer-in 320ms var(--ease-out-expo) both; }
+.animate-veil-in { animation: veil-in 220ms ease-out both; }
+.animate-fade-up { animation: fade-up 240ms var(--ease-out-expo) both; }
+
+.day-today {
+  outline: 1.5px solid rgba(245, 158, 11, 0.9);
+  outline-offset: 2px;
+}
+
+.day-today::after,
+.day-ink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(227, 237, 231, 0.95);
-  transition: all 0.18s ease-out;
+  pointer-events: none;
 }
 
-.liquid-pill:hover {
-  background: #ffffff;
-  border-color: rgba(114, 165, 133, 0.6);
-  box-shadow: 0 3px 10px -2px rgba(35, 83, 54, 0.07);
+.day-today::after {
+  border: 1.5px solid rgba(245, 158, 11, 0.75);
+  animation: sunrise 1.9s var(--ease-out-expo) 0.4s 2 both;
 }
 
-/* Subtle Star Pulse */
-@keyframes star-pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-    box-shadow: 0 0 15px 2px rgba(234, 179, 8, 0.6);
+.day-ink {
+  animation: ink-bloom 700ms var(--ease-out-expo);
+}
+
+.day-ink::after {
+  border: 2px solid rgba(4, 120, 87, 0.55);
+  animation: ink-ring 900ms var(--ease-out-expo) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drawer-in,
+  .animate-fade-up {
+    animation-name: veil-in;
   }
-  50% {
-    opacity: 0.85;
-    transform: scale(1.18);
-    box-shadow: 0 0 25px 6px rgba(234, 179, 8, 0.85);
-  }
-}
 
-.animate-star-pulse {
-  animation: star-pulse 2.2s infinite ease-in-out;
-}
-
-/* Floating animation */
-@keyframes float-gentle {
-  0%, 100% {
-    transform: translateY(0px);
+  .day-today::after {
+    animation: none;
+    opacity: 0;
   }
-  50% {
-    transform: translateY(-4px);
-  }
-}
 
-.animate-float {
-  animation: float-gentle 4s ease-in-out infinite;
+  .day-ink {
+    animation: none;
+  }
+
+  .day-ink::after {
+    animation-name: ring-fade;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* Scrollbar */

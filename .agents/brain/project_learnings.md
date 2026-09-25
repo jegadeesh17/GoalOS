@@ -93,6 +93,7 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 
 ### 4.6 "Magical, Simple & Light" Design Direction (User Preference, 2026-09-24)
 - **User Preference:** Keep the Forest Mist Paper Glass theme (palette, paper surfaces, Plus Jakarta Sans + Newsreader) — no major theme changes. Improvements must make the app feel *magical* yet *simple and light*: magic comes from a few moments that respond to the user (the day dot, the serif voice, the mist), lightness comes from subtraction (fewer repeated metrics, fewer nested cards, fewer uppercase eyebrows).
+- **Approved (2026-09-25):** The user reviewed the shipped refinement live and approved it ("everything is okay to me"). Treat this as the established look: build new UI in this style rather than revisiting it.
 - **Critique baseline (Impeccable, dual-agent):** 20/40 Nielsen; snapshot in `.impeccable/critique/`. Top issues: horizon banner repeated on 3 views with every number stated twice; the theme's own magic switched off; the user's own words (goal motivations, memories, reflections) rendered as small-sans data instead of Newsreader voice; generic SaaS scaffolding; Analytics as a wall of amber warnings + APM table.
 
 ### 4.7 Tailwind 3 Silently Drops Unsupported Utility Values

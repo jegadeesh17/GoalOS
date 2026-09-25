@@ -98,7 +98,16 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 ### 4.7 Tailwind 3 Silently Drops Unsupported Utility Values
 - **Observation:** `bg-white/88`, `bg-white/86`, `scale-130`, `scale-140`, `ring-3`, `shadow-xs`, `backdrop-blur-xs`, `animate-in slide-in-from-right`, `animate-fadeIn`, and `bg-canvas` never compile under Tailwind 3 (opacity modifiers must come from the opacity scale, e.g. `/90` or `/95`; the others are Tailwind 4 or `tailwindcss-animate` names, or undefined tokens). Consequence: the sticky navbar rendered *transparent* with a 40px `backdrop-blur-2xl` (the runtime-blur cost 4.1 banned), and the drawer/toast entrance animations never played.
 - **Solution:** Use only scale values (`/90`, `/95`) or bracket syntax (`bg-white/[.88]`), define custom keyframes in `tailwind.config.js`, and verify a new class by grepping the compiled CSS (`curl -s http://localhost:5173/src/index.css | grep -o '\.bg-white[^ {]*'`).
-- **Also:** The root `App.tsx` wrapper's opaque `bg-[#f7f9f7]` paints over the body's watercolor radial washes, so the mist is never visible.
+- **Also:** The root `App.tsx` wrapper's opaque `bg-[#f7f9f7]` paints over the body's watercolor radial washes, so the mist is never visible. (Fixed 2026-09-25: washes now live on a fixed `body::before` layer and the wrapper is transparent.)
+
+### 4.8 Fixed Overlays Inherit `space-y-*` Margins
+- **Observation:** `DayDetailDrawer` and `GoalFormModal` render inside `space-y-6` / `space-y-8` containers. Tailwind's `space-y` adds `margin-top` to every non-first child, including a `position: fixed; inset: 0` overlay, so the drawer and modal started 24–32px below the top of the viewport.
+- **Solution:** Give fixed overlays `!mt-0` (or render them outside the spaced container or through a portal). Verify with `getBoundingClientRect().top === 0` in a Playwright check.
+
+### 4.9 Journal Autosave Pattern
+- **Pattern:** Keep the last-saved snapshot and the latest editable state in refs (`lastSavedRef`, `latestRef`). A debounced effect (1.2s) calls `persist()`, which claims the snapshot *before* the request so overlapping triggers never double-send. Switching dates or tabs flushes immediately (`goToDate` and unmount cleanup), Ctrl/Cmd+S forces a save, and failures fall back to the IndexedDB queue in `offline/journalStash.ts`. Never `setLog(serverResponse)` after an autosave, because that clobbers keystrokes typed during the request.
+- **Dates:** Always use `lib/date.ts` (`localDateStr`, `shiftDate`, `weekStartOf`). `toISOString().split('T')[0]` is UTC and opens the previous day between 00:00 and 05:30 IST.
+- **Testing without touching data:** Verify autosave with Playwright `page.route('**/api/journal/upsert', ...)` so no writes reach `goalos.db`.
 
 ---
 

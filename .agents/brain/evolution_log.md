@@ -4,6 +4,46 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-25 — "Magical, Simple & Light" Refinement Shipped (Theme Unchanged)
+
+- **Action:** Implemented every scope the user chose after the 2026-09-24 critique. The palette, paper-glass surfaces and fonts are unchanged.
+- **Uncover the magic:**
+  - The watercolor mist is visible again through a fixed `body::before` layer.
+  - The navbar is solid `bg-white/95` with no blur.
+  - Real keyframes replace the missing classes: drawer glide, veil, fade-up, a today ripple that plays twice and rests, and an ink bloom.
+  - Everything has a `prefers-reduced-motion` path, and every dead Tailwind class was removed.
+- **Lighten:**
+  - The horizon banner shows on the Calendar only, as one serif sentence ("Day 268 of 365 · 82 productive days · 97 still unwritten") plus a bar with an amber "today" marker.
+  - Every view header is a plain `PageHeader` on the canvas, and all 28 uppercase labels and eyebrow chips are gone.
+  - Month cards became borderless groups with aligned weekday rows.
+  - The legend is plain words; jargon became plain copy; the footer reads "Stored privately on this device".
+- **Serif voice:** A `.voice` utility (Newsreader) now carries goal reasons, memories (cards by default, with relative dates), journal gratitude, reflection and rule, the drawer's win, lesson and notes, and coach chat replies.
+- **Ink the day:**
+  - A shared `DayDot` component serves the calendar and a new 7-day strip in the Journal header.
+  - When a save raises the day's tier, its dot inks. Today is an amber sun until it has been written in.
+- **Calm Analytics:**
+  - The healthy momentum pattern comes first, and all "Repeated Task Deferral" cards fold into one "Tasks you keep postponing" list.
+  - Patterns are capped at 3, and daily scores at 10 rows, each with a "Show all" toggle.
+  - The APM table moved to a collapsed `DiagnosticsPanel` in Settings that loads on open.
+- **Journal behaviour:**
+  - Debounced autosave with a quiet status line, flushed on date and tab changes, with Ctrl/Cmd+S to save now.
+  - Local-date fix (`lib/date.ts`).
+  - The date is a serif title with a native picker.
+- **Accessibility:**
+  - The calendar is one tab stop with arrow-key movement, and each day's label reads as a sentence.
+  - The drawer is a real dialog: it focuses Close, traps Tab, closes on Escape and returns focus.
+  - Nav tabs carry `aria-current`, and labels are tied to their inputs.
+  - Secondary text is at least slate-500.
+  - The 70-year view no longer contains 3,650 no-op buttons.
+- **Bugs found along the way:** Fixed overlays were offset by `space-y` margins (learning 4.8). `LifeCalendar.tsx` was dead code and has been deleted.
+- **Verification:**
+  - `npm run build` (tsc + vite) is clean, and `pytest -q` shows 134 passed.
+  - A Playwright interaction suite passed 19 of 19 checks with journal writes intercepted, so no DB writes occurred. It covered autosave (once), the ink moment, the local date, flush on tab switch, the keyboard grid, drawer focus handling and reduced motion.
+  - The Impeccable detector dropped from 5 findings to 0 after a disclosed ignore for the pinned house font (`.impeccable/config.json`).
+  - The critique snapshot is closed.
+
+---
+
 ## 2026-09-24 — Impeccable Design Critique: "Magical, Simple & Light" Without a Theme Change
 
 - **Action:** Ran a dual-agent Impeccable critique of the whole React SPA (an isolated design review plus an isolated detector and headless-Playwright pass, at desktop 1440 and mobile 390). Scored 20/40 on Nielsen's heuristics, with 0 P0 and 3 P1 issues. The snapshot is `.impeccable/critique/2026-09-24T17-38-23Z__frontend-src-app-tsx.md`.

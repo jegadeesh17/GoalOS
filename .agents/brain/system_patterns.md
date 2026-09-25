@@ -45,13 +45,19 @@ $$\text{API Layer (FastAPI)} \longrightarrow \text{Service Layer} \longrightarro
   - Warm Sunlit Amber: `text-amber-900`, `bg-amber-50/90 border border-amber-200/80`
 
 ### 2.2 Typography Scale & Non-Redundancy
-- **H1 Header:** `text-2xl font-bold tracking-tight text-slate-900`
-- **H2 Header:** `text-xl font-bold text-slate-800`
-- **H3 Header:** `text-sm font-bold text-slate-700`
-- **Metrics Display:** `text-xl font-bold tracking-tight`
+- **Page Title (tools):** `PageHeader` component, `text-2xl sm:text-[1.75rem] font-bold tracking-tight text-slate-900`, set directly on the mist canvas (no card, no eyebrow chip above it).
+- **Time & Voice in Serif:** Headlines about time (Calendar horizon line, Journal date, drawer date) and the owner's own words (goal reasons, memories, reflections, coach replies) use Newsreader via `font-serif` or the `.voice` utility. Tools, labels and data stay in Plus Jakarta Sans.
+- **H2 Section:** `text-sm font-bold text-slate-900` (often with a 16px emerald icon)
+- **Metrics Display:** `text-2xl font-bold tabular-nums`
 - **Body Text:** `text-sm font-normal text-slate-600`
-- **Labels / Badges:** `text-xs font-medium uppercase tracking-wider`
-- **Single Source of Truth:** Never render duplicate metric summaries on the same screen (e.g. Life Calendar week count is rendered once in the header banner, not repeated in inner views).
+- **Labels / Badges:** `text-xs font-semibold` in sentence case, never `uppercase tracking-wider`, never an eyebrow chip above a heading.
+- **Secondary Text Floor:** `text-slate-500` minimum for text (slate-400 is 2.56:1 on white and fails WCAG AA); placeholders use `placeholder:text-slate-500`.
+- **Single Source of Truth:** Never render duplicate metric summaries on the same screen. The year horizon is one serif sentence plus a bar, shown on the Calendar only (`LifeProgressBanner`, rendered inside `YearProductivityCalendar`).
+
+### 2.2.1 Surfaces & Motion
+- **No nested cards:** Month groups, drawer metrics, insight lists and stat blocks sit on their parent panel without their own border/card. `glass-card-interactive` (hover lift) is only for clickable elements; static content uses `glass-panel`.
+- **Motion answers actions, never idles:** Use `.animate-drawer-in`, `.animate-veil-in`, `.animate-fade-up`, `.day-today` (amber ring that ripples twice, then rests) and `.day-ink` (dot fills when a save raises the day's tier). No infinite pulses; everything has a `prefers-reduced-motion` path in `index.css`.
+- **Shared day vocabulary:** `DayDot` (`components/DayDot.tsx`) owns day tiers (strong / productive / logged / not logged / still ahead), fills, and screen-reader descriptions for both the Calendar and the Journal week strip.
 
 ### 2.3 State Management & API Client
 - All HTTP calls must use `frontend/src/api/client.ts`.

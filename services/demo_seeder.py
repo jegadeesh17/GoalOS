@@ -23,8 +23,6 @@ except ImportError:
 from database.connection import get_db
 from database.repositories.log_repository import LogRepository
 
-
-
 logger = logging.getLogger(__name__)
 
 DEMO_DB_PATH = ROOT / "data" / "demo_goalos.db"

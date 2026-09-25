@@ -1,6 +1,7 @@
 """Unit tests for Year Productivity Calendar calculations and API endpoints."""
 
 from datetime import date
+
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -93,7 +94,6 @@ def test_year_productivity_smart_composite_rules(temp_db):
 def test_year_productivity_streaks(temp_db):
   """Verify streak calculations."""
   log_repo = LogRepository()
-  score_repo = ScoreRepository()
   service = LifeCalendarService(birth_date=date(2000, 1, 1), target_age=70)
   ref_date = date(2026, 1, 5)
 

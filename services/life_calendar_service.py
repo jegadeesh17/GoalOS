@@ -76,6 +76,7 @@ class LifeCalendarService:
     import calendar
     import json
     from datetime import timedelta
+
     from database.repositories.log_repository import LogRepository
     from database.repositories.score_repository import ScoreRepository
 

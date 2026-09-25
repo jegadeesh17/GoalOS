@@ -1,5 +1,5 @@
-import sqlite3
 import re
+import sqlite3
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -23,7 +23,7 @@ def check_db(db_path: Path):
                 row_str = " ".join(str(x) for x in row if x)
                 if re.search(r"\b(jegadeesh|chennai|vit)\b", row_str, re.I):
                     matches.append((t, row_str[:100]))
-        except Exception as e:
+        except Exception:
             pass
 
     if matches:

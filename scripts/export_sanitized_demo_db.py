@@ -9,7 +9,6 @@ Copies the local goalos.db into data/demo_goalos.db and local chroma_db into dat
 - Full verification that zero personal names, university references, emails, or phone numbers remain.
 """
 
-import os
 import re
 import shutil
 import sqlite3
@@ -56,7 +55,7 @@ def sanitize_sqlite_file(db_path: Path, persona_name: str = "Alex Chen") -> None
             for col in columns:
                 for target, repl in replacements:
                     c.execute(f"UPDATE {table} SET {col} = replace({col}, ?, ?) WHERE {col} LIKE ?", (target, repl, f"%{target}%"))
-        except Exception as e:
+        except Exception:
             # Not all tables/columns support direct string replace
             pass
 

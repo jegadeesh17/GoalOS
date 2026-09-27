@@ -19,6 +19,8 @@ VERBS = re.compile(
   re.IGNORECASE,
 )
 
+AWAKE_TIME = re.compile(r"(\d{1,2})(?:[:.](\d{2}))?\s*(AM|PM)", re.IGNORECASE)
+
 
 class JournalImportService:
   """Import historical journal entries from Excel or raw text."""
@@ -176,6 +178,7 @@ class JournalImportService:
     tasks = self._parse_tasks(str(normalized.get("tasks", "") or ""))
     completed = sum(1 for t in tasks if t.completed)
     rate = completed / len(tasks) if tasks else 0.0
+    awake_range, sleep_hours = self._parse_awake_range(normalized.get("awake"))
 
     return ParsedEntry(
       date=entry_date,
@@ -185,6 +188,8 @@ class JournalImportService:
       review=self._clean(normalized.get("review")),
       takeaway=self._clean(normalized.get("takeaway")),
       task_completion_rate=rate,
+      awake_range=awake_range,
+      sleep_hours=sleep_hours,
     )
 
   def store_entry(self, entry: ParsedEntry, source: str = "import") -> int:
@@ -196,6 +201,8 @@ class JournalImportService:
     log = DailyLogCreate(
       date=entry.date,
       gratitude=entry.gratitude,
+      awake_range=entry.awake_range,
+      sleep_hours=entry.sleep_hours,
       time_blocks=time_blocks_json,
       planned_tasks=tasks_json,
       tasks_completed=tasks_text,
@@ -331,6 +338,40 @@ class JournalImportService:
         ))
     return blocks
 
+  def _parse_awake_range(self, text: Optional[str]) -> tuple[Optional[str], Optional[float]]:
+    """Parse an AWAKE line like '9:00 AM - 12.30 AM.' into (cleaned range, sleep_hours).
+
+    Never guesses: if the two times can't both be confidently read, or the
+    resulting sleep duration is outside a sane 0-16h window, the raw cleaned
+    text is kept (for the user to review) but sleep_hours stays None.
+    """
+    if not text:
+      return None, None
+    cleaned = text.strip().rstrip(".").strip()
+    if not cleaned:
+      return None, None
+
+    matches = AWAKE_TIME.findall(cleaned)
+    if len(matches) != 2:
+      return cleaned, None
+
+    def to_hours(hour_str: str, minute_str: str, meridiem: str) -> float:
+      hour = int(hour_str) % 12
+      if meridiem.upper() == "PM":
+        hour += 12
+      minute = int(minute_str) if minute_str else 0
+      return hour + minute / 60.0
+
+    start_hours = to_hours(*matches[0])
+    end_hours = to_hours(*matches[1])
+    awake_duration = end_hours - start_hours
+    if awake_duration <= 0:
+      awake_duration += 24
+    sleep_hours = round(24 - awake_duration, 1)
+    if not (0.0 <= sleep_hours <= 16.0):
+      return cleaned, None
+    return cleaned, sleep_hours
+
   def _parse_markdown_block(self, block: str) -> Optional[dict]:
     """Extract journal fields from a transcribed markdown block."""
     entry_date = None
@@ -357,7 +398,7 @@ class JournalImportService:
     sections: dict[str, str] = {}
     current = None
     section_headers = (
-      "GRATITUDE", "PLAN", "PLANS", "TASKS", "TO DO", "TODO",
+      "GRATITUDE", "AWAKE", "PLAN", "PLANS", "TASKS", "TO DO", "TODO",
       "REVIEW", "ENDNOTE", "END NOTE", "TAKEAWAY",
     )
     for line in block.split("\n"):
@@ -393,6 +434,7 @@ class JournalImportService:
     return {
       "date": entry_date.isoformat(),
       "gratitude": sections.get("GRATITUDE", "").strip() or None,
+      "awake": sections.get("AWAKE", "").strip() or None,
       "plans": plans or None,
       "tasks": tasks or None,
       "review": review or None,
@@ -421,7 +463,7 @@ class JournalImportService:
   def _parse_text_block(self, block: str) -> ParsedEntry:
     sections: dict[str, str] = {}
     current = None
-    section_names = ("GRATITUDE", "PLANS", "TASKS", "REVIEW", "TAKEAWAY")
+    section_names = ("GRATITUDE", "AWAKE", "PLANS", "TASKS", "REVIEW", "TAKEAWAY")
     lines = block.split("\n")
     for line in lines:
       upper = line.strip().upper()
@@ -447,6 +489,7 @@ class JournalImportService:
     row = {
       "date": entry_date.isoformat(),
       "gratitude": sections.get("GRATITUDE", "").strip(),
+      "awake": sections.get("AWAKE", "").strip(),
       "plans": sections.get("PLANS", "").strip(),
       "tasks": sections.get("TASKS", "").strip(),
       "review": sections.get("REVIEW", "").strip(),

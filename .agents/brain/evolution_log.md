@@ -4,6 +4,17 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-27 — Real Journal Data Cleanup + AWAKE Import Support
+
+- **Removed all guesswork:** `scripts/backfill_analytics.py` used to fabricate `sleep_hours`/`mood_morning`/`energy_level`/`sleep_quality`/`expected_focus`/`deep_work_hours` via keyword-matching (e.g. `extract_sleep_hours` only ever returned `5.5`/`7.2`/`8.0`). Deleted those functions outright; the script now only recomputes `scores` from real fields. Nulled the 94 already-fabricated rows and deleted the 94 downstream `scores` rows that had compounded from them (`momentum_score` chains day-to-day, so the contamination wasn't isolated to single days).
+- **Deleted pre-standard history:** all `daily_logs` before 2026-07-01 (48 rows + 84 memories) — the user's confirmed final journal structure started that date; earlier data used inconsistent, evolving formats and the user chose not to keep it.
+- **Fixed 3 real task-blob rows** (2026-07-01/02/03) where a day's TASKS had been written as one comma-joined paragraph instead of one task per line — re-split on the user's own embedded numbering, no invented content.
+- **Confirmed final journal structure** (six sections, in order): GRATITUDE, AWAKE, PLAN, TASKS, REVIEW, TAKEAWAY. Added AWAKE parsing to `journal_import_service.py` (`_parse_awake_range`) — computes `sleep_hours` honestly from the two written times (e.g. "9:00 AM - 12.30 AM." → 8.5h), never guesses when unparseable.
+- **Backups:** two full `DataPortabilityService.create_backup()` zips in `backups/` bracket this work.
+- **Next planned import change:** normalize PLAN into fixed 1-hour blocks spanning the awake window — plan written to `docs/plans/2026-09-27-hourly-plan-blocks-import.md`, not yet implemented.
+
+---
+
 ## 2026-09-27 — AI Coach Pruned to Goal Alignment + Future Self
 
 - **Decision:** User doesn't journal live in the app — real usage is a weekly/biweekly bulk photo-to-text import from a paper notebook via `journal_import_service.py`. Morning Planning, Evening Review and Weekly Sync all restated same-day journal fields back as one generic LLM sentence; none had any consumer elsewhere in the app, and none matched a workflow where days arrive in batches, not one at a time.

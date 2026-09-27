@@ -112,3 +112,80 @@ class TestJournalImport:
     plans = svc._parse_plans("7:15 - 9: Quandao project\n10 - 12: codekata")
     assert len(plans) == 2
     assert plans[0].activity == "Quandao project"
+
+  def test_parse_awake_range_computes_sleep_hours(self, temp_db):
+    svc = JournalImportService()
+    awake_range, sleep_hours = svc._parse_awake_range("9:00 AM - 12.30 AM.")
+    assert awake_range == "9:00 AM - 12.30 AM"
+    assert sleep_hours == 8.5
+
+  def test_parse_awake_range_unparseable_does_not_guess(self, temp_db):
+    svc = JournalImportService()
+    awake_range, sleep_hours = svc._parse_awake_range("woke up late")
+    assert awake_range == "woke up late"
+    assert sleep_hours is None
+
+  def test_parse_awake_range_empty(self, temp_db):
+    svc = JournalImportService()
+    assert svc._parse_awake_range("") == (None, None)
+    assert svc._parse_awake_range(None) == (None, None)
+
+  def test_parse_entry_includes_awake_section(self, temp_db):
+    svc = JournalImportService()
+    entry = svc.parse_entry({
+      "date": "19/9/26",
+      "gratitude": "I am grateful for having good friends",
+      "awake": "9:00 AM - 12.30 AM.",
+      "plan": "9-10: Wakeup, shower, breakfast, job application",
+      "tasks": "1. Apply for few companies ✓\n2. Study for the interview X",
+      "review": "I am not focused at all",
+      "takeaway": "I am gonna regret very much.",
+    })
+    assert entry.awake_range == "9:00 AM - 12.30 AM"
+    assert entry.sleep_hours == 8.5
+
+  def test_markdown_block_parses_awake_section(self, temp_db):
+    svc = JournalImportService()
+    text = """19/9/26
+GRATITUDE
+I am grateful for having good friends
+
+AWAKE
+9:00 AM - 12.30 AM.
+
+PLAN
+9-10 Wakeup, shower, breakfast, job application
+10-11 Tea time break, applications
+
+TASKS
+① Apply for few companies ✓
+② Study for the interview X
+③ Wash clothes ✓
+
+REVIEW
+I am not focused at all
+
+TAKEAWAY
+I am gonna regret very much.
+"""
+    row = svc._parse_markdown_block(text)
+    assert row["awake"] == "9:00 AM - 12.30 AM."
+    entry = svc.parse_entry(row)
+    assert entry.sleep_hours == 8.5
+    assert len(entry.tasks) == 3
+    assert entry.tasks[0].completed is True
+    assert entry.tasks[1].completed is True
+    assert entry.tasks[2].completed is True
+
+  def test_store_entry_persists_awake_and_sleep(self, temp_db):
+    svc = JournalImportService()
+    entry = svc.parse_entry({
+      "date": "20/9/26",
+      "gratitude": "grateful",
+      "awake": "9:00 AM - 12.30 AM.",
+      "review": "fine",
+    })
+    svc.store_entry(entry)
+    log = svc.log_repo.get_by_date(date(2026, 9, 20))
+    assert log.awake_range == "9:00 AM - 12.30 AM"
+    assert log.sleep_hours == 8.5

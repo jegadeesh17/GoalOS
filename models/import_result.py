@@ -25,6 +25,8 @@ class ParsedEntry(BaseModel):
   review: Optional[str] = None
   takeaway: Optional[str] = None
   task_completion_rate: float = 0.0
+  awake_range: Optional[str] = None
+  sleep_hours: Optional[float] = None
 
 
 class ImportResult(BaseModel):

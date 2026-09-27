@@ -54,8 +54,23 @@ class TestFallbackFutureSelf:
   def test_names_missing_goals_instead_of_inventing_them(self):
     context = {"current_age_in_10_years": 34, "user_vision": {}, "recent_logs": []}
     result = fallback_future_self(context)
-    assert "no 5-year goals defined yet" in result["five_year_pacing"]
-    assert "no 10-year goals defined yet" in result["ten_year_pacing"]
+    assert "No 5-year goals defined yet" in result["five_year_pacing"]
+    assert "No 10-year goals defined yet" in result["ten_year_pacing"]
+    assert result["key_things_referenced"] == []
+
+  def test_missing_ten_year_goal_does_not_get_quoted_as_a_real_goal(self):
+    # Regression: one horizon has a goal, the other doesn't - the "no goals
+    # defined yet" placeholder must never be treated as a real goal name.
+    context = {
+      "current_age_in_10_years": 34,
+      "user_vision": {"five_year_vision": "Net worth target", "ten_year_vision": ""},
+      "recent_logs": [{"task_completion_rate": 80.0}],
+    }
+    result = fallback_future_self(context)
+    assert "Net worth target" in result["five_year_pacing"]
+    assert "No 10-year goals defined yet" in result["ten_year_pacing"]
+    assert "defined yet" not in result["message"]
+    assert result["key_things_referenced"] == ["Net worth target"]
 
   def test_end_to_end_pacing_reflects_real_goal_records(self, temp_db):
     service = CoachService()

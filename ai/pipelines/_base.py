@@ -28,33 +28,48 @@ def fallback_reflection(context: dict) -> dict:
 def fallback_future_self(context: dict) -> dict:
   written_from_age = context.get("current_age_in_10_years") or 35
   visions = context.get("user_vision") or {}
-  five_year_text = (visions.get("five_year_vision") or "").strip() or "no 5-year goals defined yet"
-  ten_year_text = (visions.get("ten_year_vision") or "").strip() or "no 10-year goals defined yet"
+  five_year_goal = (visions.get("five_year_vision") or "").strip()
+  ten_year_goal = (visions.get("ten_year_vision") or "").strip()
 
   recent_logs = context.get("recent_logs", [])
   rates = [l.get("task_completion_rate") for l in recent_logs if l.get("task_completion_rate") is not None]
   avg_completion = (sum(rates) / len(rates)) if rates else None
 
-  if avg_completion is None:
-    five_year_pacing = f"Not enough recent logs to evaluate pacing against: {five_year_text}."
-    ten_year_pacing = f"Not enough recent logs to evaluate pacing against: {ten_year_text}."
+  def pacing_for(goal_text: str, horizon_label: str) -> str:
+    if not goal_text:
+      return f"No {horizon_label} goals defined yet - nothing to pace against."
+    if avg_completion is None:
+      return f"Not enough recent logs to evaluate pacing against: {goal_text}."
+    if avg_completion < 40:
+      return f"Off pace — recent execution ({avg_completion:.0f}% task completion) is not compounding toward: {goal_text}."
+    return f"On pace — {avg_completion:.0f}% recent task completion is compounding toward: {goal_text}."
+
+  five_year_pacing = pacing_for(five_year_goal, "5-year")
+  ten_year_pacing = pacing_for(ten_year_goal, "10-year")
+
+  defined_goals = [g for g in (five_year_goal, ten_year_goal) if g]
+  goals_joined = " and ".join(defined_goals)
+  are_or_is = "is" if len(defined_goals) == 1 else "are"
+
+  if not defined_goals:
+    message = (
+      f"I'm you, {written_from_age} years old, writing back. There's nothing on the Goals page yet for "
+      "5 or 10 years out, so I can't tell you if today is building toward anything. Define them, then we can check."
+    )
+  elif avg_completion is None:
     message = (
       f"I'm you, {written_from_age} years old, writing back. There isn't enough logged yet to tell you "
       "whether the days are adding up to anything. Start logging so future-you can actually check."
     )
   elif avg_completion < 40:
-    five_year_pacing = f"Off pace — recent execution ({avg_completion:.0f}% task completion) is not compounding toward: {five_year_text}."
-    ten_year_pacing = f"At this rate, the identity behind '{ten_year_text}' doesn't form. The gap is daily follow-through, not the ambition itself."
     message = (
-      f"I'm you, {written_from_age} years old, writing back. {five_year_text} and {ten_year_text} are still "
-      "just words right now, because the days aren't compounding toward them. Fix the follow-through, not the plan."
+      f"I'm you, {written_from_age} years old, writing back. {goals_joined} {are_or_is} still just words "
+      "right now, because the days aren't compounding toward them. Fix the follow-through, not the plan."
     )
   else:
-    five_year_pacing = f"On pace — {avg_completion:.0f}% recent task completion is compounding toward: {five_year_text}."
-    ten_year_pacing = f"Keep this rate up and '{ten_year_text}' stops being aspirational and becomes real."
     message = (
       f"I'm you, {written_from_age} years old, writing back. What you're doing now is working — "
-      f"{five_year_text} and {ten_year_text} are becoming real because of days like these."
+      f"{goals_joined} {are_or_is} becoming real because of days like these."
     )
 
   return {
@@ -62,7 +77,7 @@ def fallback_future_self(context: dict) -> dict:
     "written_from_age": written_from_age,
     "five_year_pacing": five_year_pacing,
     "ten_year_pacing": ten_year_pacing,
-    "key_things_referenced": [five_year_text, ten_year_text],
+    "key_things_referenced": defined_goals,
     "confidence": 0.5,
     "source": "heuristic_fallback",
   }

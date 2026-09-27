@@ -8,8 +8,8 @@ import {
   Circle,
   Clock,
   Sun,
+  Sunrise,
   Moon,
-  Trophy,
   Lightbulb,
   ArrowRight,
   Flame,
@@ -39,6 +39,44 @@ const parseTasks = (raw: string | null | undefined): TaskItem[] => {
         priority: 1,
         completed: text.toLowerCase().includes('tick') || text.includes('✓'),
       }));
+  }
+};
+
+interface PlanBlockDisplay {
+  key: string;
+  label: string;
+  activity: string;
+}
+
+// time_blocks has been stored in three shapes over the app's history:
+// {start,end,activity} (current import format), {time,activity,...}
+// (JournalView's manual-edit format), and raw "9-10 activity" text lines
+// (the pre-fix CSV importer). Render whichever one is actually there.
+const parsePlanBlocks = (raw: string | null | undefined): PlanBlockDisplay[] => {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((b: Record<string, unknown>, idx: number): PlanBlockDisplay | null => {
+        if (!b || typeof b !== 'object') return null;
+        const activity = typeof b.activity === 'string' ? b.activity.trim() : '';
+        if (!activity) return null;
+        const label = b.start && b.end ? `${b.start}–${b.end}` : typeof b.time === 'string' ? b.time : '';
+        return { key: `${idx}`, label, activity };
+      })
+      .filter((b): b is PlanBlockDisplay => b !== null);
+  } catch {
+    return raw
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line, idx) => {
+        const match = line.match(/^(\d{1,2}(?::\d{2})?\s*[-–]\s*\d{1,2}(?::\d{2})?)\s+(.*)$/);
+        return match
+          ? { key: `${idx}`, label: match[1].trim(), activity: match[2].trim() }
+          : { key: `${idx}`, label: '', activity: line };
+      });
   }
 };
 
@@ -130,16 +168,16 @@ export const DayDetailDrawer: React.FC<DayDetailDrawerProps> = ({
   const year = Number(dateStr.slice(0, 4));
   const tasks = parseTasks(log?.planned_tasks);
   const doneCount = tasks.filter((t) => t.completed).length;
+  const planBlocks = parsePlanBlocks(log?.time_blocks);
 
   const isToday = daySummary?.status === 'today';
   const isFuture = daySummary?.status === 'future';
   const isProductive = daySummary?.is_productive;
-  const hasContent = Boolean(daySummary?.has_log || log?.top_priority || log?.journal_entry);
-
-  const hasMorning = Boolean(
-    log?.top_priority || log?.supporting_task_1 || log?.supporting_task_2 || log?.intention || log?.gratitude,
+  const hasContent = Boolean(
+    daySummary?.has_log || log?.gratitude || log?.journal_entry || log?.takeaway || planBlocks.length > 0 || tasks.length > 0,
   );
-  const hasEvening = Boolean(log?.one_win || log?.one_lesson || log?.takeaway || log?.journal_entry);
+
+  const hasAwake = Boolean(log?.awake_range || log?.sleep_hours);
 
   const tasksValue =
     daySummary?.tasks_total_count && daySummary.tasks_total_count > 0
@@ -248,36 +286,42 @@ export const DayDetailDrawer: React.FC<DayDetailDrawerProps> = ({
                 ))}
               </dl>
 
-              {hasMorning && (
+              {log?.gratitude && (
                 <section>
-                  <SectionTitle icon={<Sun className="w-4 h-4 text-amber-500" />} badge={log?.morning_completed ? 'Routine done' : undefined}>
-                    Morning
-                  </SectionTitle>
-                  <div className="space-y-3">
-                    {log?.top_priority && (
-                      <div>
-                        <p className="text-xs text-slate-500">First priority</p>
-                        <p className="text-sm font-semibold text-slate-900 mt-0.5">{log.top_priority}</p>
-                      </div>
-                    )}
-                    {(log?.supporting_task_1 || log?.supporting_task_2) && (
-                      <ul className="space-y-1 text-sm text-slate-700">
-                        {[log.supporting_task_1, log.supporting_task_2].filter(Boolean).map((t) => (
-                          <li key={t} className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-                            {t}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {log?.intention && <p className="voice text-[15px]">“{log.intention}”</p>}
-                    {log?.gratitude && (
-                      <div>
-                        <p className="text-xs text-slate-500">Grateful for</p>
-                        <p className="voice text-[15px] mt-0.5">{log.gratitude}</p>
-                      </div>
-                    )}
+                  <SectionTitle icon={<Sun className="w-4 h-4 text-amber-500" />}>Gratitude</SectionTitle>
+                  <p className="voice text-[15px]">{log.gratitude}</p>
+                </section>
+              )}
+
+              {hasAwake && (
+                <section>
+                  <SectionTitle icon={<Sunrise className="w-4 h-4 text-orange-500" />}>Awake &amp; sleep</SectionTitle>
+                  <div className="flex items-center gap-3 text-sm">
+                    {log?.awake_range && <span className="text-slate-800">{log.awake_range}</span>}
+                    {log?.sleep_hours ? (
+                      <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full tabular-nums">
+                        {log.sleep_hours}h sleep
+                      </span>
+                    ) : null}
                   </div>
+                </section>
+              )}
+
+              {planBlocks.length > 0 && (
+                <section>
+                  <SectionTitle icon={<Clock className="w-4 h-4 text-emerald-700" />}>Plan</SectionTitle>
+                  <ul className="space-y-1.5">
+                    {planBlocks.map((block) => (
+                      <li key={block.key} className="flex items-start gap-2.5 text-sm">
+                        {block.label && (
+                          <span className="text-xs font-semibold text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded-lg whitespace-nowrap tabular-nums mt-0.5">
+                            {block.label}
+                          </span>
+                        )}
+                        <span className="text-slate-800 leading-snug">{block.activity}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </section>
               )}
 
@@ -303,41 +347,17 @@ export const DayDetailDrawer: React.FC<DayDetailDrawerProps> = ({
                 </section>
               )}
 
-              {hasEvening && (
+              {log?.journal_entry && (
                 <section>
-                  <SectionTitle icon={<Moon className="w-4 h-4 text-teal-700" />} badge={log?.evening_completed ? 'Reflection done' : undefined}>
-                    Evening
-                  </SectionTitle>
-                  <div className="space-y-4">
-                    {log?.one_win && (
-                      <div>
-                        <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                          <Trophy className="w-3.5 h-3.5 text-amber-500" /> Win
-                        </p>
-                        <p className="voice text-base mt-0.5">{log.one_win}</p>
-                      </div>
-                    )}
-                    {log?.one_lesson && (
-                      <div>
-                        <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                          <Lightbulb className="w-3.5 h-3.5 text-teal-600" /> Lesson
-                        </p>
-                        <p className="voice text-base mt-0.5">{log.one_lesson}</p>
-                      </div>
-                    )}
-                    {log?.takeaway && (
-                      <div>
-                        <p className="text-xs text-slate-500">Rule for tomorrow</p>
-                        <p className="voice text-base mt-0.5">{log.takeaway}</p>
-                      </div>
-                    )}
-                    {log?.journal_entry && (
-                      <div>
-                        <p className="text-xs text-slate-500">Notes</p>
-                        <p className="voice text-[15px] mt-1 whitespace-pre-wrap">{log.journal_entry}</p>
-                      </div>
-                    )}
-                  </div>
+                  <SectionTitle icon={<Moon className="w-4 h-4 text-teal-700" />}>Review</SectionTitle>
+                  <p className="voice text-[15px] whitespace-pre-wrap">{log.journal_entry}</p>
+                </section>
+              )}
+
+              {log?.takeaway && (
+                <section>
+                  <SectionTitle icon={<Lightbulb className="w-4 h-4 text-teal-600" />}>Takeaway</SectionTitle>
+                  <p className="voice text-base">{log.takeaway}</p>
                 </section>
               )}
             </div>

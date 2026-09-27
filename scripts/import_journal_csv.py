@@ -2,11 +2,14 @@
 
 Imports and synchronizes all handwritten journal entries from journal_data.csv
 into SQLite goalos.db daily_logs table with zero loss of information.
+
+Parsing (PLAN time blocks, TASKS, AWAKE) is delegated to
+JournalImportService so this script stays in sync with the shared,
+tested logic instead of maintaining its own duplicate heuristics.
 """
 
 import csv
 import json
-import re
 import sqlite3
 import sys
 from datetime import date, datetime
@@ -32,7 +35,7 @@ def parse_date(date_str: str) -> date:
             pass
 
     # Handle D/M/YY or D-M-YY with single digits
-    parts = re.split(r"[/.-]", date_str)
+    parts = date_str.replace(".", "-").replace("/", "-").split("-")
     if len(parts) == 3:
         try:
             d, m, y = int(parts[0]), int(parts[1]), int(parts[2])
@@ -45,51 +48,10 @@ def parse_date(date_str: str) -> date:
     raise ValueError(f"Unrecognized date format: '{date_str}'")
 
 
-def parse_tasks_from_text(tasks_text: str):
-    """Parse task lines into structured JSON, formatted text, completion rate, and top priority."""
-    if not tasks_text or not tasks_text.strip():
-        return None, None, None, None
-
-    lines = [line.strip() for line in tasks_text.strip().split("\n") if line.strip()]
-    task_objs = []
-    completed_count = 0
-    top_priority_text = None
-
-    for idx, line in enumerate(lines, 1):
-        # Detect completion mark: (tick), ✓, ✔, [done], [x]
-        is_completed = bool(re.search(r"\(tick\)|✓|✔|\[done\]|\[x\]", line, re.IGNORECASE))
-
-        # Detect priority tag like P1, P2, P3 if present
-        p_match = re.search(r"\b(P[1-5])\b", line, re.IGNORECASE)
-        priority_tag = p_match.group(1).upper() if p_match else f"P{idx}"
-
-        # Clean text
-        cleaned = re.sub(r"^\d+[\.\)]\s*", "", line)  # Remove leading numbers
-        cleaned = re.sub(r"\s*\((tick|x|~|\*)\)", "", cleaned, flags=re.IGNORECASE)  # Remove (tick)/(x)
-        cleaned = re.sub(r"\s*\[(done|x| )\]", "", cleaned, flags=re.IGNORECASE)
-        cleaned = cleaned.strip()
-
-        if idx == 1 and cleaned:
-            top_priority_text = cleaned
-
-        task_objs.append({
-            "id": f"t_{idx}",
-            "text": cleaned,
-            "completed": is_completed,
-            "priority": idx,
-            "priority_tag": priority_tag,
-        })
-
-        if is_completed:
-            completed_count += 1
-
-    rate = round((completed_count / len(task_objs)) * 100, 1) if task_objs else 0.0
-    return json.dumps(task_objs), tasks_text.strip(), rate, top_priority_text
-
-
 def run_import(csv_path: str | None = None, db_path: str | None = None) -> int:
     """Read CSV and sync cleanly into SQLite daily_logs table."""
     from config.settings import settings
+    from services.journal_import_service import JournalImportService
 
     if db_path is None:
         resolved_db = Path(settings.DB_PATH)
@@ -118,6 +80,7 @@ def run_import(csv_path: str | None = None, db_path: str | None = None) -> int:
             print(f"Error: CSV file not found at {resolved_csv}")
             return 0
 
+    svc = JournalImportService()
     conn = sqlite3.connect(str(resolved_db))
     conn.row_factory = sqlite3.Row
 
@@ -139,27 +102,44 @@ def run_import(csv_path: str | None = None, db_path: str | None = None) -> int:
             iso_date = entry_date.isoformat()
 
             gratitude = (row.get("Gratitude") or row.get("gratitude") or "").strip()
-            plan = (row.get("Plan") or row.get("plan") or "").strip()
+            plan_text = (row.get("Plan") or row.get("plan") or "").strip()
             tasks_raw = (row.get("Tasks") or row.get("tasks") or "").strip()
             review = (row.get("Review") or row.get("review") or row.get("journal_entry") or "").strip()
             takeaway = (row.get("Takeaway") or row.get("takeaway") or row.get("one_lesson") or "").strip()
+            awake_text = (row.get("Awake") or row.get("AWAKE") or row.get("awake") or "").strip()
 
-            planned_tasks_json, tasks_text, completion_rate, top_priority = parse_tasks_from_text(tasks_raw)
+            # Bare-hour PLAN lines only resolve into a fixed hourly grid when an
+            # AWAKE wake-hour is available to anchor them; otherwise keep the
+            # raw parsed blocks as-is (see journal_import_service.py's
+            # `_build_hourly_blocks` for the grid rule).
+            plans = svc._parse_plans(plan_text)
+            wake_hour = svc._parse_wake_hour(awake_text or None)
+            if wake_hour is not None and plans:
+                resolved = svc._resolve_plan_times(plans, wake_hour)
+                plans = svc._build_hourly_blocks(resolved, wake_hour)
+            time_blocks_json = json.dumps([b.model_dump() for b in plans])
 
-            existing = conn.execute("SELECT id, top_priority FROM daily_logs WHERE date = ?", (iso_date,)).fetchone()
+            tasks = svc._parse_tasks(tasks_raw)
+            planned_tasks_json = json.dumps([t.model_dump() for t in tasks]) if tasks else None
+            completed_count = sum(1 for t in tasks if t.completed)
+            completion_rate = round((completed_count / len(tasks)) * 100, 1) if tasks else 0.0
+
+            awake_range, sleep_hours = svc._parse_awake_range(awake_text or None)
+
+            existing = conn.execute("SELECT id FROM daily_logs WHERE date = ?", (iso_date,)).fetchone()
 
             if existing:
                 conn.execute("""
                     UPDATE daily_logs SET
                         gratitude = ?,
+                        awake_range = ?,
+                        sleep_hours = ?,
                         time_blocks = ?,
                         planned_tasks = ?,
                         tasks_completed = ?,
                         task_completion_rate = ?,
                         journal_entry = ?,
                         takeaway = ?,
-                        one_lesson = ?,
-                        top_priority = COALESCE(NULLIF(top_priority, ''), ?),
                         morning_completed = 1,
                         evening_completed = 1,
                         imported = 1,
@@ -168,34 +148,34 @@ def run_import(csv_path: str | None = None, db_path: str | None = None) -> int:
                     WHERE id = ?
                 """, (
                     gratitude,
-                    plan,
+                    awake_range,
+                    sleep_hours,
+                    time_blocks_json,
                     planned_tasks_json,
-                    tasks_text,
+                    tasks_raw,
                     completion_rate,
                     review,
                     takeaway,
-                    takeaway,
-                    top_priority,
                     existing["id"],
                 ))
             else:
                 conn.execute("""
                     INSERT INTO daily_logs (
-                        date, gratitude, time_blocks, planned_tasks, tasks_completed, task_completion_rate,
-                        journal_entry, takeaway, one_lesson, top_priority, morning_completed, evening_completed,
-                        imported, import_source
+                        date, gratitude, awake_range, sleep_hours, time_blocks, planned_tasks,
+                        tasks_completed, task_completion_rate, journal_entry, takeaway,
+                        morning_completed, evening_completed, imported, import_source
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, 1, 'journal_data.csv')
                 """, (
                     iso_date,
                     gratitude,
-                    plan,
+                    awake_range,
+                    sleep_hours,
+                    time_blocks_json,
                     planned_tasks_json,
-                    tasks_text,
+                    tasks_raw,
                     completion_rate,
                     review,
                     takeaway,
-                    takeaway,
-                    top_priority,
                 ))
 
             count += 1

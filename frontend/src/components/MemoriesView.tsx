@@ -19,11 +19,11 @@ const TYPE_STYLES: Record<string, { label: string; icon: typeof Lightbulb; tone:
   principle: { label: 'Principle', icon: Award, tone: 'bg-amber-50 text-amber-900' },
   lesson: { label: 'Lesson', icon: BookOpen, tone: 'bg-emerald-50 text-emerald-900' },
   identity: { label: 'Identity', icon: Fingerprint, tone: 'bg-teal-50 text-teal-900' },
-  insight: { label: 'Insight', icon: Lightbulb, tone: 'bg-emerald-50/70 text-forest-900' },
+  journal_insight: { label: 'Insight', icon: Lightbulb, tone: 'bg-emerald-50/70 text-forest-900' },
 };
 
 const TypeBadge: React.FC<{ type: string }> = ({ type }) => {
-  const style = TYPE_STYLES[(type || 'insight').toLowerCase()] ?? TYPE_STYLES.insight;
+  const style = TYPE_STYLES[(type || 'journal_insight').toLowerCase()] ?? TYPE_STYLES.journal_insight;
   const Icon = style.icon;
   return (
     <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${style.tone}`}>
@@ -42,7 +42,7 @@ export const MemoriesView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [newMemoryText, setNewMemoryText] = useState('');
-  const [newMemoryType, setNewMemoryType] = useState('insight');
+  const [newMemoryType, setNewMemoryType] = useState('journal_insight');
   const [newMemoryImportance, setNewMemoryImportance] = useState(0.8);
 
   const loadMemories = async () => {
@@ -197,7 +197,7 @@ export const MemoriesView: React.FC = () => {
                   onChange={(e) => setNewMemoryType(e.target.value)}
                   className="w-full text-xs p-2.5 rounded-xl border border-emerald-100 bg-white text-slate-800 font-medium"
                 >
-                  <option value="insight">Insight</option>
+                  <option value="journal_insight">Insight</option>
                   <option value="principle">Principle</option>
                   <option value="lesson">Lesson</option>
                   <option value="identity">Identity</option>
@@ -251,17 +251,17 @@ export const MemoriesView: React.FC = () => {
 
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center bg-slate-100/90 rounded-full p-0.5 text-xs" role="group" aria-label="Filter by type">
-                {(['all', 'insight', 'principle', 'lesson', 'identity'] as const).map((type) => (
+                {(['all', 'journal_insight', 'principle', 'lesson', 'identity'] as const).map((type) => (
                   <button
                     key={type}
                     type="button"
                     onClick={() => setSelectedType(type)}
                     aria-pressed={selectedType === type}
-                    className={`px-2.5 py-1 rounded-full capitalize transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
                       selectedType === type ? 'bg-white text-emerald-950 font-semibold shadow-forest-xs' : 'text-slate-600 font-medium hover:text-slate-900'
                     }`}
                   >
-                    {type}
+                    {type === 'all' ? 'All' : TYPE_STYLES[type].label}
                   </button>
                 ))}
               </div>

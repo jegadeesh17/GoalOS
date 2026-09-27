@@ -76,7 +76,7 @@ api_router = APIRouter()
 
 class MemoryStoreRequest(BaseModel):
   text: str = Field(min_length=1, max_length=5000)
-  memory_type: str = Field(default="insight", max_length=64)
+  memory_type: str = Field(default="journal_insight", max_length=64)
   importance: float = Field(default=0.5, ge=0.0, le=1.0)
   source_date: Optional[date] = None
   goal_id: Optional[int] = None

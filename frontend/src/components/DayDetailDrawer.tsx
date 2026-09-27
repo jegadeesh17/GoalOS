@@ -186,11 +186,12 @@ export const DayDetailDrawer: React.FC<DayDetailDrawerProps> = ({
       ? `${doneCount}/${tasks.length}`
       : '–';
 
+  // Deep work and Energy are omitted here: neither the real import pipeline
+  // nor any live-editing UI ever populates deep_work_hours/energy_level, so
+  // they'd always render as a dead "–" placeholder.
   const metrics = [
-    { label: 'Deep work', value: log?.deep_work_hours ? `${log.deep_work_hours}h` : '–' },
     { label: 'Tasks', value: tasksValue },
     { label: 'Sleep', value: log?.sleep_hours ? `${log.sleep_hours}h` : '–' },
-    { label: 'Energy', value: log?.energy_level ? `${log.energy_level}/5` : '–' },
   ];
 
   const status = isProductive
@@ -277,7 +278,7 @@ export const DayDetailDrawer: React.FC<DayDetailDrawerProps> = ({
             </div>
           ) : (
             <div className="space-y-8">
-              <dl className="grid grid-cols-4 rounded-2xl border border-emerald-100 divide-x divide-emerald-100">
+              <dl className="grid grid-cols-2 rounded-2xl border border-emerald-100 divide-x divide-emerald-100">
                 {metrics.map((m) => (
                   <div key={m.label} className="px-3 py-2.5">
                     <dt className="text-[11px] font-medium text-slate-500">{m.label}</dt>

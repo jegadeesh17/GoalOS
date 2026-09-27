@@ -8,7 +8,7 @@
 [![Vector DB](https://img.shields.io/badge/Vector%20Store-ChromaDB-purple.svg)](https://www.trychroma.com/)
 [![Database](https://img.shields.io/badge/Database-SQLite%203%20%2B%20FTS5-003B57.svg)](https://www.sqlite.org/)
 [![Validation](https://img.shields.io/badge/Schema-Pydantic%20v2-E92063.svg)](https://docs.pydantic.dev/)
-[![Tests](https://img.shields.io/badge/Tests-pytest%20(130%20passing)-green.svg)](https://docs.pytest.org/)
+[![Tests](https://img.shields.io/badge/Tests-pytest%20(160%20passing)-green.svg)](https://docs.pytest.org/)
 [![License](https://img.shields.io/badge/License-MIT-gray.svg)](LICENSE)
 
 ---
@@ -21,14 +21,10 @@
 - [Key Features](#-key-features)
 - [System Architecture](#-system-architecture)
 - [Frontend Design System](#-frontend-design-system)
-- [Hybrid RAG & Cognitive Memory Engine](#-hybrid-rag--cognitive-memory-engine)
 - [Agentic AI Coaching & Tool Calling](#-agentic-ai-coaching--tool-calling)
-- [Project Directory Structure](#-project-directory-structure)
 - [Installation & Quickstart](#-installation--quickstart)
 - [Running the Application](#-running-the-application)
 - [REST API Reference](#-rest-api-reference)
-- [Configuration Reference](#-configuration-reference)
-- [Data Portability & Safe Operations](#-data-portability--safe-operations)
 - [Testing & Quality Assurance](#-testing--quality-assurance)
 - [Privacy & Security Guarantees](#-privacy--security-guarantees)
 
@@ -53,25 +49,23 @@
 - **Visual Milestones:** Real-time calculation of weeks lived, weeks remaining, percentage of life elapsed, and decade markers.
 - **Non-Redundant Information:** Single source of truth for metrics with clean visual legend and hover inspector.
 
-### 📓 2. Morning Planning & Evening Reflections
-- **Structured Daily Execution:** Daily logging capturing sleep duration/quality, vitality mood, energy levels, gratitude, intentions, and #1 top priority.
-- **Goal-Linked Tasks:** Tie daily execution directly to short-, medium-, and long-term milestones.
-- **Evening Retrospective:** Consolidate daily wins, extract honest lessons, log deep work blocks, and record free-form reflections.
+### 📓 2. Notebook Journal Import
+- **Six-Section Journal:** Each day follows a fixed structure — Gratitude, Awake (wake–sleep range), Plan (hour-range blocks), Tasks (numbered, ticked when done), Review, and Takeaway.
+- **Bulk Import, Not Live Entry:** Handwritten notebook pages are transcribed and bulk-imported (`scripts/import_journal_csv.py` → `JournalImportService`), which normalizes Plan entries into an hourly grid and computes sleep hours only from real Awake times.
+- **Day Drawer:** Clicking any day on the calendar opens the full six-section entry for that date.
 
 ### 🎯 3. Multi-Horizon Goals Architecture
-- **3 Dynamic Horizons:**
+- **4 Dynamic Horizons** (Goal records are the single source of truth for vision):
   - **1-Month Sprints:** Immediate tactical habit execution.
   - **1-Year Horizons:** Strategic compounding milestones and skill expansion.
-  - **5-Year Vision:** Long-term trajectory and identity architecture.
+  - **5-Year Vision:** Long-term trajectory.
+  - **10-Year Identity:** Who the user is becoming.
 - **Interactive Checklists & Pacing:** Granular milestone progress tracking and auto-calculated completion percentages.
 
 ### 🤖 4. AI Coach Studio
-- **Autonomous Multi-Pipeline Coaching:**
-  - **Morning Planning:** Sets daily priorities and focus.
-  - **Evening Review:** Consolidates wins and extracts lessons.
-  - **Weekly Sync:** Evaluates longitudinal pacing and weekly review.
-  - **Future Self:** Connects current trajectory with 10-year identity.
-  - **Goal Alignment:** Stress-tests active goals against daily reality.
+- **Batch-Cadence Coaching Pipelines** (built for weekly/biweekly journal imports, not daily check-ins):
+  - **Goal Alignment:** Monthly and yearly pacing of 1-month and 1-year goals against logged days.
+  - **Future Self:** Checks whether current execution is on pace for the 5-year and 10-year goals.
 - **Coach Chat (Multi-Agent Coordinator):** Free-form conversational coaching backed by `CoordinatorPipeline` — classifies intent, routes to scoped domain toolkits (goals/journal/memory/calendar), persists a session blackboard across turns, and falls back to a deterministic rule engine when remote AI consent is off or no API key is configured.
 - **Grounded Verification:** Transparent evidence reporting with retrieved memory sources and confidence scores.
 
@@ -97,7 +91,7 @@ flowchart TD
     subgraph Frontend_Layer ["React 18 + TypeScript (Forest Mist Paper Glass)"]
         Vite["Vite Dev Server (Port 5173)"]
         App["App.tsx"]
-        Views["Views: Calendar | Journal | Goals | AI Coach (Pipelines + Chat) | Analytics | Memories | Settings"]
+        Views["Views: Calendar | Journal | Goals | AI Coach (Goal Alignment + Future Self + Chat) | Analytics | Memories | Settings"]
         Vite --> App --> Views
     end
 
@@ -231,30 +225,32 @@ Open `http://localhost:5173` in your browser.
 |---|---|---|
 | `/calendar/summary` | `GET` | Lifespan summary (weeks lived, remaining, percentage) |
 | `/calendar/grid` | `GET` | 3,640 week grid rows (52 weeks &times; 70 years) |
+| `/calendar/year` | `GET` | Per-day productivity grid for a calendar year |
 | `/journal/today` | `GET` | Current day's journal entry & planned tasks |
 | `/journal/date/{target_date}` | `GET` | Specific date journal record |
+| `/journal/history` | `GET` | Most recent journal entries (`limit`, default 30) |
 | `/journal/upsert` | `POST` | Upsert daily log fields |
-| `/goals/horizons` | `GET` | Active goals grouped by 1-month, 1-year, 5-year horizons |
+| `/goals/horizons` | `GET` | Active goals grouped by 1-month, 1-year, 5-year, 10-year horizons |
 | `/goals` | `GET`, `POST` | List and create goals |
 | `/goals/{id}` | `GET`, `PUT`, `DELETE` | Goal management |
 | `/goals/{id}/milestones` | `POST` | Add milestone to goal |
 | `/milestones/{id}` | `PUT`, `PATCH`, `DELETE` | Update or remove milestone |
-| `/coach/morning` | `POST` | Generate morning mentor guidance |
-| `/coach/evening` | `POST` | Generate evening review analysis |
-| `/coach/weekly` | `POST` | Generate weekly review coaching |
-| `/coach/future-self` | `POST` | Generate 10-year identity alignment guidance |
-| `/coach/goal-alignment` | `POST` | Evaluate specific goal alignment |
+| `/coach/progress` | `POST` | Goal Alignment: monthly/yearly goal pacing for the month of `date` |
+| `/coach/future-self` | `POST` | Future Self: 5-year/10-year goal pacing |
 | `/coach/chat` | `POST` | Multi-agent coordinator chat turn (intent routing, scoped tools, session blackboard) |
 | `/coach/sessions` | `GET`, `POST` | List or create coach chat sessions |
 | `/coach/sessions/{id}` | `GET`, `DELETE` | Fetch or delete a chat session and its messages |
 | `/coach/telemetry/summary` | `GET` | Aggregated coordinator latency/tool-use telemetry |
 | `/coach/telemetry/traces` | `GET` | Individual coordinator trace spans |
 | `/analytics/dashboard` | `GET` | Aggregated metrics, scores, and behavioral patterns |
+| `/analytics/scores` | `GET` | Daily score history |
 | `/memories` | `GET`, `POST` | List and record cognitive memories |
 | `/memories/search` | `GET` | Hybrid lexical & vector semantic search |
 | `/settings` | `GET`, `POST` | Profile and AI privacy configuration |
 | `/export` | `GET` | Full JSON export of user database |
-| `/factory-reset` | `POST` | Auto-backup SQLite and clear data |
+| `/export/weekly-report` | `GET` | 7-day retrospective digest (Markdown, HTML, or JSON) |
+| `/export/reset` | `POST` | Auto-backup, then clear data (requires `{"confirmation": "RESET"}`) |
+| `/health`, `/health/details` | `GET` | Liveness and dependency health |
 
 ---
 
@@ -264,7 +260,7 @@ Run the comprehensive pytest test suite:
 ```bash
 pytest
 ```
-**Results:** **130/130 tests passing (100%)**.
+**Results:** **160/160 tests passing (100%)**.
 
 Run frontend typecheck and build validation:
 ```bash
@@ -279,5 +275,5 @@ npm run build
 
 1. **Local-First Storage:** All personal data is saved in local SQLite (`goalos.db`) and local ChromaDB (`chroma_db/`).
 2. **Explicit AI Consent:** External LLM calls are disabled by default until explicitly enabled by the user in Settings.
-3. **Automated Backups:** Factory reset operations automatically create timestamped SQLite backups (`goalos_backup_YYYYMMDD_HHMMSS.db`).
+3. **Automated Backups:** Factory reset operations automatically create timestamped backups (`backups/goalos-backup-YYYYMMDD-HHMMSS.zip`, JSON export + raw `.db`).
 4. **Input Sanitation & Validation:** All API inputs are validated via strict Pydantic v2 schemas.

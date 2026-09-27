@@ -501,8 +501,8 @@ export const JournalView: React.FC<JournalViewProps> = ({ initialDate }) => {
           {/* Morning */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="md:col-span-2">
-              <label htmlFor="journal-gratitude" className="flex items-center gap-1.5 text-xs font-semibold text-forest-800 mb-1.5">
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
+              <label htmlFor="journal-gratitude" className="flex items-center gap-1.5 text-sm font-semibold text-forest-800 mb-1.5">
+                <Sun className="w-4 h-4 text-amber-500" />
                 Morning gratitude
               </label>
               <input
@@ -516,7 +516,7 @@ export const JournalView: React.FC<JournalViewProps> = ({ initialDate }) => {
             </div>
 
             <div>
-              <label htmlFor="journal-awake" className="flex items-center justify-between text-xs font-semibold text-forest-800 mb-1.5">
+              <label htmlFor="journal-awake" className="flex items-center justify-between text-sm font-semibold text-forest-800 mb-1.5">
                 <span>Awake &amp; sleep</span>
                 {log.sleep_hours ? <span className="font-medium text-emerald-800">{log.sleep_hours}h sleep</span> : null}
               </label>
@@ -760,8 +760,8 @@ export const JournalView: React.FC<JournalViewProps> = ({ initialDate }) => {
           {/* Evening */}
           <div className="pt-6 border-t border-emerald-100/70 space-y-5">
             <div>
-              <label htmlFor="journal-reflection" className="flex items-center gap-1.5 text-xs font-semibold text-forest-800 mb-1.5">
-                <Moon className="w-3.5 h-3.5 text-teal-700" />
+              <label htmlFor="journal-reflection" className="flex items-center gap-1.5 text-sm font-semibold text-forest-800 mb-1.5">
+                <Moon className="w-4 h-4 text-teal-700" />
                 Evening reflection
               </label>
               <textarea
@@ -775,7 +775,7 @@ export const JournalView: React.FC<JournalViewProps> = ({ initialDate }) => {
             </div>
 
             <div>
-              <label htmlFor="journal-rule" className="block text-xs font-semibold text-forest-800 mb-1.5">
+              <label htmlFor="journal-rule" className="block text-sm font-semibold text-forest-800 mb-1.5">
                 One rule for tomorrow
               </label>
               <input

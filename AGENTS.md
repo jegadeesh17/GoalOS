@@ -33,9 +33,11 @@ Before and after every meaningful task:
 
 ## 4. 🌿 Autonomous Git Discipline & Version Control
 
-- **Autonomous Commits:** Upon concluding any meaningful code change, refactor, or style update, automatically stage verified files and create atomic Conventional Commits (`feat:`, `style:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`) without waiting for explicit user prompts.
-- **Hygiene & Safety:** Verify modified files with `git status --short` before committing. Never commit secrets (`.env`) or broken code.
-- **Traceability:** Always report the commit message and summary in the implementation debrief.
+- **Commit every change, no matter how small:** After each edit — including single-line fixes, renames, label/copy tweaks, or a single font-size change — immediately stage and commit it as an atomic Conventional Commit (`feat:`, `style:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`) without waiting for explicit user prompts. Never let verified, working edits sit uncommitted while you move on to the next task.
+- **End-of-turn clean-tree check:** Before ending a turn, run `git status --short` one final time. If any file you touched this session is still uncommitted, stage and commit it before finishing — never hand control back with your own edits left uncommitted.
+- **Hygiene & Safety:** Verify modified files with `git status --short` before every commit. Never commit secrets (`.env`) or broken code. Stage only the specific files your change touched by name — never `git add -A` or `git add .`.
+- **Pre-existing unrelated changes:** If `git status` shows modified or untracked files you did not touch this session, leave them untouched and explicitly name them in your response so the user stays aware — never commit, stash, or discard someone else's in-progress work without being asked.
+- **Traceability:** Always report the commit SHA and message in the implementation debrief.
 
 ---
 

@@ -4,6 +4,17 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-28 — Audit Follow-ups: No Guessed Age, Dead Analytics Tiles, Stale Files
+
+- **User confirmed birth date 2002-06-17** (already stored in `goalos.db`; current age 24.28, so Future Self writes from 34).
+- **Removed the guessed age 35 (`25c543a`):** when `birth_date` is unset, `current_age_in_10_years` is now `None`. The fallback letter says "ten years from now" instead of an age, the prompt tells the LLM not to state or guess one, and `AICoachView` hides the age line on null (previously it only checked `undefined`, so it would have printed "age null").
+- **Removed Morning mood + Deep work tiles from Analytics (`9223717`):** `mood_morning` and `deep_work_hours` are null on 73/73 real rows. `/analytics/dashboard` defaulted `avg_morning_mood` to **3.0** when empty, so the tile showed a fabricated "3 / 5". Both fields were dropped from the endpoint and the TS type. Sleep stays (real, from AWAKE). Note: `8264679` had only removed these tiles from the *day drawer*, not the Analytics page.
+- **Deleted stale files (`548c04c`):** six one-off scripts that already ran, `docs/interview_llm_prep.md`, and `WeeklyReviewRepository` + `models/weekly_review.py` (test-only).
+- **Held back for a user decision:** `ai/prompts/{morning,evening,mentor,goal_alignment}.txt`. `scripts/run_model_eval.py` still loads them, and 12/15 eval scenarios target removed pipelines, so deleting them means deciding the fate of the whole eval harness. Also flagged: `CoachService.build_context` still feeds the latest legacy `weekly_reviews` row (Sep 11–17, from the removed Weekly Sync) into every coaching prompt.
+- **Verification:** `pytest -q` 161 passed, `ruff check .` clean, `tsc --noEmit` clean.
+
+---
+
 ## 2026-09-28 — Codebase Staleness Audit
 
 - **Dead code removed (`923b98c`):** `CoachService.prefill_from_journal`, `chat`, `get_future_self`, and `get_dashboard_interpretations` had zero callers (`/coach/chat` routes to `CoordinatorPipeline`). That stranded the reflection pipeline (`reflection_coach.py`, `prompts/reflection.txt`, `fallback_reflection`), so those went too. Five legacy `WeeklySyncService` aliases (`group_entries_into_weeks`, `generate_weekly_report`, `generate_monthly_summary`, `save_sync_log`, `get_recent_sync_logs`) were referenced nowhere.

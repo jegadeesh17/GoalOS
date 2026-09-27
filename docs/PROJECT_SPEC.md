@@ -43,7 +43,7 @@ The system retrieves relevant memories using hybrid lexical and vector search, i
 | 8 | **Longitudinal Analytics & Behavioral Patterns:** Daily growth scores & multi-day pattern detection | `services/analytics_service.py`, `services/pattern_service.py` |
 | 9 | **Sovereign Privacy & Data Portability:** Remote AI consent switch, JSON export, auto-backup factory reset | `services/settings_service.py`, `services/data_portability_service.py` |
 | 10 | **FastAPI REST API:** Full CRUD, 512KB payload ceiling, CORS, and constant-time HMAC token auth | `api/main.py` |
-| 11 | **Comprehensive Test Suite:** 160 passing tests across repositories, services, pipelines, and API | `tests/*` |
+| 11 | **Comprehensive Test Suite:** 161 passing tests across repositories, services, pipelines, and API | `tests/*` |
 | 12 | **Production AI Evaluation Framework:** 6 Vision Metrics and leaky-bucket rate limiting for free-tier LLMs | `ai/eval/*`, `scripts/run_model_eval.py` |
 
 ### 2.2 Out of Scope
@@ -79,7 +79,7 @@ The system retrieves relevant memories using hybrid lexical and vector search, i
 
 | ID | Requirement | Target Specification | Enforcement Mechanism |
 |----|-------------|----------------------|-----------------------|
-| **NFR-01** | Test Suite Completeness | 100% green local test suite | `pytest -q` (160 passing tests) |
+| **NFR-01** | Test Suite Completeness | 100% green local test suite | `pytest -q` (161 passing tests) |
 | **NFR-02** | Data Privacy & Zero Leakage | Sovereign local persistence; explicit AI opt-in | `remote_ai_consent` gate in `SettingsService` |
 | **NFR-03** | Local CPU Embedding Inference | $< 20\text{ms}$ embedding generation | `all-MiniLM-L6-v2` with deterministic hash fallback |
 | **NFR-04** | Request Body Protection | Maximum 512KB payload | FastAPI `limit_request_body` middleware |
@@ -183,7 +183,7 @@ $$\text{Composite Score} = 0.35 \cdot S_{\text{sem}} + 0.15 \cdot S_{\text{lex}}
 
 | Metric | Result | Notes |
 |--------|--------|-------|
-| **pytest Suite** | 160/160 passing (100%) | `pytest -q` across all repositories, services, APIs, and pipelines |
+| **pytest Suite** | 161/161 passing (100%) | `pytest -q` across all repositories, services, APIs, and pipelines |
 | **AI Evaluation Framework** | 6 GoalOS Vision Metrics | Evaluates Schema Integrity, Grounding, Actionability, Horizon Alignment, Tool Precision, and Operational Efficiency |
 | **Free-Tier Model Benchmarking** | 76.8% composite score (`nvidia/nemotron-3-super-120b-a12b:free`) | 45-scenario live evaluation with leaky-bucket rate limiting ($\le 14$ RPM) |
 | **Retrieval Evaluation** | `python scripts/generate_retrieval_eval.py` | Generates rubric-based ranking report in `reports/evaluation.md` |

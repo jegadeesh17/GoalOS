@@ -55,9 +55,18 @@ class TestJournalImport:
   def test_parse_tasks_completion(self, temp_db):
     svc = JournalImportService()
     tasks = svc._parse_tasks("1. Task one X\n2. Task two [done]\n3. Task three")
-    assert tasks[0].completed is True
+    assert tasks[0].completed is False  # bare X marks a NOT-done task, not a completion
     assert tasks[1].completed is True
     assert tasks[2].completed is False
+
+  def test_parse_tasks_tick_marks_completion(self, temp_db):
+    svc = JournalImportService()
+    tasks = svc._parse_tasks("1. Task one (tick)\n2. Task two (X)\n3. Task three ✓")
+    assert tasks[0].completed is True
+    assert tasks[0].text == "Task one"
+    assert tasks[1].completed is False
+    assert tasks[1].text == "Task two"
+    assert tasks[2].completed is True
 
   def test_date_formats(self, temp_db):
     svc = JournalImportService()
@@ -174,7 +183,7 @@ I am gonna regret very much.
     assert entry.sleep_hours == 8.5
     assert len(entry.tasks) == 3
     assert entry.tasks[0].completed is True
-    assert entry.tasks[1].completed is True
+    assert entry.tasks[1].completed is False  # bare X marks a NOT-done task
     assert entry.tasks[2].completed is True
 
   def test_hourly_plan_grid_matches_worked_example(self, temp_db):

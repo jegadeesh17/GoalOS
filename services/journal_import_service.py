@@ -510,16 +510,20 @@ class JournalImportService:
     }
 
   def _parse_tasks(self, text: str) -> list[ParsedTask]:
+    # The user's real notation marks a done task with "(tick)"/[done]/checkmarks
+    # and a NOT-done task with a bare "X"/"(X)"/[X] - X is a failure mark, not
+    # a completion mark. Treating X as "done" (a common but wrong assumption)
+    # inverts every incomplete task's status.
     tasks = []
     for line in text.strip().split("\n"):
       line = line.strip()
       if not line:
         continue
-      completed = bool(re.search(r"\bX\b|\[done\]|✓|✔", line, re.IGNORECASE))
+      completed = bool(re.search(r"\(tick\)|\[done\]|✓|✔", line, re.IGNORECASE))
       cleaned = re.sub(r"^[①②③④⑤⑥⑦⑧⑨⑩\d]+[\.\)]\s*", "", line)
-      cleaned = re.sub(r"\s*[\[X\]]\s*$", "", cleaned, flags=re.IGNORECASE)
+      cleaned = re.sub(r"\s*\((tick|x)\)\s*$", "", cleaned, flags=re.IGNORECASE)
+      cleaned = re.sub(r"\s*\[(done|x)\]\s*$", "", cleaned, flags=re.IGNORECASE)
       cleaned = re.sub(r"\s+X\s*$", "", cleaned)
-      cleaned = re.sub(r"\s*\[done\]\s*$", "", cleaned, flags=re.IGNORECASE)
       if cleaned:
         tasks.append(ParsedTask(text=cleaned.strip(), completed=completed))
     return tasks

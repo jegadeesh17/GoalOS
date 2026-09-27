@@ -202,8 +202,6 @@ export const COACH_TONE_PRESETS: { value: string; label: string; blurb: string }
 export interface AnalyticsDashboardData {
   total_logs: number;
   avg_sleep_hours: number;
-  avg_deep_work_hours: number;
-  avg_morning_mood: number;
   patterns: any[];
   recent_scores: any[];
 }

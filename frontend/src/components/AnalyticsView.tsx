@@ -3,9 +3,7 @@ import { AnalyticsDashboardData, goalOSApi } from '../api/client';
 import { PageHeader } from './PageHeader';
 import {
   TrendingUp,
-  Clock,
   Moon,
-  Smile,
   AlertTriangle,
   CheckCircle2,
   BookOpen,
@@ -85,8 +83,8 @@ export const AnalyticsView: React.FC = () => {
     return (
       <div className="space-y-6">
         {header}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 motion-safe:animate-pulse" aria-hidden="true">
-          {[0, 1, 2, 3].map((i) => (
+        <div className="grid grid-cols-2 gap-3.5 motion-safe:animate-pulse" aria-hidden="true">
+          {[0, 1].map((i) => (
             <div key={i} className="h-28 bg-white/60 rounded-3xl" />
           ))}
         </div>
@@ -105,9 +103,7 @@ export const AnalyticsView: React.FC = () => {
 
   const stats = [
     { label: 'Days logged', value: `${data.total_logs}`, unit: 'days', note: 'Recent journal entries', icon: BookOpen },
-    { label: 'Deep work', value: `${data.avg_deep_work_hours}`, unit: 'hrs', note: 'Average focused hours per day', icon: Clock },
     { label: 'Sleep', value: `${data.avg_sleep_hours}`, unit: 'hrs', note: 'Average per night · aim for 7.5–8', icon: Moon },
-    { label: 'Morning mood', value: `${data.avg_morning_mood}`, unit: '/ 5', note: 'How mornings have felt', icon: Smile },
   ];
 
   const visibleInsights = showAllInsights ? insights : insights.slice(0, VISIBLE_INSIGHTS);
@@ -117,7 +113,7 @@ export const AnalyticsView: React.FC = () => {
     <div className="space-y-6">
       {header}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 gap-3.5">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (

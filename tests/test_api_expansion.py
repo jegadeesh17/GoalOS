@@ -136,7 +136,9 @@ def test_analytics_endpoints(client):
   dashboard = dashboard_res.json()
   assert "total_logs" in dashboard
   assert "avg_sleep_hours" in dashboard
-  assert "avg_deep_work_hours" in dashboard
+  # Deep work and morning mood are no longer captured - no fabricated averages.
+  assert "avg_deep_work_hours" not in dashboard
+  assert "avg_morning_mood" not in dashboard
 
   scores_res = client.get("/analytics/scores?limit=10")
   assert scores_res.status_code == 200

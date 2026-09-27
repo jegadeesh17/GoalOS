@@ -518,18 +518,12 @@ def analytics_dashboard() -> dict:
 
   total_logs = len(recent_logs)
   sleep_logs = [l.sleep_hours for l in recent_logs if l.sleep_hours is not None]
-  deep_work_logs = [l.deep_work_hours for l in recent_logs if l.deep_work_hours is not None]
-  mood_logs = [l.mood_morning for l in recent_logs if l.mood_morning is not None]
 
   avg_sleep = round(sum(sleep_logs) / len(sleep_logs), 1) if sleep_logs else 0.0
-  avg_deep_work = round(sum(deep_work_logs) / len(deep_work_logs), 1) if deep_work_logs else 0.0
-  avg_mood = round(sum(mood_logs) / len(mood_logs), 1) if mood_logs else 3.0
 
   return {
     "total_logs": total_logs,
     "avg_sleep_hours": avg_sleep,
-    "avg_deep_work_hours": avg_deep_work,
-    "avg_morning_mood": avg_mood,
     "patterns": pattern_cards,
     "recent_scores": [s.model_dump(mode="json") for s in recent_scores],
   }

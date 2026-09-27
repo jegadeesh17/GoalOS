@@ -6,12 +6,10 @@ from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from database.repositories.milestone_repository import MilestoneRepository
 from database.repositories.score_repository import ScoreRepository
-from database.repositories.weekly_review_repository import WeeklyReviewRepository
 from models.daily_log import DailyLogCreate, DailyLogUpdate
 from models.goal import GoalCreate
 from models.milestone import MilestoneCreate
 from models.score import ScoreCreate
-from models.weekly_review import WeeklyReviewCreate
 from services.data_portability_service import DataPortabilityService
 from services.journal_helpers import serialize_journal_fields
 from services.memory_service import MemoryService
@@ -27,16 +25,12 @@ def test_partial_log_update_preserves_evening_fields(temp_db):
   assert updated.evening_completed is True
 
 
-def test_score_and_weekly_writes_are_idempotent(temp_db):
+def test_score_writes_are_idempotent(temp_db):
   scores = ScoreRepository()
   scores.create(ScoreCreate(date=date(2026, 1, 1), scope="daily", overall_growth_score=10))
   scores.create(ScoreCreate(date=date(2026, 1, 1), scope="daily", overall_growth_score=20))
   assert scores.get_by_date(date(2026, 1, 1)).overall_growth_score == 20
   assert len(scores.get_recent(10)) == 1
-  reviews = WeeklyReviewRepository()
-  reviews.upsert(WeeklyReviewCreate(week_start=date(2026, 1, 5), week_end=date(2026, 1, 11), ai_output="one"))
-  reviews.upsert(WeeklyReviewCreate(week_start=date(2026, 1, 5), week_end=date(2026, 1, 11), ai_output="two"))
-  assert reviews.get_by_week_start(date(2026, 1, 5)).ai_output == "two"
 
 
 def test_milestone_task_link_is_validated(temp_db):

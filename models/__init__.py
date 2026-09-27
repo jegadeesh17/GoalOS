@@ -14,7 +14,6 @@ from models.daily_log import DailyLog, DailyLogCreate, DailyLogUpdate
 from models.goal import Goal, GoalCreate, GoalUpdate
 from models.memory import Memory, MemoryCreate
 from models.score import Score, ScoreCreate
-from models.weekly_review import WeeklyReview, WeeklyReviewCreate
 
 __all__ = [
   "Goal",
@@ -23,8 +22,6 @@ __all__ = [
   "DailyLog",
   "DailyLogCreate",
   "DailyLogUpdate",
-  "WeeklyReview",
-  "WeeklyReviewCreate",
   "Score",
   "ScoreCreate",
   "Memory",

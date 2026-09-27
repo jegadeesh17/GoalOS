@@ -116,7 +116,7 @@ export const MemoriesView: React.FC = () => {
   const displayedList = useMemo(() => {
     const rawList = searchResults !== null ? searchResults : memories;
     if (selectedType === 'all') return rawList;
-    return rawList.filter((m) => (m.memory_type || '').toLowerCase() === selectedType.toLowerCase());
+    return rawList.filter((m) => (m.type || '').toLowerCase() === selectedType.toLowerCase());
   }, [searchResults, memories, selectedType]);
 
   const deleteButton = (mem: Memory) =>
@@ -314,7 +314,7 @@ export const MemoriesView: React.FC = () => {
                   <blockquote className="voice text-[15px] flex-1">{mem.text}</blockquote>
                   <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
                     <div className="flex flex-wrap items-center gap-2">
-                      <TypeBadge type={mem.memory_type} />
+                      <TypeBadge type={mem.type} />
                       {mem.source_date && (
                         <time dateTime={mem.source_date} title={formatDate(mem.source_date, { month: 'long', day: 'numeric', year: 'numeric' })}>
                           {relativeDay(mem.source_date)}
@@ -352,7 +352,7 @@ export const MemoriesView: React.FC = () => {
                           <p className="text-slate-800 leading-relaxed break-words">{mem.text}</p>
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap">
-                          <TypeBadge type={mem.memory_type} />
+                          <TypeBadge type={mem.type} />
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap text-xs text-slate-600 tabular-nums">
                           {mem.source_date || '–'}

@@ -162,7 +162,7 @@ export interface Goal {
 export interface Memory {
   id: number;
   text: string;
-  memory_type: string;
+  type: string;
   importance: number;
   source_date?: string | null;
   goal_id?: number | null;
@@ -398,7 +398,7 @@ export const goalOSApi = {
     const res = await api.get<Memory[]>(`/memories?${params.toString()}`);
     return res.data;
   },
-  createMemory: async (payload: Partial<Memory>): Promise<Memory> => {
+  createMemory: async (payload: { text: string; memory_type: string; importance?: number; source_date?: string; goal_id?: number }): Promise<Memory> => {
     const res = await api.post<Memory>('/memories', payload);
     return res.data;
   },

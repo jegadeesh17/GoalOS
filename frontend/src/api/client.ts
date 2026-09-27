@@ -345,44 +345,12 @@ export const goalOSApi = {
   },
 
   // AI Coaching
-  morningCoach: async (payload: {
-    target_date?: string;
-    gratitude?: string;
-    plans_text?: string;
-    tasks: TaskItem[];
-    sleep_hours?: number;
-    sleep_quality?: number;
-    mood_morning?: number;
-    energy_level?: number;
-    intention?: string;
-    top_priority?: string;
-  }): Promise<any> => {
-    const res = await api.post('/coach/morning', payload);
-    return res.data;
-  },
-  eveningCoach: async (payload: {
-    target_date?: string;
-    journal_entry?: string;
-    deep_work_hours?: number;
-    mood_evening?: number;
-    one_win?: string;
-    one_lesson?: string;
-    takeaway?: string;
-    biggest_distraction?: string;
-  }): Promise<any> => {
-    const res = await api.post('/coach/evening', payload);
-    return res.data;
-  },
-  weeklyCoach: async (weekStartDate?: string): Promise<any> => {
-    const res = await api.post('/coach/weekly', { week_start_date: weekStartDate });
-    return res.data;
-  },
   futureSelfCoach: async (dateStr?: string): Promise<any> => {
     const res = await api.post('/coach/future-self', { date: dateStr });
     return res.data;
   },
-  goalAlignmentCoach: async (goalId: number): Promise<any> => {
-    const res = await api.post('/coach/goal-alignment', { goal_id: goalId });
+  progressCoach: async (dateStr?: string): Promise<any> => {
+    const res = await api.post('/coach/progress', { date: dateStr });
     return res.data;
   },
 

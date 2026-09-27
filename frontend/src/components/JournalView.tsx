@@ -8,7 +8,6 @@ import {
   Circle,
   Plus,
   Trash2,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -21,7 +20,6 @@ import {
 } from 'lucide-react';
 
 interface JournalViewProps {
-  onTriggerCoach?: (mode: 'morning' | 'evening') => void;
   initialDate?: string;
 }
 
@@ -101,7 +99,7 @@ const blankDay = (date: string): YearDayBlock => {
   };
 };
 
-export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach, initialDate }) => {
+export const JournalView: React.FC<JournalViewProps> = ({ initialDate }) => {
   const [currentDate, setCurrentDate] = useState<string>(initialDate || localDateStr());
   const [log, setLog] = useState<DailyLog | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
@@ -366,11 +364,6 @@ export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach, initia
     }
   };
 
-  const openCoach = async (mode: 'morning' | 'evening') => {
-    await persist();
-    onTriggerCoach?.(mode);
-  };
-
   const saveLabel =
     saveState === 'saving'
       ? 'Saving…'
@@ -482,16 +475,6 @@ export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach, initia
               <FileDown className="w-3.5 h-3.5" />
               {exportStatus || 'Weekly digest'}
             </button>
-            {onTriggerCoach && (
-              <button
-                type="button"
-                onClick={() => openCoach('morning')}
-                className="inline-flex items-center gap-1.5 text-emerald-800 hover:text-emerald-950 cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                Morning coach
-              </button>
-            )}
           </div>
         </div>
       </header>
@@ -818,17 +801,6 @@ export const JournalView: React.FC<JournalViewProps> = ({ onTriggerCoach, initia
                   Workout done
                 </span>
               </label>
-
-              {onTriggerCoach && (
-                <button
-                  type="button"
-                  onClick={() => openCoach('evening')}
-                  className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  Run evening review
-                </button>
-              )}
             </div>
           </div>
         </div>

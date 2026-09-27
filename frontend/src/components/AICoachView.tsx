@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { goalOSApi, Goal, CoachSession, CoachMessage } from '../api/client';
+import { goalOSApi, CoachSession, CoachMessage } from '../api/client';
 import { PageHeader } from './PageHeader';
 import {
   Sparkles,
-  Sun,
-  Moon,
-  Calendar,
   Compass,
   Target,
   CheckCircle,
@@ -22,7 +19,7 @@ import {
 } from 'lucide-react';
 
 interface AICoachViewProps {
-  initialMode?: 'morning' | 'evening' | 'weekly' | 'future-self' | 'goal-alignment';
+  initialMode?: 'future-self' | 'goal-alignment';
 }
 
 type SubView = 'pipelines' | 'chat';
@@ -62,24 +59,15 @@ const ChatBubble: React.FC<{ message: CoachMessage }> = ({ message }) => {
   );
 };
 
-export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'morning' }) => {
+export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'goal-alignment' }) => {
   const [subView, setSubView] = useState<SubView>('pipelines');
 
   // --- Guided Pipelines state ---
-  const [mode, setMode] = useState<'morning' | 'evening' | 'weekly' | 'future-self' | 'goal-alignment'>(initialMode);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [selectedGoalId, setSelectedGoalId] = useState<number | undefined>(undefined);
+  const [mode, setMode] = useState<'future-self' | 'goal-alignment'>(initialMode);
   const [loading, setLoading] = useState(false);
   const [coachingResult, setCoachingResult] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showRawOutput, setShowRawOutput] = useState(false);
-
-  useEffect(() => {
-    goalOSApi.getGoals({ status: 'active' }).then((data) => {
-      setGoals(data);
-      if (data.length > 0) setSelectedGoalId(data[0].id);
-    }).catch(console.error);
-  }, []);
 
   const handleRunCoach = async () => {
     try {
@@ -89,45 +77,10 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'morning
       setShowRawOutput(false);
 
       let result: any = null;
-      if (mode === 'morning') {
-        const todayLog = await goalOSApi.getTodayJournal();
-        let tasks = [];
-        if (todayLog.planned_tasks) {
-          try { tasks = JSON.parse(todayLog.planned_tasks); } catch {}
-        }
-        result = await goalOSApi.morningCoach({
-          target_date: todayLog.date,
-          gratitude: todayLog.gratitude || '',
-          plans_text: todayLog.top_priority || '',
-          tasks: tasks,
-          sleep_hours: todayLog.sleep_hours || undefined,
-          sleep_quality: todayLog.sleep_quality || undefined,
-          mood_morning: todayLog.mood_morning || undefined,
-          intention: todayLog.intention || undefined,
-          top_priority: todayLog.top_priority || undefined,
-        });
-      } else if (mode === 'evening') {
-        const todayLog = await goalOSApi.getTodayJournal();
-        result = await goalOSApi.eveningCoach({
-          target_date: todayLog.date,
-          journal_entry: todayLog.journal_entry || '',
-          deep_work_hours: todayLog.deep_work_hours || undefined,
-          mood_evening: todayLog.mood_evening || undefined,
-          one_win: todayLog.one_win || '',
-          one_lesson: todayLog.one_lesson || '',
-          takeaway: todayLog.takeaway || '',
-        });
-      } else if (mode === 'weekly') {
-        result = await goalOSApi.weeklyCoach();
-      } else if (mode === 'future-self') {
+      if (mode === 'future-self') {
         result = await goalOSApi.futureSelfCoach();
       } else if (mode === 'goal-alignment') {
-        if (!selectedGoalId) {
-          setError('Please select an active goal to evaluate.');
-          setLoading(false);
-          return;
-        }
-        result = await goalOSApi.goalAlignmentCoach(selectedGoalId);
+        result = await goalOSApi.progressCoach();
       }
 
       setCoachingResult(result);
@@ -140,11 +93,8 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'morning
   };
 
   const modeOptions = [
-    { id: 'morning', label: 'Morning Planning', icon: Sun, desc: 'Daily focus, priorities & mindset setup' },
-    { id: 'evening', label: 'Evening Review', icon: Moon, desc: 'Win consolidation & lesson extraction' },
-    { id: 'weekly', label: 'Weekly Sync', icon: Calendar, desc: 'Weekly review & progress check' },
+    { id: 'goal-alignment', label: 'Goal Alignment', icon: Target, desc: 'Monthly & yearly pacing against your active goals' },
     { id: 'future-self', label: 'Future Self', icon: Compass, desc: '10-year identity & horizon alignment' },
-    { id: 'goal-alignment', label: 'Goal Alignment', icon: Target, desc: 'Check active goals against actual execution' },
   ] as const;
   const selectedMode = modeOptions.find((o) => o.id === mode) ?? modeOptions[0];
 
@@ -286,34 +236,42 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'morning
         </div>
       )}
 
-      {r.alignment_narrative && (
-        <p className="mt-1.5 text-sm text-slate-700 leading-relaxed">{r.alignment_narrative}</p>
+      {r.pacing_status && (
+        <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200">
+          {r.pacing_status}
+        </div>
       )}
 
-      {((Array.isArray(r.aligned_goals) && r.aligned_goals.length > 0) ||
-        (Array.isArray(r.neglected_goals) && r.neglected_goals.length > 0)) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-          {Array.isArray(r.aligned_goals) && r.aligned_goals.length > 0 && (
-            <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5">
-              <div className="text-xs font-semibold text-emerald-800 mb-2">On track</div>
-              <ul className="space-y-1.5 text-xs text-emerald-950">
-                {r.aligned_goals.map((g: string, i: number) => (
-                  <li key={i} className="flex gap-1.5"><span className="text-emerald-600">✓</span><span>{g}</span></li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {Array.isArray(r.neglected_goals) && r.neglected_goals.length > 0 && (
-            <div className="bg-rose-50/70 border border-rose-200 rounded-xl p-3.5">
-              <div className="text-xs font-semibold text-rose-800 mb-2">Needs attention</div>
-              <ul className="space-y-1.5 text-xs text-rose-950">
-                {r.neglected_goals.map((g: string, i: number) => (
-                  <li key={i} className="flex gap-1.5"><span className="text-rose-500">✕</span><span>{g}</span></li>
-                ))}
-              </ul>
-            </div>
-          )}
+      {r.progress_narrative && (
+        <p className="mt-2 text-sm text-slate-700 leading-relaxed">{r.progress_narrative}</p>
+      )}
+
+      {r.monthly_goal_evaluated && (
+        <p className="mt-1.5 text-xs text-slate-600">
+          <strong className="text-slate-800 font-semibold">Evaluated against: </strong>
+          {r.monthly_goal_evaluated}
+        </p>
+      )}
+
+      {(r.critical_bottleneck || r.recognized_pattern_analysis) && (
+        <div className="bg-rose-50/70 border border-rose-200 rounded-xl p-3.5 mt-3 space-y-1.5">
+          {r.critical_bottleneck && <p className="text-xs font-semibold text-rose-900">{r.critical_bottleneck}</p>}
+          {r.recognized_pattern_analysis && <p className="text-xs text-rose-800 leading-relaxed">{r.recognized_pattern_analysis}</p>}
         </div>
+      )}
+
+      {r.actionable_pattern_breaking_protocol && (
+        <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 mt-3">
+          <div className="text-xs font-semibold text-emerald-800 mb-1">Pattern-breaking protocol</div>
+          <p className="text-xs text-emerald-950 leading-relaxed">{r.actionable_pattern_breaking_protocol}</p>
+        </div>
+      )}
+
+      {r.key_wins_aligned && (
+        <p className="mt-2 text-xs text-slate-600">
+          <strong className="text-slate-800 font-semibold">Wins: </strong>
+          {r.key_wins_aligned}
+        </p>
       )}
 
       {Array.isArray(r.key_things_referenced) && r.key_things_referenced.length > 0 && (
@@ -375,7 +333,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'morning
 
       {subView === 'pipelines' ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" role="radiogroup" aria-label="Coaching session">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Coaching session">
             {modeOptions.map((opt) => {
               const Icon = opt.icon;
               const isSelected = mode === opt.id;
@@ -406,25 +364,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'morning
             })}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-            {mode === 'goal-alignment' ? (
-              <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">
-                Goal to check
-                <select
-                  value={selectedGoalId || ''}
-                  onChange={(e) => setSelectedGoalId(Number(e.target.value))}
-                  className="text-xs px-3 py-1.5 rounded-xl border border-emerald-100 bg-white text-slate-800 font-medium"
-                >
-                  {goals.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      [{g.horizon}] {g.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : (
-              <span />
-            )}
+          <div className="flex flex-wrap items-center justify-end gap-3 px-1">
             <button
               type="button"
               onClick={handleRunCoach}
@@ -482,7 +422,8 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'morning
                     coachingResult.core_insight ||
                     coachingResult.coaching ||
                     coachingResult.recommendation ||
-                    (coachingResult.message || coachingResult.alignment_narrative
+                    coachingResult.actionable_coaching_advice ||
+                    (coachingResult.message || coachingResult.progress_narrative
                       ? ''
                       : 'Focus on relentless execution of today\'s #1 priority.');
                   return directive ? (

@@ -2,27 +2,19 @@
 
 import json
 import logging
-from datetime import date, timedelta
+from datetime import date
 
 from ai.openrouter_client import OpenRouterClient
-from ai.pipelines.evening_coach import run_evening_coach
 from ai.pipelines.future_self_coach import run_future_self_coach
-from ai.pipelines.goal_alignment_coach import run_goal_alignment_coach
-from ai.pipelines.morning_coach import run_morning_coach
 from ai.pipelines.progress_coach import run_progress_coach
 from ai.pipelines.reflection_coach import run_reflection_coach
-from ai.pipelines.weekly_coach import run_weekly_coach
 from database.connection import get_db
 from database.repositories.coach_repository import CoachRepository
 from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from database.repositories.score_repository import ScoreRepository
-from database.repositories.weekly_review_repository import WeeklyReviewRepository
-from models.coach_output import CoachingEvidence, MorningCoachOutput
 from models.coach_response import CoachResponseCreate
-from models.daily_log import DailyLog, DailyLogUpdate
-from models.weekly_review import WeeklyReviewCreate
-from services.analytics_service import calculate_daily_scores
+from models.daily_log import DailyLog
 from services.memory_service import MemoryService
 from services.mentor_briefing import build_mentor_briefing
 from services.pattern_service import PatternService
@@ -39,7 +31,6 @@ class CoachService:
     self.log_repo = LogRepository()
     self.score_repo = ScoreRepository()
     self.coach_repo = CoachRepository()
-    self.weekly_repo = WeeklyReviewRepository()
     self.memory_service = MemoryService()
     self.llm = OpenRouterClient()
     self.settings_service = SettingsService()
@@ -68,23 +59,6 @@ class CoachService:
 
   def _remote_ai_allowed(self) -> bool:
     return bool(self.settings_service.remote_ai_allowed() and self.llm.api_key)
-
-  def _with_evidence(self, result: dict, context: dict) -> dict:
-    """Validate public output and attach bounded, non-journal evidence references."""
-    evidence: list[CoachingEvidence] = []
-    for goal in context.get("active_goals", [])[:3]:
-      evidence.append(CoachingEvidence(goal_id=goal.get("id"), goal_title=goal.get("title")))
-    for memory in context.get("relevant_memories", [])[:3]:
-      evidence.append(CoachingEvidence(memory_id=memory.get("id"), source_date=memory.get("source_date")))
-    result["evidence"] = [item.model_dump(mode="json") for item in evidence]
-    try:
-      return MorningCoachOutput.model_validate(result).model_dump(mode="json")
-    except Exception as exc:
-      logger.warning("coach_output_invalid event=morning reason=%s", type(exc).__name__)
-      from ai.pipelines._base import fallback_morning
-      fallback = fallback_morning(context)
-      fallback.update({"fallback_reason": "invalid_response", "fallback_detail": "The model response did not match the coach schema", "evidence": result["evidence"]})
-      return MorningCoachOutput.model_validate(fallback).model_dump(mode="json")
 
   def build_context(self, target_date: date, query: str = "") -> dict:
     """Assemble full context for AI calls."""
@@ -151,127 +125,6 @@ class CoachService:
       recent_coach,
     )
     return ctx
-
-  def get_morning_coaching(self, target_date: date, log: DailyLog) -> dict:
-    """Run mentor pipeline and store output."""
-    self._refresh_llm()
-    context = self.build_context(target_date, log.planned_tasks or log.gratitude or "")
-    context["today_log"] = self._serialize_log(log)
-    context["mentor_briefing"] = build_mentor_briefing(
-      target_date,
-      context["today_log"],
-      self.log_repo.get_recent(14),
-      context["user_vision"],
-      context["recent_coach_advice"],
-    )
-    if self._remote_ai_allowed():
-      result = run_morning_coach(context, self.llm)
-    else:
-      from ai.pipelines._base import fallback_morning
-      result = fallback_morning(context)
-      result["fallback_reason"] = "remote_ai_consent_required" if self.llm.api_key else "no_api_key"
-      result["fallback_detail"] = "Enable remote AI consent in Settings to send journal context to OpenRouter."
-    result = self._with_evidence(result, context)
-    logger.info("coach_complete event=morning source=%s retrieval_count=%d fallback=%s", result["source"], len(context["relevant_memories"]), result.get("fallback_reason"))
-
-    self.log_repo.update(log.id, DailyLogUpdate(
-      morning_ai_output=json.dumps(result),
-      morning_completed=True,
-    ))
-    self.coach_repo.create(CoachResponseCreate(
-      session_type="morning",
-      ai_response=json.dumps(result),
-      date=target_date,
-    ))
-    return result
-
-  def get_evening_coaching(self, target_date: date, log: DailyLog) -> dict:
-    """Run evening pipeline, extract memories, calculate scores."""
-    self._refresh_llm()
-    context = self.build_context(target_date, log.journal_entry or "")
-    context["today_log"] = self._serialize_log(log)
-    if self._remote_ai_allowed():
-      result = run_evening_coach(context, self.llm)
-    else:
-      from ai.pipelines._base import fallback_evening
-      result = fallback_evening(context)
-      result["fallback_reason"] = "remote_ai_consent_required" if self.llm.api_key else "no_api_key"
-
-    for mem in result.get("memories_to_store", []):
-      self.memory_service.store(
-        mem.get("text", ""),
-        mem.get("type", "journal_insight"),
-        mem.get("importance", 0.6),
-        target_date,
-        "evening",
-        log.id,
-      )
-
-    # Automatically store detected repeating pattern as high-importance pattern memory
-    pattern_detected = result.get("pattern_detected")
-    if pattern_detected and "unable to detect" not in pattern_detected.lower() and len(pattern_detected.strip()) > 5:
-      self.memory_service.store(
-        pattern_detected, "pattern", 0.8, target_date, "evening", log.id
-      )
-
-    if result.get("commitment_extracted"):
-      self.memory_service.store(
-        result["commitment_extracted"], "commitment", 0.7, target_date, "evening", log.id
-      )
-
-    logs_30d = self.log_repo.get_range(target_date - timedelta(days=30), target_date)
-    goals = self.goal_repo.get_active()
-    recent_scores = self.score_repo.get_recent(7)
-    scores_7d = [s.overall_growth_score or 50 for s in recent_scores]
-    calculate_daily_scores(log, goals, logs_30d, scores_7d)
-
-    self.log_repo.update(log.id, DailyLogUpdate(
-      evening_ai_output=json.dumps(result),
-      evening_completed=True,
-    ))
-    self.coach_repo.create(CoachResponseCreate(
-      session_type="evening",
-      ai_response=json.dumps(result),
-      date=target_date,
-    ))
-    return result
-
-  def get_weekly_coaching(self, week_start: date) -> dict:
-    """Run weekly pipeline and store in weekly_reviews."""
-    self._refresh_llm()
-    from services.journal_helpers import week_task_stats
-
-    week_end = week_start + timedelta(days=6)
-    week_logs = self.log_repo.get_range(week_start, week_end)
-    context = self.build_context(week_end)
-    context["week_logs"] = [self._serialize_log(l) for l in week_logs]
-    context["week_task_stats"] = week_task_stats(week_logs)
-    if self._remote_ai_allowed():
-      result = run_weekly_coach(context, self.llm)
-    else:
-      from ai.pipelines._base import fallback_weekly
-      result = fallback_weekly(context)
-      result["fallback_reason"] = "remote_ai_consent_required" if self.llm.api_key else "no_api_key"
-
-    self.weekly_repo.upsert(WeeklyReviewCreate(
-      week_start=week_start,
-      week_end=week_end,
-      ai_output=json.dumps(result),
-    ))
-    self.coach_repo.create(CoachResponseCreate(
-      session_type="weekly",
-      ai_response=json.dumps(result),
-      date=week_start,
-    ))
-    return result
-
-  def get_goal_alignment(self) -> dict:
-    self._refresh_llm()
-    context = self.build_context(date.today())
-    if self._remote_ai_allowed():
-      return run_goal_alignment_coach(context, self.llm)
-    from ai.pipelines._base import fallback_goal_alignment
-    return fallback_goal_alignment(context)
 
   def get_progress_coaching(self, target_date: date = None) -> dict:
     import calendar
@@ -392,36 +245,6 @@ class CoachService:
       return run_future_self_coach(context, self.llm)
     from ai.pipelines._base import fallback_future_self
     return fallback_future_self(context)
-
-  def get_goal_alignment_coaching(self, goal) -> dict:
-    self._refresh_llm()
-    context = self.build_context(date.today())
-    context["target_goal"] = self._serialize_goal(goal)
-    if self._remote_ai_allowed():
-      return run_goal_alignment_coach(context, self.llm)
-    from ai.pipelines._base import fallback_goal_alignment
-    return fallback_goal_alignment(context)
-
-
-  def get_dashboard_recommendation(self) -> str:
-    """Today's mentor rule for dashboard."""
-    self._refresh_llm()
-    today = date.today()
-    log = self.log_repo.get_by_date(today)
-    if log and log.morning_ai_output:
-      try:
-        output = json.loads(log.morning_ai_output)
-        if output.get("mentor_rule"):
-          return output["mentor_rule"]
-      except json.JSONDecodeError:
-        pass
-    context = self.build_context(today)
-    if not self._remote_ai_allowed():
-      from ai.pipelines._base import fallback_morning
-      result = fallback_morning(context)
-    else:
-      result = run_morning_coach(context, self.llm)
-    return result.get("mentor_rule", "Complete your morning journal to receive today's rule.")
 
   def get_dashboard_interpretations(self, metrics: dict) -> dict:
     """Batch interpretations for dashboard metrics."""

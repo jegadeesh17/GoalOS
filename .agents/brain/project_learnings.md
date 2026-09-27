@@ -64,6 +64,11 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
   2. Implemented immediate model rotation in `OpenRouterClient` on any `httpx.TimeoutException`, network error, or HTTP 5xx response, rotating through healthy candidate fallbacks (`google/gemma-4-26b-a4b-it:free`, `nex-agi/nex-n2.5-pro:free`, `nex-agi/nex-n2.5-mini:free`, `nvidia/nemotron-3.5-lightning:free`).
   3. Added a 45s safety timeout to the frontend Axios instance and updated loading state feedback in `AICoachView.tsx`.
 
+### 3.6 User Preference: AI Coach Cadence Must Match Bulk-Import Workflow, Not Daily Journaling (2026-09-27)
+- **User Preference:** The user does not journal live in the app; real usage is a weekly/biweekly bulk photo-to-text import of a paper notebook (`journal_import_service.py`). Any coaching feature framed around "run this once a day" (Morning Planning, Evening Review) is dead friction for this user — pattern detection and goal pacing only become meaningful after a week or more of data, matching the cadence `progress_coach.py` (1-Month + 1-Year evaluation) was already built for.
+- **Removed as a result:** Morning Planning, Evening Review, Weekly Sync, and the old single-goal Goal Alignment picker. AI Coach page is now just Goal Alignment (monthly/yearly pacing, `/coach/progress`) and Future Self. See [[evolution_log 2026-09-27 entry]] for the full dependency trace (why Evening Review's memory-extraction side effect was safe to drop, why `progress_coach.py` was reused instead of building new).
+- **How to apply:** Before adding any new coaching feature, ask whether it assumes daily interaction — this user's workflow won't sustain that cadence, so features must work when data arrives in weekly/biweekly batches.
+
 ---
 
 ## 4. 🎨 Frontend & Design System Learnings

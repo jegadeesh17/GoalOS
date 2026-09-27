@@ -205,33 +205,10 @@ def test_settings_and_export(client):
 def test_ai_coach_endpoints(client):
   today = date.today().isoformat()
 
-  # Morning Coach
-  morning_res = client.post(
-    "/coach/morning",
-    json={
-      "target_date": today,
-      "plans_text": "Ship v2 release",
-      "gratitude": "Good health",
-    },
-  )
-  assert morning_res.status_code == 200
-  assert "mentor_rule" in morning_res.json() or "rule" in morning_res.json()
-
-  # Evening Coach
-  evening_res = client.post(
-    "/coach/evening",
-    json={
-      "target_date": today,
-      "one_win": "Everything tested",
-      "one_lesson": "Stay focused",
-    },
-  )
-  assert evening_res.status_code == 200
-
-  # Weekly Coach
-  weekly_res = client.post("/coach/weekly", json={"week_start_date": today})
-  assert weekly_res.status_code == 200
-
   # Future Self Coach
   future_res = client.post("/coach/future-self", json={"date": today})
   assert future_res.status_code == 200
+
+  # Progress / Goal Alignment Coach (1-Month + 1-Year pacing check)
+  progress_res = client.post("/coach/progress", json={"date": today})
+  assert progress_res.status_code == 200

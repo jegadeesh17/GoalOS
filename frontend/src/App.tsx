@@ -12,7 +12,6 @@ import { ShieldCheck } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('calendar');
-  const [coachInitialMode, setCoachInitialMode] = useState<'morning' | 'evening' | 'weekly' | 'future-self' | 'goal-alignment'>('morning');
   const [lifeSummary, setLifeSummary] = useState<LifeSummary | null>(null);
   const [yearSummary, setYearSummary] = useState<YearProductivityData | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(true);
@@ -45,11 +44,6 @@ export const App: React.FC = () => {
     if (activeTab === 'calendar') fetchSummary();
   }, [activeTab, fetchSummary]);
 
-  const handleTriggerCoachFromJournal = (mode: 'morning' | 'evening') => {
-    setCoachInitialMode(mode);
-    setActiveTab('coach');
-  };
-
   const handleNavigateToJournalWithDate = (dateStr: string) => {
     setJournalTargetDate(dateStr);
     setActiveTab('journal');
@@ -71,11 +65,10 @@ export const App: React.FC = () => {
         {activeTab === 'journal' && (
           <JournalView
             initialDate={journalTargetDate}
-            onTriggerCoach={handleTriggerCoachFromJournal}
           />
         )}
         {activeTab === 'goals' && <GoalsView />}
-        {activeTab === 'coach' && <AICoachView initialMode={coachInitialMode} />}
+        {activeTab === 'coach' && <AICoachView />}
         {activeTab === 'analytics' && <AnalyticsView />}
         {activeTab === 'memories' && <MemoriesView />}
         {activeTab === 'settings' && <SettingsView onSettingsSaved={fetchSummary} />}

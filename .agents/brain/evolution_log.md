@@ -4,6 +4,20 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-27 — AI Coach Pruned to Goal Alignment + Future Self
+
+- **Decision:** User doesn't journal live in the app — real usage is a weekly/biweekly bulk photo-to-text import from a paper notebook via `journal_import_service.py`. Morning Planning, Evening Review and Weekly Sync all restated same-day journal fields back as one generic LLM sentence; none had any consumer elsewhere in the app, and none matched a workflow where days arrive in batches, not one at a time.
+- **Traced before removing, not assumed:**
+  - Evening Review looked load-bearing (it drives `MemoryService.store()` for lessons/patterns/commitments) — but `journal_import_service._extract_memories()` already does the same job deterministically, per imported day, independent of any coach click. Removing the card loses nothing for this user.
+  - `morning_completed`/`evening_completed` (set by the deleted routes) are only the last-resort rule in `life_calendar_service.py`'s 4-tier productivity check, behind score/deep-work/task-rate — bulk import populates those first three directly, so the fallback rule was already dead weight for this user's data.
+  - `/journal/upsert` already recalculates daily scores independently (`api/main.py`), so Evening Review was never the only path to Analytics scoring either.
+  - Found `progress_coach.py` + `CoachService.get_progress_coaching()` fully written but never wired to a route or the UI — it evaluates execution against **both** 1-Month and 1-Year goals with explicit pattern-vs-noise separation, which is exactly the "aligned to this month's and this year's goals" check the user wanted. Reused it instead of building new.
+- **Removed:** `morning_coach.py`, `evening_coach.py`, `weekly_coach.py`, `agent_morning_coach.py`, the old single-goal `goal_alignment_coach.py`, `models/coach_output.py`, `ai/prompts/weekly.txt`, the `/coach/morning|evening|weekly|goal-alignment` routes, `MorningCoachRequest`/`EveningCoachRequest`, and the buried "Morning coach"/"Run evening review" buttons inside `JournalView.tsx` (a third entry point that would have been easy to miss).
+- **Kept on purpose:** `ai/prompts/mentor.txt`, `evening.txt`, `goal_alignment.txt`, `future_self.txt` — `scripts/run_model_eval.py` (the free-model benchmarking harness) loads these directly by name via `load_prompt()`, decoupled from the product pipeline files. Deleting them would have silently broken an unrelated, already-working tool outside the scope of this change.
+- **Result:** AI Coach page is now 2 cards (Goal Alignment → `/coach/progress`, Future Self) plus the unaffected Chat tab. New route added, four old ones removed; `pytest -q` 133 passed, `tsc --noEmit` clean, verified live via Playwright against real journal data.
+
+---
+
 ## 2026-09-25 — "Magical, Simple & Light" Refinement Shipped (Theme Unchanged)
 
 - **Action:** Implemented every scope the user chose after the 2026-09-24 critique. The palette, paper-glass surfaces and fonts are unchanged.

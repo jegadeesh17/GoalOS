@@ -1,6 +1,6 @@
 import os
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -12,20 +12,16 @@ sys.path.insert(0, ROOT)
 @pytest.fixture
 def client(temp_db):
     mock_result = {
-        "mentor_rule": "Protect a 90-minute deep work block before meetings.",
-        "why_this_rule": "Meetings fragmented focus yesterday.",
+        "pacing_status": "On Track — High Execution",
+        "monthly_goal_evaluated": "Ship V2",
+        "progress_narrative": "Solid pacing against the monthly goal.",
+        "critical_bottleneck": "None detected",
+        "actionable_coaching_advice": "Protect the morning deep work block.",
         "confidence": 0.82,
-        "source": "agent_morning",
-        "tools_used": ["search_memories", "get_active_goals"],
+        "source": "ai",
     }
-    mock_log = MagicMock()
-    mock_log.id = 1
-    with patch("api.main.LogRepository") as log_repo_cls, patch(
-        "api.main.CoachService"
-    ) as coach_cls:
-        log_repo_cls.return_value.upsert_by_date.return_value = mock_log
-        log_repo_cls.return_value.count.return_value = 1
-        coach_cls.return_value.get_morning_coaching.return_value = mock_result
+    with patch("api.main.CoachService") as coach_cls:
+        coach_cls.return_value.get_progress_coaching.return_value = mock_result
         with patch("api.main.MemoryService") as mem_cls:
             mem_cls.return_value.count.return_value = 5
             from api.main import app
@@ -48,37 +44,16 @@ def test_api_health(client):
     assert body["status"] == "ok"
 
 
-def test_coach_morning_schema(client):
-    response = client.post(
-        "/coach/morning",
-        json={
-            "gratitude": "Focused morning",
-            "tasks": [{"text": "Deep work", "priority": 1}],
-        },
-    )
+def test_coach_progress_schema(client):
+    response = client.post("/coach/progress", json={"date": "2026-01-15"})
     assert response.status_code == 200
     body = response.json()
-    assert "mentor_rule" in body
-    assert body["tools_used"] == ["search_memories", "get_active_goals"]
+    assert "actionable_coaching_advice" in body
+    assert body["monthly_goal_evaluated"] == "Ship V2"
 
 
-def test_api_coach_morning_schema(client):
-    response = client.post(
-        "/api/coach/morning",
-        json={
-            "gratitude": "Focused morning",
-            "tasks": [{"text": "Deep work", "priority": 1}],
-        },
-    )
+def test_api_coach_progress_schema(client):
+    response = client.post("/api/coach/progress", json={})
     assert response.status_code == 200
     body = response.json()
-    assert "mentor_rule" in body
-    assert body["tools_used"] == ["search_memories", "get_active_goals"]
-
-
-def test_coach_morning_invalid_mood(client):
-    response = client.post(
-        "/coach/morning",
-        json={"tasks": [{"text": "Task"}], "mood_morning": 10},
-    )
-    assert response.status_code == 422
+    assert "actionable_coaching_advice" in body

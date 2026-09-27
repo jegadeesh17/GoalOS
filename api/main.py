@@ -41,7 +41,6 @@ from models.goal import GoalCreate, GoalUpdate
 from models.milestone import MilestoneCreate, MilestoneUpdate
 from services.coach_service import CoachService
 from services.data_portability_service import DataPortabilityService
-from services.journal_helpers import serialize_journal_fields
 from services.life_calendar_service import LifeCalendarService
 from services.memory_service import MemoryService
 from services.observability_service import ObservabilityService
@@ -73,44 +72,6 @@ api_router = APIRouter()
 # ---------------------------------------------------------------------------
 # Request & Response Schemas
 # ---------------------------------------------------------------------------
-
-
-class TaskInput(BaseModel):
-  id: Optional[str] = Field(default=None, max_length=64)
-  text: str = Field(min_length=1, max_length=500)
-  priority: int = Field(default=1, ge=1, le=100)
-  completed: bool = False
-  goal_id: Optional[int] = Field(default=None, ge=1)
-  milestone_id: Optional[int] = Field(default=None, ge=1)
-
-
-class MorningCoachRequest(BaseModel):
-  target_date: Optional[date] = None
-  gratitude: str = Field(default="", max_length=2000)
-  plans_text: str = Field(default="", max_length=6000)
-  tasks: list[TaskInput] = Field(default_factory=list, max_length=50)
-  sleep_hours: Optional[float] = Field(default=None, ge=0, le=24)
-  sleep_quality: Optional[int] = Field(default=None, ge=1, le=5)
-  mood_morning: Optional[int] = Field(default=None, ge=1, le=5)
-  energy_level: Optional[int] = Field(default=None, ge=1, le=5)
-  expected_focus: Optional[int] = Field(default=None, ge=1, le=5)
-  intention: Optional[str] = Field(default="", max_length=2000)
-  anxiety: Optional[str] = Field(default="", max_length=2000)
-  top_priority: Optional[str] = Field(default="", max_length=1000)
-
-
-class EveningCoachRequest(BaseModel):
-  target_date: Optional[date] = None
-  journal_entry: str = Field(default="", max_length=8000)
-  deep_work_hours: Optional[float] = Field(default=None, ge=0, le=24)
-  mood_evening: Optional[int] = Field(default=None, ge=1, le=5)
-  one_win: Optional[str] = Field(default="", max_length=2000)
-  one_lesson: Optional[str] = Field(default="", max_length=2000)
-  takeaway: Optional[str] = Field(default="", max_length=2000)
-  biggest_distraction: Optional[str] = Field(default="", max_length=2000)
-  workout_completed: Optional[bool] = None
-  tasks_completed: Optional[str] = None
-  task_completion_rate: Optional[float] = Field(default=None, ge=0.0, le=1.0)
 
 
 class MemoryStoreRequest(BaseModel):
@@ -382,68 +343,6 @@ def delete_milestone(milestone_id: int) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@api_router.post("/coach/morning", dependencies=[Depends(require_api_token)])
-def coach_morning(req: MorningCoachRequest) -> dict:
-  target_date = req.target_date or date.today()
-  try:
-    task_dicts = [task.model_dump() for task in req.tasks]
-    fields = serialize_journal_fields(req.gratitude, req.plans_text, task_dicts)
-    changes = DailyLogUpdate(
-      morning_completed=True,
-      sleep_hours=req.sleep_hours,
-      sleep_quality=req.sleep_quality,
-      mood_morning=req.mood_morning,
-      energy_level=req.energy_level,
-      expected_focus=req.expected_focus,
-      intention=req.intention,
-      anxiety=req.anxiety,
-      top_priority=req.top_priority,
-      **fields,
-    )
-    log = LogRepository().upsert_fields(target_date, changes)
-    return CoachService().get_morning_coaching(target_date, log)
-  except ValueError as exc:
-    raise HTTPException(status_code=422, detail=str(exc)) from exc
-  except Exception:
-    logger.exception("morning_coach_failed event=api")
-    raise HTTPException(status_code=500, detail="Unable to generate coaching right now") from None
-
-
-@api_router.post("/coach/evening", dependencies=[Depends(require_api_token)])
-def coach_evening(req: EveningCoachRequest) -> dict:
-  target_date = req.target_date or date.today()
-  try:
-    changes = DailyLogUpdate(
-      evening_completed=True,
-      journal_entry=req.journal_entry,
-      deep_work_hours=req.deep_work_hours,
-      mood_evening=req.mood_evening,
-      one_win=req.one_win,
-      one_lesson=req.one_lesson,
-      takeaway=req.takeaway,
-      biggest_distraction=req.biggest_distraction,
-      workout_completed=req.workout_completed,
-      tasks_completed=req.tasks_completed,
-      task_completion_rate=req.task_completion_rate,
-    )
-    log = LogRepository().upsert_fields(target_date, changes)
-    return CoachService().get_evening_coaching(target_date, log)
-  except Exception:
-    logger.exception("evening_coach_failed event=api")
-    raise HTTPException(status_code=500, detail="Unable to generate evening coaching right now") from None
-
-
-@api_router.post("/coach/weekly", dependencies=[Depends(require_api_token)])
-def coach_weekly(payload: dict) -> dict:
-  week_date_str = payload.get("week_start_date")
-  week_start = date.fromisoformat(week_date_str) if week_date_str else date.today()
-  try:
-    return CoachService().get_weekly_coaching(week_start)
-  except Exception:
-    logger.exception("weekly_coach_failed event=api")
-    raise HTTPException(status_code=500, detail="Unable to generate weekly review coaching") from None
-
-
 @api_router.post("/coach/future-self", dependencies=[Depends(require_api_token)])
 def coach_future_self(payload: dict) -> dict:
   target_date_str = payload.get("date")
@@ -455,18 +354,14 @@ def coach_future_self(payload: dict) -> dict:
     raise HTTPException(status_code=500, detail="Unable to generate future self coaching") from None
 
 
-@api_router.post("/coach/goal-alignment", dependencies=[Depends(require_api_token)])
-def coach_goal_alignment(payload: dict) -> dict:
-  goal_id = payload.get("goal_id")
-  if not goal_id:
-    raise HTTPException(status_code=400, detail="goal_id is required")
-  goal = GoalRepository().get_by_id(int(goal_id))
-  if not goal:
-    raise HTTPException(status_code=404, detail="Goal not found")
+@api_router.post("/coach/progress", dependencies=[Depends(require_api_token)])
+def coach_progress(payload: dict) -> dict:
+  target_date_str = payload.get("date")
+  target_date = date.fromisoformat(target_date_str) if target_date_str else date.today()
   try:
-    return CoachService().get_goal_alignment_coaching(goal)
+    return CoachService().get_progress_coaching(target_date)
   except Exception:
-    logger.exception("goal_alignment_coach_failed event=api")
+    logger.exception("progress_coach_failed event=api")
     raise HTTPException(status_code=500, detail="Unable to generate goal alignment coaching") from None
 
 

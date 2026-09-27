@@ -1,6 +1,7 @@
 """Journal import service for Excel and handwritten text format."""
 
 import json
+import math
 import re
 from collections import Counter
 from datetime import date, datetime
@@ -178,7 +179,13 @@ class JournalImportService:
     tasks = self._parse_tasks(str(normalized.get("tasks", "") or ""))
     completed = sum(1 for t in tasks if t.completed)
     rate = completed / len(tasks) if tasks else 0.0
-    awake_range, sleep_hours = self._parse_awake_range(normalized.get("awake"))
+    awake_text = normalized.get("awake")
+    awake_range, sleep_hours = self._parse_awake_range(awake_text)
+
+    wake_hour = self._parse_wake_hour(awake_text)
+    if wake_hour is not None and plans:
+      resolved = self._resolve_plan_times(plans, wake_hour)
+      plans = self._build_hourly_blocks(resolved, wake_hour)
 
     return ParsedEntry(
       date=entry_date,
@@ -355,15 +362,8 @@ class JournalImportService:
     if len(matches) != 2:
       return cleaned, None
 
-    def to_hours(hour_str: str, minute_str: str, meridiem: str) -> float:
-      hour = int(hour_str) % 12
-      if meridiem.upper() == "PM":
-        hour += 12
-      minute = int(minute_str) if minute_str else 0
-      return hour + minute / 60.0
-
-    start_hours = to_hours(*matches[0])
-    end_hours = to_hours(*matches[1])
+    start_hours = self._awake_match_to_hours(matches[0])
+    end_hours = self._awake_match_to_hours(matches[1])
     awake_duration = end_hours - start_hours
     if awake_duration <= 0:
       awake_duration += 24
@@ -371,6 +371,74 @@ class JournalImportService:
     if not (0.0 <= sleep_hours <= 16.0):
       return cleaned, None
     return cleaned, sleep_hours
+
+  def _awake_match_to_hours(self, match: tuple[str, str, str]) -> float:
+    hour_str, minute_str, meridiem = match
+    hour = int(hour_str) % 12
+    if meridiem.upper() == "PM":
+      hour += 12
+    minute = int(minute_str) if minute_str else 0
+    return hour + minute / 60.0
+
+  def _parse_wake_hour(self, text: Optional[str]) -> Optional[float]:
+    """Extract the AWAKE section's wake-up hour as a float (e.g. 9.0), or None if unparseable."""
+    if not text:
+      return None
+    match = AWAKE_TIME.search(text)
+    if not match:
+      return None
+    return self._awake_match_to_hours(match.groups())
+
+  def _parse_bare_hour(self, token: str) -> Optional[float]:
+    """Parse a bare PLAN time token like '10' or '10:30' (no AM/PM) into a float hour."""
+    match = re.match(r"^\s*(\d{1,2})(?::(\d{2}))?\s*$", token)
+    if not match:
+      return None
+    hour = int(match.group(1))
+    minute = int(match.group(2)) if match.group(2) else 0
+    return hour + minute / 60.0
+
+  def _resolve_plan_times(
+    self, plans: list[ParsedTimeBlock], wake_hour: float
+  ) -> list[tuple[float, float, str]]:
+    """Resolve bare PLAN hour tokens into an absolute, forward-only timeline.
+
+    Each written block's start/end hour is ambiguous between {n, n+12} (no
+    AM/PM given). Carries the previous block's resolved end forward and picks
+    whichever candidate keeps the timeline moving forward, never backward.
+    """
+    resolved: list[tuple[float, float, str]] = []
+    prev_end = wake_hour
+    for block in plans:
+      start_n = self._parse_bare_hour(block.start)
+      end_n = self._parse_bare_hour(block.end)
+      if start_n is None or end_n is None:
+        continue
+      start_abs = self._resolve_forward(start_n, prev_end)
+      end_abs = self._resolve_forward(end_n, start_abs)
+      resolved.append((start_abs, end_abs, block.activity))
+      prev_end = end_abs
+    return resolved
+
+  def _resolve_forward(self, hour: float, prev_end: float) -> float:
+    candidates = [hour, hour + 12]
+    valid = [c for c in candidates if c >= prev_end]
+    return min(valid) if valid else max(candidates)
+
+  def _build_hourly_blocks(
+    self, resolved: list[tuple[float, float, str]], wake_hour: float
+  ) -> list[ParsedTimeBlock]:
+    """Build a fixed 1-hour-per-block grid from ceil(wake_hour) through midnight."""
+    start_hour = math.ceil(wake_hour)
+    blocks = []
+    for hour in range(start_hour, 24):
+      activity = ""
+      for start_abs, end_abs, block_activity in resolved:
+        if start_abs <= hour < end_abs:
+          activity = block_activity
+          break
+      blocks.append(ParsedTimeBlock(start=str(hour), end=str(hour + 1), activity=activity))
+    return blocks
 
   def _parse_markdown_block(self, block: str) -> Optional[dict]:
     """Extract journal fields from a transcribed markdown block."""

@@ -177,6 +177,85 @@ I am gonna regret very much.
     assert entry.tasks[1].completed is True
     assert entry.tasks[2].completed is True
 
+  def test_hourly_plan_grid_matches_worked_example(self, temp_db):
+    svc = JournalImportService()
+    plan_text = "\n".join([
+      "9-10   Wakeup, shower, breakfast, job application",
+      "10-11  Tea time break, applications",
+      "11-12  applications, chill",
+      "12-1   lunch and youtube",
+      "1-3    chess and networking",
+      "3-4    chill",
+      "4-7    timewasted",
+      "7-8    dinner & youtube",
+      "8-12   time waste",
+    ])
+    entry = svc.parse_entry({
+      "date": "27/9/26",
+      "awake": "9:00 AM - 12.30 AM.",
+      "plan": plan_text,
+    })
+    assert len(entry.plans) == 15  # hours 9 through 23 inclusive
+    assert entry.plans[0].start == "9"
+    assert entry.plans[0].end == "10"
+    assert entry.plans[0].activity == "Wakeup, shower, breakfast, job application"
+    assert entry.plans[-1].start == "23"
+    assert entry.plans[-1].end == "24"
+    assert entry.plans[-1].activity == "time waste"
+    expected_activities = [
+      "Wakeup, shower, breakfast, job application",  # 9-10
+      "Tea time break, applications",  # 10-11
+      "applications, chill",  # 11-12
+      "lunch and youtube",  # 12-13
+      "chess and networking",  # 13-14
+      "chess and networking",  # 14-15
+      "chill",  # 15-16
+      "timewasted",  # 16-17
+      "timewasted",  # 17-18
+      "timewasted",  # 18-19
+      "dinner & youtube",  # 19-20
+      "time waste",  # 20-21
+      "time waste",  # 21-22
+      "time waste",  # 22-23
+      "time waste",  # 23-24
+    ]
+    assert [b.activity for b in entry.plans] == expected_activities
+
+  def test_hourly_plan_grid_repeats_activity_across_multi_hour_block(self, temp_db):
+    svc = JournalImportService()
+    entry = svc.parse_entry({
+      "date": "27/9/26",
+      "awake": "6:00 AM - 11:00 PM.",
+      "plan": "6-9 met my friends",
+    })
+    assert len(entry.plans) == 18  # hours 6 through 23
+    first_three = entry.plans[:3]
+    assert [b.start for b in first_three] == ["6", "7", "8"]
+    assert all(b.activity == "met my friends" for b in first_three)
+
+  def test_hourly_plan_grid_leaves_gap_hour_empty(self, temp_db):
+    svc = JournalImportService()
+    plan_text = "9-10 applications\n11-12 chill"
+    entry = svc.parse_entry({
+      "date": "27/9/26",
+      "awake": "9:00 AM - 11:00 PM.",
+      "plan": plan_text,
+    })
+    by_start = {b.start: b for b in entry.plans}
+    assert by_start["9"].activity == "applications"
+    assert by_start["10"].activity == ""
+    assert by_start["11"].activity == "chill"
+
+  def test_no_awake_section_falls_back_to_raw_plan_blocks(self, temp_db):
+    svc = JournalImportService()
+    entry = svc.parse_entry({
+      "date": "27/9/26",
+      "plan": "10:30-12: Restructuring app\n1:30-3: Solve problems",
+    })
+    assert len(entry.plans) == 2
+    assert entry.plans[0].start == "10:30"
+    assert entry.plans[0].activity == "Restructuring app"
+
   def test_store_entry_persists_awake_and_sleep(self, temp_db):
     svc = JournalImportService()
     entry = svc.parse_entry({

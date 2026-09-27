@@ -112,8 +112,11 @@ class MemoryService:
     return semantic * 0.35 + lexical * 0.15 + importance * 0.25 + recency * 0.15 + min(frequency, 1.0) * 0.10
 
   def retrieve(self, query: str, top_k: int = 5) -> list[Memory]:
+    return [memory for memory, _score in self.retrieve_scored(query, top_k)]
+
+  def retrieve_scored(self, query: str, top_k: int = 5) -> list[tuple[Memory, float]]:
     if not query.strip():
-      return self.repo.get_all(status="active")[:top_k]
+      return [(memory, 0.0) for memory in self.repo.get_all(status="active")[:top_k]]
     candidates: dict[int, tuple[Memory, float, float]] = {}
     for memory in self.repo.search_text(query, limit=max(top_k * 4, 20)):
       candidates[memory.id] = (memory, 0.0, 1.0)
@@ -136,15 +139,15 @@ class MemoryService:
       ((memory, self._composite_score(semantic, memory.importance, self._recency_score(memory.source_date), self._frequency_score(memory.access_count), lexical))
        for memory, semantic, lexical in candidates.values()), key=lambda item: item[1], reverse=True,
     )
-    selected: list[Memory] = []
+    selected: list[tuple[Memory, float]] = []
     for memory, score in ranked:
       if score < 0.08:
         continue
       # Simple MMR-style diversity: do not return near-duplicate text snippets.
-      if any(self.embedder.similarity(memory.text, chosen.text) > 0.94 for chosen in selected):
+      if any(self.embedder.similarity(memory.text, chosen.text) > 0.94 for chosen, _ in selected):
         continue
       self.repo.increment_access(memory.id)
-      selected.append(self.repo.get_by_id(memory.id) or memory)
+      selected.append((self.repo.get_by_id(memory.id) or memory, score))
       if len(selected) == top_k:
         break
     return selected

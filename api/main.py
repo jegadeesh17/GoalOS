@@ -441,10 +441,10 @@ def get_telemetry_traces(limit: int = Query(default=25, ge=1, le=100)) -> list[T
 @api_router.get("/memories/search", dependencies=[Depends(require_api_token)])
 def memories_search(q: str = Query(min_length=1), limit: int = Query(default=10, ge=1, le=50)) -> list[dict]:
   try:
-    results = MemoryService().hybrid_search(q, top_k=limit)
-    return results
+    results = MemoryService().retrieve_scored(q, top_k=limit)
+    return [{**memory.model_dump(mode="json"), "score": score} for memory, score in results]
   except Exception as exc:
-    logger.warning("hybrid_search_failed: %s", exc)
+    logger.warning("memory_search_failed: %s", exc)
     return []
 
 

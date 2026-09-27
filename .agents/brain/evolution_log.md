@@ -4,6 +4,20 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-28 — Full Historical AWAKE Backfill (July–September)
+
+- **Transcribed AWAKE directly from all 61 remaining notebook photos** (the July root photos, all 31 August photos across both batches, and the remaining 9 September photos beyond the 2 already read) to complete the backfill decided on last session. Confirmed structurally: July has no AWAKE section at all (5 spot-checked across the full month, all absent) - the habit started August 3. Two photos in the August batch turned out to be retakes of the same day (Aug 15 and Aug 19 each photographed twice); both matched their originals exactly once transcribed, confirming the duplicate theory.
+- **Four entries have anomalously short "AM–AM" windows** (Aug 30, Sep 5, Sep 6, Sep 10) that don't match the rest of the pattern (e.g. "9:30 AM - 11:00 AM") - recorded exactly as written, not corrected/guessed. The existing `_parse_awake_range()` sanity check (reject if computed sleep is outside 0-16h) already handles these correctly: text is preserved, `sleep_hours` stays `None` rather than computing a nonsensical ~20+ hour figure. Three entries (Aug 18, Aug 27, Sep 11) have no end time written at all - stored as-is, same guard applies.
+- **Patched `data/Journal/journal_data.csv` directly** (not the JSON transcription batches, several of which no longer exist for the earlier days) with an `Awake` column value per row, verified 1:1 against all 73 CSV dates before writing. This file lives under the gitignored `data/Journal/`, so the patch is on-disk only.
+- **Found and fixed two more real bugs while verifying against the real data**, both in `services/journal_import_service.py`:
+  1. 5 of 73 days write PLAN times without a colon ("915-945 study" instead of "9:15-9:45") - `_parse_plans()`'s regex required `\d{1,2}(:\d{2})?` and silently dropped these lines. Extended the time-token regex (and `_parse_bare_hour()`, used during hourly-grid resolution) to also accept the compact 3-4 digit form.
+  2. Even after that fix, the affected days' blocks were 30-minute (sub-hour) spans that never touched an integer hour boundary, so `_build_hourly_blocks()`'s old containment check (`start_abs <= hour < end_abs`) still matched nothing. Changed to a proper interval-overlap test (`start_abs < hour+1 and end_abs > hour`) - a strict superset of the old behavior for hour-aligned blocks (verified against the existing Issue 1 tests), and it now correctly captures sub-hour blocks too.
+- Re-ran `scripts/import_journal_csv.py` against the real `goalos.db` (backed up first). Result: `awake_range` populated for 40/73 days, `sleep_hours` computed for 33/73 (the other 7 are the anomalous/incomplete entries above, correctly left `None`). Days with zero visible PLAN content dropped from 7 to 2 - the remaining 2 (19/7, 11/8) have genuinely empty Plan fields in the source, not a parsing failure.
+- Verified end-to-end in a live browser session (Playwright): August 5 (previously invisible, 0 PLAN blocks) now shows "9.5h sleep", "8:30 AM - 11:00 PM", and both of its written PLAN blocks correctly bucketed.
+- Suite: 160 passing, ruff/tsc clean.
+
+---
+
 ## 2026-09-27 — Real Journal Data Cleanup + AWAKE Import Support
 
 - **Removed all guesswork:** `scripts/backfill_analytics.py` used to fabricate `sleep_hours`/`mood_morning`/`energy_level`/`sleep_quality`/`expected_focus`/`deep_work_hours` via keyword-matching (e.g. `extract_sleep_hours` only ever returned `5.5`/`7.2`/`8.0`). Deleted those functions outright; the script now only recomputes `scores` from real fields. Nulled the 94 already-fabricated rows and deleted the 94 downstream `scores` rows that had compounded from them (`momentum_score` chains day-to-day, so the contamination wasn't isolated to single days).

@@ -21,9 +21,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
     name: 'Jegadeesh',
     birth_date: '2002-06-17',
     target_age: 70,
-    life_vision: '',
-    five_year_vision: '',
-    one_year_vision: '',
     custom_coach_prompt: '',
     preferred_tone: 'executive_mentor',
     remote_ai_consent: false,
@@ -165,33 +162,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsSaved }) =
             </div>
           </div>
 
-          <div className="space-y-3.5 pt-1">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                10-year vision
-              </label>
-              <textarea
-                rows={2}
-                placeholder="What is your ultimate 10-year horizon vision?"
-                value={settings.life_vision || ''}
-                onChange={(e) => setSettings({ ...settings, life_vision: e.target.value })}
-                className="w-full text-sm p-3 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 resize-none font-sans text-slate-900"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                5-year goals
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Where must you be 5 years from now to align with your life vision?"
-                value={settings.five_year_vision || ''}
-                onChange={(e) => setSettings({ ...settings, five_year_vision: e.target.value })}
-                className="w-full text-sm p-3 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 resize-none font-sans text-slate-900"
-              />
-            </div>
-          </div>
+          <p className="text-xs text-slate-500 font-normal pt-1">
+            Your 1-year, 5-year, and 10-year vision now lives on the{' '}
+            <span className="font-semibold text-slate-700">Goals</span> page — add goals at
+            each horizon there and the coach reads them directly.
+          </p>
         </div>
 
         {/* Coach Persona & Prompt Tuning */}

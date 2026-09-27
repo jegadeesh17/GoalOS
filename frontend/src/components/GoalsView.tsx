@@ -10,13 +10,15 @@ import {
   Pencil,
   Target,
   Calendar,
-  Compass
+  Compass,
+  Sparkles
 } from 'lucide-react';
 
 const HORIZON_COLUMNS = [
   { key: '1-month', title: '1-month sprints', desc: 'What you’re building momentum on now', icon: Target },
   { key: '1-year', title: '1-year horizons', desc: 'Milestones that compound over the year', icon: Calendar },
-  { key: '5-year', title: '5-year vision', desc: 'The life you’re growing toward', icon: Compass },
+  { key: '5-year', title: '5-year horizons', desc: 'The life you’re growing toward', icon: Compass },
+  { key: '10-year', title: '10-year vision', desc: 'The identity everything else is building toward', icon: Sparkles },
 ];
 
 export const GoalsView: React.FC = () => {
@@ -24,6 +26,7 @@ export const GoalsView: React.FC = () => {
     '1-month': [],
     '1-year': [],
     '5-year': [],
+    '10-year': [],
   });
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -127,7 +130,7 @@ export const GoalsView: React.FC = () => {
     <div className="space-y-8">
       <PageHeader
         title="Goals"
-        subtitle="From your five-year vision down to this month’s sprint."
+        subtitle="From your ten-year vision down to this month’s sprint."
         actions={
           <button
             type="button"
@@ -141,13 +144,13 @@ export const GoalsView: React.FC = () => {
       />
 
       {loading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 motion-safe:animate-pulse" aria-hidden="true">
-          {[0, 1, 2].map((i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 motion-safe:animate-pulse" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => (
             <div key={i} className="h-96 bg-white/60 rounded-3xl" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {HORIZON_COLUMNS.map((col) => {
             const columnGoals = horizons[col.key] || [];
             const Icon = col.icon;

@@ -174,9 +174,6 @@ export interface UserSettings {
   name?: string;
   birth_date?: string;
   target_age?: number;
-  life_vision?: string;
-  one_year_vision?: string;
-  five_year_vision?: string;
   custom_coach_prompt?: string | null;
   preferred_tone?: string | null;
   remote_ai_consent?: boolean;

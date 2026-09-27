@@ -104,7 +104,8 @@ export const GoalFormModal: React.FC<GoalFormModalProps> = ({ mode, initialGoal,
               >
                 <option value="1-month">1-Month Sprint</option>
                 <option value="1-year">1-Year Horizon</option>
-                <option value="5-year">5-Year Vision</option>
+                <option value="5-year">5-Year Horizon</option>
+                <option value="10-year">10-Year Vision</option>
               </select>
             </div>
 

@@ -15,6 +15,18 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-27 — Goal Records Are Now the Source of Truth for Vision
+
+- **Issue 2 of the roadmap, resolved:** Settings' three free-text paragraphs (`life_vision`/`five_year_vision`/`one_year_vision`) were removed. `one_year_vision` had no UI input at all despite being fully wired end-to-end and read by the mentor briefing — always silently empty. Root cause was genuine overlap: the Goals page already had structured, trackable goals per horizon; Settings duplicated that with untracked prose at 1/5/10-year that drifted out of sync.
+- **Decision (user's):** Goals is the single source of truth for vision at every horizon, not Settings. Added a `10-year` horizon bucket to `GoalRepository.get_by_horizons()` (previously capped at 5-year) so the identity-tier vision has somewhere to live as real goals.
+- **`CoachService._get_user_vision()`** now derives the AI coaching narrative from active Goal titles/reasons per horizon instead of the three DB columns — output dict shape unchanged, so `mentor_briefing.py` and the chat system prompt needed no edits.
+- **Migration 7** dropped the three columns from `user` (SQLite 3.35+ `ALTER TABLE ... DROP COLUMN`). Applied to the real local `goalos.db` after a `DataPortabilityService.create_backup()` snapshot; the old paragraph text was allowed to go per the user since real Goal records already cover the same themes.
+- **Frontend:** removed the two Settings textareas; `GoalFormModal`'s horizon select and `GoalsView`'s board gained a 10-year option/column; relabeled Goals' 5-year option from "5-Year Vision" to "5-Year Horizon" so "vision" consistently means the 10-year identity tier and "horizon" means a trackable goal.
+- **Also removed the legacy Streamlit app** (`app/`, `components/`, `utils.py`, `run.bat`, `packages.txt`) per explicit user confirmation it's no longer used — the React (`frontend/`) + FastAPI app is the only live surface. One Streamlit page wrote `user.life_vision` directly and would have broken on the migration above.
+- Suite: 149 passing (+6 new), `ruff check .` clean, frontend `tsc --noEmit` clean.
+
+---
+
 ## 2026-09-27 — Hourly PLAN-Block Normalization on Journal Import
 
 - **Issue 1 of the roadmap, implemented:** `journal_import_service.py` now expands each day's PLAN section into a fixed grid of one-hour `ParsedTimeBlock`s (from `ceil(wake_hour)` through midnight) whenever an AWAKE section is present, instead of storing whatever irregular widths the user happened to write that day. Multi-hour lines (e.g. `"6-9 met my friends"`) repeat their activity across each covered hour; hours with nothing written get `""`, never a fabricated activity.

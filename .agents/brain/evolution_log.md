@@ -4,6 +4,15 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-28 — Codebase Staleness Audit
+
+- **Dead code removed (`923b98c`):** `CoachService.prefill_from_journal`, `chat`, `get_future_self`, and `get_dashboard_interpretations` had zero callers (`/coach/chat` routes to `CoordinatorPipeline`). That stranded the reflection pipeline (`reflection_coach.py`, `prompts/reflection.txt`, `fallback_reflection`), so those went too. Five legacy `WeeklySyncService` aliases (`group_entries_into_weeks`, `generate_weekly_report`, `generate_monthly_summary`, `save_sync_log`, `get_recent_sync_logs`) were referenced nowhere.
+- **Streamlit residue removed (`c6721cc`):** `.streamlit/` and two text references survived the Streamlit removal in `be330c8`.
+- **Docs synced (`3acbc4a`, `37a6d29`):** README, ARCHITECTURE, PROJECT_SPEC, DEMO, and SYSTEM_DESIGN_MAPPING still documented Morning/Evening/Weekly pipelines and nonexistent endpoints (`/coach/morning|evening|weekly`, `/coach/goal-alignment`, `/factory-reset`), a `LifeCalendar.tsx` component that doesn't exist, the vision columns dropped in migration 7, 3 goal horizons instead of 4, and test counts of 106/130 (actual: 160). The README ToC also had 4 links to sections that don't exist.
+- **Correction to the entry below:** `data/Journal/` is in `.gitignore`, but `journal_data.csv` and four JSON batches (plus `data/Journal/append_csv.py` and `data/journal_history.json`) were force-added in August/September and remain **tracked**. They are pushed to `origin/main`, and the GitHub repo is **public**. So the AWAKE backfill is *not* on-disk only: it shows as an uncommitted modification of a tracked file. Surfaced to the user for a decision (untrack and/or purge history); nothing was committed or rewritten.
+- **Verification:** `pytest -q` 160 passed, `ruff check .` clean, `tsc --noEmit` clean.
+- **Agent Reflection:** Removing features (Morning/Evening/Weekly, Streamlit, vision fields) left a long tail: dead service methods, orphaned prompts, and five docs describing the old app. When deleting a feature, grep docs and callers in the same change. And `.gitignore` only stops *untracked* files: `git ls-files` is the truth for what's tracked.
+
 ## 2026-09-28 — Full Historical AWAKE Backfill (July–September)
 
 - **Transcribed AWAKE directly from all 61 remaining notebook photos** (the July root photos, all 31 August photos across both batches, and the remaining 9 September photos beyond the 2 already read) to complete the backfill decided on last session. Confirmed structurally: July has no AWAKE section at all (5 spot-checked across the full month, all absent) - the habit started August 3. Two photos in the August batch turned out to be retakes of the same day (Aug 15 and Aug 19 each photographed twice); both matched their originals exactly once transcribed, confirming the duplicate theory.

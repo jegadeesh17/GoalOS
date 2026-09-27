@@ -131,3 +131,11 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 ### 5.4 Antigravity CLI Customization & Global Marketplace Plugins
 - **Observation:** Global plugins in Google Antigravity CLI (`agy`) reside at `~/.gemini/config/plugins/<name>` and are indexed via `~/.gemini/config/import_manifest.json`. The `wshobson/agents` marketplace generates harness-native plugins via `python tools/generate.py --harness antigravity` and imports them cleanly using `agy plugin install <plugin_path>`.
 - **User Preference:** User focuses strictly on Python, backend engineering, architecture, testing, and debugging workflows, excluding JavaScript/TypeScript packages.
+
+### 5.5 `.gitignore` Does Not Untrack Force-Added Files (2026-09-28)
+- **Observation:** `data/Journal/` and `data/journal_history.json` are listed in `.gitignore`, yet the private journal CSV/JSON files were force-added earlier and are still tracked. They are pushed to the **public** GitHub repo. Agents (and the brain) assumed "gitignored = never committed".
+- **Rule:** Before calling a file "on-disk only" or "private", check `git ls-files <path>`, not `.gitignore`. Untracking requires `git rm --cached`, and removing it from published history requires a history rewrite plus a force push, which is destructive and needs explicit user confirmation.
+
+### 5.6 Feature Removal Must Sweep Callers, Prompts, and Docs in the Same Change (2026-09-28)
+- **Observation:** Removing Morning/Evening/Weekly coaching and the Streamlit app left dead `CoachService` methods, an orphaned reflection pipeline and prompt, `.streamlit/`, and five docs describing endpoints that no longer exist.
+- **How to apply:** When deleting a feature, `git grep` its route, service method, prompt name, and UI label across code *and* `README.md`/`docs/`, and update them in the same commit series.

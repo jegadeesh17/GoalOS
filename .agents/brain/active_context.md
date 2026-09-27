@@ -1,5 +1,7 @@
 # 📍 GoalOS Active Context & Operational Roadmap
 
+> Last refreshed: 2026-09-28 (codebase audit).
+
 This document outlines the current project status, active features, technical health, and near-term enhancement roadmaps.
 
 ---
@@ -10,11 +12,11 @@ This document outlines the current project status, active features, technical he
 | :--- | :--- | :--- |
 | **System Architecture** | ✅ Modern React + FastAPI | Single-page application backed by FastAPI 2.1 |
 | **Persistence Engine** | ✅ SQLite 3 + ChromaDB | Dual-write vector indexing and FTS5 search operational |
-| **AI Coaching Suite** | ✅ 6 Pipelines + Multi-Agent Coordinator | Morning, Evening, Weekly, Future Self, Goal Alignment, Progress, plus `CoordinatorPipeline` free-form chat (intent routing, scoped tools, session blackboard, telemetry) |
-| **Coach Chat UI** | ✅ Wired end-to-end | Sessions sidebar + chat thread in `AICoachView.tsx`; pipeline-specific fields (future-self `message`, goal-alignment `alignment_narrative`/`neglected_goals`) render directly instead of a generic fallback line |
-| **Test Suite** | ✅ 106/106 Passing Tests | Comprehensive repository, service, API, and pipeline test coverage |
+| **AI Coaching Suite** | ✅ 2 Pipelines + Multi-Agent Coordinator | Goal Alignment (`progress_coach.py`, `/coach/progress`, monthly/yearly pacing) and Future Self (`future_self_coach.py`, 5/10-year pacing), plus `CoordinatorPipeline` free-form chat. Morning/Evening/Weekly/Reflection were removed (2026-09-27/28) because the user bulk-imports, never journals daily |
+| **Coach Chat UI** | ✅ Wired end-to-end | Sessions sidebar + chat thread in `AICoachView.tsx`; pipeline-specific fields render directly instead of a generic fallback line |
+| **Test Suite** | ✅ 160/160 Passing Tests (2026-09-28) | `pytest -q`; `ruff check .` and `tsc --noEmit` clean |
 | **Design System** | ✅ Forest Mist Paper Glass | Opaque emerald/sage glass panels, static pre-computed gradient washes, Plus Jakarta Sans + Newsreader typography |
-| **Journal Data** | ✅ August 2026 complete (31/31 days) | Days 1–15 imported from `journal_data.csv`; days 16–31 transcribed from handwritten pages and ingested via `scripts/import_journal_csv.py` |
+| **Journal Data** | ✅ 2026-07-01 → 2026-09-11 (73 days) | Six-section notebook (Gratitude, Awake, Plan, Tasks, Review, Takeaway) transcribed to `data/Journal/journal_data.csv` and imported via `scripts/import_journal_csv.py`, which delegates parsing to `JournalImportService`. Pre-July data deleted 2026-09-27; AWAKE backfilled 2026-09-28 (habit starts Aug 3) |
 
 ---
 
@@ -42,7 +44,6 @@ This document outlines the current project status, active features, technical he
 ### Sprint 4: Extended AI Coach Observability & Telemetry Surface (Upcoming)
 - [ ] Implement live latency and cost dashboard in React frontend consuming `/api/coach/telemetry/summary` and `/api/coach/telemetry/traces`.
 - [ ] Add interactive prompt playground in Settings for custom coaching persona prompts.
-- [ ] Extend Weekly Sync pipeline with automated visual PDF report generation.
 
 ---
 

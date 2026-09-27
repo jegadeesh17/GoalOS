@@ -15,6 +15,16 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-27 — Hourly PLAN-Block Normalization on Journal Import
+
+- **Issue 1 of the roadmap, implemented:** `journal_import_service.py` now expands each day's PLAN section into a fixed grid of one-hour `ParsedTimeBlock`s (from `ceil(wake_hour)` through midnight) whenever an AWAKE section is present, instead of storing whatever irregular widths the user happened to write that day. Multi-hour lines (e.g. `"6-9 met my friends"`) repeat their activity across each covered hour; hours with nothing written get `""`, never a fabricated activity.
+- **Bare-hour disambiguation:** the user's notebook writes PLAN times with no AM/PM (`"9-10"`, `"1-3"`, `"8-12"`). Each token is ambiguous between `{n, n+12}`; resolved by carrying the previous block's resolved end forward and picking whichever candidate keeps the day moving strictly forward from the wake hour — never wrapping backward into the same day.
+- **Grid end confirmed with the user:** always caps at midnight (24:00) regardless of the AWAKE section's actual end time — the stretch between midnight and actual sleep isn't tracked as blocks.
+- **No AWAKE section → no grid:** falls back to the old unsplit PLAN parsing rather than guessing a wake hour.
+- Full plan: `docs/plans/2026-09-27-hourly-plan-blocks-import.md`. Suite: 143 passing, `ruff check .` clean.
+
+---
+
 ## 2026-09-27 — AI Coach Pruned to Goal Alignment + Future Self
 
 - **Decision:** User doesn't journal live in the app — real usage is a weekly/biweekly bulk photo-to-text import from a paper notebook via `journal_import_service.py`. Morning Planning, Evening Review and Weekly Sync all restated same-day journal fields back as one generic LLM sentence; none had any consumer elsewhere in the app, and none matched a workflow where days arrive in batches, not one at a time.

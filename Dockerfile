@@ -44,7 +44,6 @@ COPY --chown=appuser:appgroup database/ database/
 COPY --chown=appuser:appgroup models/ models/
 COPY --chown=appuser:appgroup services/ services/
 COPY --chown=appuser:appgroup scripts/ scripts/
-COPY --chown=appuser:appgroup utils.py utils.py
 COPY --chown=appuser:appgroup data/demo_seed.csv data/demo_seed.csv
 COPY --chown=appuser:appgroup data/demo_goalos.db /app/goalos.db
 COPY --chown=appuser:appgroup data/demo_goalos.db /app/data/demo_goalos.db

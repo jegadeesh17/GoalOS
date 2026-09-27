@@ -15,6 +15,17 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-27 — Real Import Pipeline Never Used the New Parser + Day Drawer Rebuilt
+
+- **Root-cause finding:** all 73 real `daily_logs` rows (`import_source='journal_data.csv'`) came from `scripts/import_journal_csv.py`, a completely separate, older script from `services/journal_import_service.py` - meaning every improvement from this session's earlier AWAKE-parsing and hourly-PLAN-block work had never touched a single real row, only the excel/json/markdown/text-block paths nobody actually uses. Traced further: `journal_data.csv` (built by `data/Journal/append_csv.py` from monthly transcription batches like `september_2026_batch.json`) has no AWAKE field anywhere upstream, all the way back to transcription - not a parsing bug, the data was never captured.
+- **Rewired `scripts/import_journal_csv.py`** to delegate PLAN/TASKS/AWAKE parsing to a shared `JournalImportService()` instance instead of its own duplicate heuristics, and to read an optional Awake/AWAKE/awake CSV column so adding one later needs no code change. Dropped the `top_priority`-copies-first-task hack and the `one_lesson=takeaway` duplication (both dead: `journal.tsx`'s live editor hasn't exposed those fields in months, 0 real rows have `one_win`/`supporting_task_1/2` set).
+- **Found and fixed a real inverted-logic bug** while re-running the corrected importer: `JournalImportService._parse_tasks()` treated bare `"X"` as a *completion* marker and never recognized `"(tick)"` at all. The user's actual notation is the reverse - `(tick)`/checkmarks mean done, `X`/`(x)` mean NOT done (a failure mark). This silently inverted completion status for a large fraction of real tasks (fixed, e.g. two prior tests had encoded the wrong assumption and were corrected alongside the fix).
+- **Rebuilt `DayDetailDrawer.tsx`** (the read-only panel from the Year Productivity Calendar) around the real six-section structure (Gratitude / Awake & sleep / Plan / Tasks / Review / Takeaway) instead of the old in-app Morning Planning/Evening Review schema it was still using (`top_priority`, `supporting_task_1/2`, `intention`, `one_win`, `one_lesson`, `morning/evening_completed` badges) - fields dead for every real row. It previously didn't render PLAN/schedule data at all.
+- Re-ran the corrected importer against the real `goalos.db` (backed up first via `DataPortabilityService.create_backup()`); verified end-to-end with Playwright against a live dev server - the July 24 day now correctly shows 5 real PLAN blocks and the right task checked off.
+- Suite: 150 passing, ruff/tsc clean.
+
+---
+
 ## 2026-09-27 — Goal Records Are Now the Source of Truth for Vision
 
 - **Issue 2 of the roadmap, resolved:** Settings' three free-text paragraphs (`life_vision`/`five_year_vision`/`one_year_vision`) were removed. `one_year_vision` had no UI input at all despite being fully wired end-to-end and read by the mentor briefing — always silently empty. Root cause was genuine overlap: the Goals page already had structured, trackable goals per horizon; Settings duplicated that with untracked prose at 1/5/10-year that drifted out of sync.

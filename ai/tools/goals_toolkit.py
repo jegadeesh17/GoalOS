@@ -55,7 +55,7 @@ def build_goals_toolkit(goal_repo: Optional[GoalRepository] = None) -> DomainToo
 
   toolkit.register(
     name="get_horizon_pacing",
-    description="Get goals structured across 1-month, 1-year, and 5-year life horizons with pacing details.",
+    description="Get goals structured across 1-month, 1-year, 5-year, and 10-year life horizons with pacing details.",
     parameters={"type": "object", "properties": {}},
     handler=get_horizon_pacing_handler,
   )

@@ -9,7 +9,7 @@ from database.repositories.memory_repository import MemoryRepository
 from database.repositories.score_repository import ScoreRepository
 from models.coach_response import CoachResponseCreate
 from models.daily_log import DailyLogCreate, DailyLogUpdate
-from models.goal import GoalUpdate
+from models.goal import GoalCreate, GoalUpdate
 from models.memory import MemoryCreate
 from models.score import ScoreCreate
 
@@ -41,6 +41,14 @@ class TestGoalRepository:
     created = repo.create(sample_goal)
     assert repo.delete(created.id) is True
     assert repo.get_by_id(created.id) is None
+
+  def test_get_by_horizons_includes_10_year_bucket(self, temp_db):
+    repo = GoalRepository()
+    repo.create(GoalCreate(title="Financial independence", category="finance", horizon="10-year"))
+    repo.create(GoalCreate(title="Net worth target", category="finance", horizon="5-year"))
+    categorized = repo.get_by_horizons()
+    assert [g.title for g in categorized["10-year"]] == ["Financial independence"]
+    assert [g.title for g in categorized["5-year"]] == ["Net worth target"]
 
 
 class TestLogRepository:

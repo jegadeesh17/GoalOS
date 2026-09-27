@@ -16,9 +16,6 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 CREATE TABLE IF NOT EXISTS user (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
-    life_vision TEXT,
-    five_year_vision TEXT,
-    one_year_vision TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -286,6 +283,15 @@ def _migration_6_coach_persona(conn: sqlite3.Connection) -> None:
   _add_column(conn, "user", "preferred_tone TEXT")
 
 
+def _migration_7_goals_are_the_vision_source_of_truth(conn: sqlite3.Connection) -> None:
+  """Drop the free-text vision fields: Goal records (horizon 1-month..10-year) are
+  now the single source of truth for the user's vision, replacing the narrative
+  life_vision/five_year_vision/one_year_vision paragraphs in Settings."""
+  for column in ("life_vision", "five_year_vision", "one_year_vision"):
+    if column in _columns(conn, "user"):
+      conn.execute(f"ALTER TABLE user DROP COLUMN {column}")
+
+
 MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
   (1, _migration_1_integrity),
   (2, _migration_2_memory_search),
@@ -293,6 +299,7 @@ MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
   (4, _migration_4_awake_range),
   (5, _migration_5_agentic_sessions_and_telemetry),
   (6, _migration_6_coach_persona),
+  (7, _migration_7_goals_are_the_vision_source_of_truth),
 ]
 
 

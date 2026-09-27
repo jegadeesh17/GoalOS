@@ -86,9 +86,6 @@ class UserSettingsUpdate(BaseModel):
   name: Optional[str] = None
   birth_date: Optional[str] = None
   target_age: Optional[int] = Field(default=None, ge=18, le=120)
-  life_vision: Optional[str] = None
-  one_year_vision: Optional[str] = None
-  five_year_vision: Optional[str] = None
   custom_coach_prompt: Optional[str] = Field(default=None, max_length=2000)
   preferred_tone: Optional[str] = None
   remote_ai_consent: Optional[bool] = None
@@ -578,15 +575,6 @@ def update_user_settings(req: UserSettingsUpdate) -> dict:
   if req.target_age is not None:
     updates.append("target_age = ?")
     params.append(req.target_age)
-  if req.life_vision is not None:
-    updates.append("life_vision = ?")
-    params.append(req.life_vision)
-  if req.one_year_vision is not None:
-    updates.append("one_year_vision = ?")
-    params.append(req.one_year_vision)
-  if req.five_year_vision is not None:
-    updates.append("five_year_vision = ?")
-    params.append(req.five_year_vision)
   if req.custom_coach_prompt is not None:
     updates.append("custom_coach_prompt = ?")
     params.append(req.custom_coach_prompt.strip() or None)

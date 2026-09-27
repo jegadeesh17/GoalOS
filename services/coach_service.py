@@ -36,16 +36,28 @@ class CoachService:
     self.settings_service = SettingsService()
 
   def _get_user_vision(self) -> dict:
-    with get_db() as conn:
-      row = conn.execute("SELECT * FROM user WHERE id = 1").fetchone()
-    if row:
-      d = dict(row)
-      return {
-        "one_year_vision": d.get("one_year_vision") or "",
-        "five_year_vision": d.get("five_year_vision") or "",
-        "ten_year_vision": d.get("life_vision") or "",
-      }
-    return {}
+    """Derive the user's vision narrative from their active Goal records.
+
+    Goals are the single source of truth for 1/5/10-year vision (no separate
+    free-text fields) - each horizon's goal titles/reasons are joined into a
+    short narrative for the AI coaching prompts.
+    """
+    categorized = self.goal_repo.get_by_horizons()
+
+    def narrative(goals: list) -> str:
+      parts = []
+      for goal in goals:
+        text = goal.title.strip()
+        if goal.reason:
+          text += f" ({goal.reason.strip()})"
+        parts.append(text)
+      return "; ".join(parts)
+
+    return {
+      "one_year_vision": narrative(categorized.get("1-year", [])),
+      "five_year_vision": narrative(categorized.get("5-year", [])),
+      "ten_year_vision": narrative(categorized.get("10-year", [])),
+    }
 
   def _serialize_log(self, log: DailyLog) -> dict:
     return log.model_dump(mode="json")

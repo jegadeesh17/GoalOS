@@ -26,11 +26,45 @@ def fallback_reflection(context: dict) -> dict:
 
 
 def fallback_future_self(context: dict) -> dict:
+  written_from_age = context.get("current_age_in_10_years") or 35
+  visions = context.get("user_vision") or {}
+  five_year_text = (visions.get("five_year_vision") or "").strip() or "no 5-year goals defined yet"
+  ten_year_text = (visions.get("ten_year_vision") or "").strip() or "no 10-year goals defined yet"
+
+  recent_logs = context.get("recent_logs", [])
+  rates = [l.get("task_completion_rate") for l in recent_logs if l.get("task_completion_rate") is not None]
+  avg_completion = (sum(rates) / len(rates)) if rates else None
+
+  if avg_completion is None:
+    five_year_pacing = f"Not enough recent logs to evaluate pacing against: {five_year_text}."
+    ten_year_pacing = f"Not enough recent logs to evaluate pacing against: {ten_year_text}."
+    message = (
+      f"I'm you, {written_from_age} years old, writing back. There isn't enough logged yet to tell you "
+      "whether the days are adding up to anything. Start logging so future-you can actually check."
+    )
+  elif avg_completion < 40:
+    five_year_pacing = f"Off pace — recent execution ({avg_completion:.0f}% task completion) is not compounding toward: {five_year_text}."
+    ten_year_pacing = f"At this rate, the identity behind '{ten_year_text}' doesn't form. The gap is daily follow-through, not the ambition itself."
+    message = (
+      f"I'm you, {written_from_age} years old, writing back. {five_year_text} and {ten_year_text} are still "
+      "just words right now, because the days aren't compounding toward them. Fix the follow-through, not the plan."
+    )
+  else:
+    five_year_pacing = f"On pace — {avg_completion:.0f}% recent task completion is compounding toward: {five_year_text}."
+    ten_year_pacing = f"Keep this rate up and '{ten_year_text}' stops being aspirational and becomes real."
+    message = (
+      f"I'm you, {written_from_age} years old, writing back. What you're doing now is working — "
+      f"{five_year_text} and {ten_year_text} are becoming real because of days like these."
+    )
+
   return {
-    "message": "I know this period feels challenging. The struggles you're facing now are shaping who you'll become. Keep showing up.",
-    "written_from_age": 35,
-    "key_things_referenced": ["consistency", "growth"],
-    "confidence": 0.3,
+    "message": message,
+    "written_from_age": written_from_age,
+    "five_year_pacing": five_year_pacing,
+    "ten_year_pacing": ten_year_pacing,
+    "key_things_referenced": [five_year_text, ten_year_text],
+    "confidence": 0.5,
+    "source": "heuristic_fallback",
   }
 
 

@@ -3,6 +3,7 @@
 import json
 import logging
 from datetime import date
+from typing import Optional
 
 from ai.openrouter_client import OpenRouterClient
 from ai.pipelines.future_self_coach import run_future_self_coach
@@ -72,6 +73,14 @@ class CoachService:
   def _remote_ai_allowed(self) -> bool:
     return bool(self.settings_service.remote_ai_allowed() and self.llm.api_key)
 
+  def _get_current_age(self) -> Optional[float]:
+    with get_db() as conn:
+      row = conn.execute("SELECT birth_date FROM user WHERE id = 1").fetchone()
+    if not row or not row["birth_date"]:
+      return None
+    birth = date.fromisoformat(row["birth_date"])
+    return (date.today() - birth).days / 365.25
+
   def build_context(self, target_date: date, query: str = "") -> dict:
     """Assemble full context for AI calls."""
     goals = self.goal_repo.get_active()
@@ -112,9 +121,13 @@ class CoachService:
     # Extract multi-day behavioral patterns
     pattern_report = PatternService().analyze_patterns(recent_logs, goals, target_date=target_date)
 
+    current_age = self._get_current_age()
+    age_in_10_years = round(current_age) + 10 if current_age is not None else 35
+
     ctx = {
       "date": target_date.isoformat(),
       "user_vision": self._get_user_vision(),
+      "current_age_in_10_years": age_in_10_years,
       "active_goals": [self._serialize_goal(g) for g in goals],
       "journal_text_digest": journal_digest,
       "recent_logs": [self._serialize_log(l) for l in recent_logs],

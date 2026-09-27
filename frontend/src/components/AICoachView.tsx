@@ -94,7 +94,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'goal-al
 
   const modeOptions = [
     { id: 'goal-alignment', label: 'Goal Alignment', icon: Target, desc: 'Monthly & yearly pacing against your active goals' },
-    { id: 'future-self', label: 'Future Self', icon: Compass, desc: '10-year identity & horizon alignment' },
+    { id: 'future-self', label: 'Future Self', icon: Compass, desc: '5-year & 10-year horizon pacing' },
   ] as const;
   const selectedMode = modeOptions.find((o) => o.id === mode) ?? modeOptions[0];
 
@@ -251,6 +251,23 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'goal-al
           <strong className="text-slate-800 font-semibold">Evaluated against: </strong>
           {r.monthly_goal_evaluated}
         </p>
+      )}
+
+      {(r.five_year_pacing || r.ten_year_pacing) && (
+        <div className="mt-3 space-y-1.5">
+          {r.five_year_pacing && (
+            <p className="text-xs text-slate-700 leading-relaxed">
+              <strong className="text-slate-900 font-semibold">5-year pacing: </strong>
+              {r.five_year_pacing}
+            </p>
+          )}
+          {r.ten_year_pacing && (
+            <p className="text-xs text-slate-700 leading-relaxed">
+              <strong className="text-slate-900 font-semibold">10-year pacing: </strong>
+              {r.ten_year_pacing}
+            </p>
+          )}
+        </div>
       )}
 
       {(r.critical_bottleneck || r.recognized_pattern_analysis) && (

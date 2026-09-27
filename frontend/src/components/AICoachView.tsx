@@ -500,7 +500,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'goal-al
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Sessions Sidebar */}
           <div className="lg:col-span-1 glass-panel rounded-3xl border border-emerald-100/70 shadow-forest p-4 flex flex-col max-h-[420px] lg:max-h-[640px]">
-            <h2 className="text-xs font-semibold text-slate-600 mb-2.5 px-1 flex-shrink-0">
+            <h2 className="text-sm font-semibold text-slate-600 mb-2.5 px-1 flex-shrink-0">
               Conversations
             </h2>
             <div className="flex-1 overflow-y-auto space-y-1 pr-0.5">

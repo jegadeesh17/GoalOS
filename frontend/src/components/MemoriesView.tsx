@@ -311,7 +311,7 @@ export const MemoriesView: React.FC = () => {
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {displayedList.map((mem, idx) => (
                 <li key={mem.id || idx} className="glass-panel rounded-3xl p-5 flex flex-col gap-4 shadow-forest group">
-                  <blockquote className="voice text-[16.5px] flex-1">{mem.text}</blockquote>
+                  <blockquote className="voice text-[15px] flex-1">{mem.text}</blockquote>
                   <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
                     <div className="flex flex-wrap items-center gap-2">
                       <TypeBadge type={mem.memory_type} />

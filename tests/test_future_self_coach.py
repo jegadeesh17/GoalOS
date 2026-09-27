@@ -19,14 +19,14 @@ class TestCurrentAgeInTenYears:
     expected_current_age = (date.today() - date(2000, 1, 1)).days / 365.25
     assert context["current_age_in_10_years"] == round(expected_current_age) + 10
 
-  def test_falls_back_to_35_when_birth_date_missing(self, temp_db):
+  def test_is_none_not_guessed_when_birth_date_missing(self, temp_db):
     with get_db() as conn:
       conn.execute("UPDATE user SET birth_date = NULL WHERE id = 1")
     service = CoachService()
 
     context = service.build_context(date.today())
 
-    assert context["current_age_in_10_years"] == 35
+    assert context["current_age_in_10_years"] is None
 
 
 class TestFallbackFutureSelf:
@@ -82,3 +82,14 @@ class TestFallbackFutureSelf:
 
     assert "Financially independent" in result["ten_year_pacing"]
     assert "8 crore net worth" in result["five_year_pacing"]
+
+
+class TestFallbackFutureSelfWithoutAge:
+  def test_does_not_invent_an_age_when_unknown(self):
+    context = {"current_age_in_10_years": None, "user_vision": {}, "recent_logs": []}
+
+    result = fallback_future_self(context)
+
+    assert result["written_from_age"] is None
+    assert "years old" not in result["message"]
+    assert "ten years from now" in result["message"]

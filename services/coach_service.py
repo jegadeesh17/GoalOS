@@ -118,7 +118,8 @@ class CoachService:
     pattern_report = PatternService().analyze_patterns(recent_logs, goals, target_date=target_date)
 
     current_age = self._get_current_age()
-    age_in_10_years = round(current_age) + 10 if current_age is not None else 35
+    # None when birth_date is unset - never guess an age.
+    age_in_10_years = round(current_age) + 10 if current_age is not None else None
 
     ctx = {
       "date": target_date.isoformat(),

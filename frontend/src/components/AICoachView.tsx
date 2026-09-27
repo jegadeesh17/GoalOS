@@ -230,7 +230,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'goal-al
           {String(r.message).split(/\n\n+/).map((para: string, i: number) => (
             <p key={i}>{para}</p>
           ))}
-          {typeof r.written_from_age !== 'undefined' && (
+          {r.written_from_age != null && (
             <p className="text-xs text-slate-600 not-italic font-sans pt-1">— your future self, age {r.written_from_age}</p>
           )}
         </div>

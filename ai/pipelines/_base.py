@@ -16,7 +16,12 @@ def format_context(context: dict[str, Any]) -> str:
 
 
 def fallback_future_self(context: dict) -> dict:
-  written_from_age = context.get("current_age_in_10_years") or 35
+  written_from_age = context.get("current_age_in_10_years")
+  opener = (
+    f"I'm you, {written_from_age} years old, writing back."
+    if written_from_age is not None
+    else "I'm you, ten years from now, writing back."
+  )
   visions = context.get("user_vision") or {}
   five_year_goal = (visions.get("five_year_vision") or "").strip()
   ten_year_goal = (visions.get("ten_year_vision") or "").strip()
@@ -43,22 +48,22 @@ def fallback_future_self(context: dict) -> dict:
 
   if not defined_goals:
     message = (
-      f"I'm you, {written_from_age} years old, writing back. There's nothing on the Goals page yet for "
+      f"{opener} There's nothing on the Goals page yet for "
       "5 or 10 years out, so I can't tell you if today is building toward anything. Define them, then we can check."
     )
   elif avg_completion is None:
     message = (
-      f"I'm you, {written_from_age} years old, writing back. There isn't enough logged yet to tell you "
+      f"{opener} There isn't enough logged yet to tell you "
       "whether the days are adding up to anything. Start logging so future-you can actually check."
     )
   elif avg_completion < 40:
     message = (
-      f"I'm you, {written_from_age} years old, writing back. {goals_joined} {are_or_is} still just words "
+      f"{opener} {goals_joined} {are_or_is} still just words "
       "right now, because the days aren't compounding toward them. Fix the follow-through, not the plan."
     )
   else:
     message = (
-      f"I'm you, {written_from_age} years old, writing back. What you're doing now is working — "
+      f"{opener} What you're doing now is working — "
       f"{goals_joined} {are_or_is} becoming real because of days like these."
     )
 

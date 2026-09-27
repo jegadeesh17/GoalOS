@@ -50,5 +50,5 @@
 ```powershell
 cd c:\Users\jegad\projects\GoalOS
 pytest -q
-streamlit run app/app.py
+.un_app.bat   # FastAPI on :8000 + React/Vite on :5173
 ```

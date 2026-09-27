@@ -9,7 +9,7 @@
 | **Document** | PROJECT_SPEC.md |
 | **Version** | 2.6.0 (Unified Executive OS Edition) |
 | **Status** | Active & Implemented in Production |
-| **Last updated** | 2026-09-03 |
+| **Last updated** | 2026-09-28 |
 | **Repository** | [github.com/jegadeesh17/GoalOS](https://github.com/jegadeesh17/GoalOS) |
 | **Related docs** | [ARCHITECTURE_AND_SPECIFICATIONS.md](./ARCHITECTURE_AND_SPECIFICATIONS.md), [SYSTEM_DESIGN_MAPPING.md](./SYSTEM_DESIGN_MAPPING.md), [README.md](../README.md), [DEPLOY.md](../DEPLOY.md), [DEMO.md](./DEMO.md) |
 
@@ -34,16 +34,16 @@ The system retrieves relevant memories using hybrid lexical and vector search, i
 | # | Capability | Implementation Location |
 |---|------------|-------------------------|
 | 1 | **Desktop SPA:** React 18 + TypeScript + Vite with Forest Mist Paper Glass design system | `frontend/src/` |
-| 2 | **70-Year Life Calendar (Memento Mori):** 3,640 discrete week blocks (52 weeks × 70 years) | `frontend/src/components/LifeCalendar.tsx`, `services/life_calendar_service.py` |
-| 3 | **Daily Journal & Execution:** Morning planning (sleep, mood, priorities, tasks) & evening retrospective | `frontend/src/components/JournalView.tsx`, `database/repositories/log_repository.py` |
-| 4 | **Multi-Horizon Goals:** 1-Month Sprints, 1-Year Horizons, 5-Year Visions with milestone checklists | `frontend/src/components/GoalsView.tsx`, `database/repositories/goal_repository.py` |
-| 5 | **AI Coaching Suite:** 5 guided pipelines (Morning, Evening, Weekly, Future Self, Goal Alignment) | `frontend/src/components/AICoachView.tsx`, `services/coach_service.py` |
+| 2 | **70-Year Life Calendar (Memento Mori):** 3,640 discrete week blocks (52 weeks × 70 years) | `frontend/src/components/YearProductivityCalendar.tsx`, `frontend/src/components/DayDetailDrawer.tsx`, `services/life_calendar_service.py` |
+| 3 | **Notebook Journal Import:** Six-section entries (Gratitude, Awake, Plan, Tasks, Review, Takeaway), bulk-imported from transcribed notebook pages | `scripts/import_journal_csv.py`, `services/journal_import_service.py`, `frontend/src/components/JournalView.tsx` |
+| 4 | **Multi-Horizon Goals:** 1-Month, 1-Year, 5-Year, and 10-Year horizons with milestone checklists (Goals are the single source of truth for vision) | `frontend/src/components/GoalsView.tsx`, `database/repositories/goal_repository.py` |
+| 5 | **AI Coaching Suite:** 2 batch-cadence pipelines: Goal Alignment (monthly/yearly pacing) and Future Self (5/10-year pacing) | `frontend/src/components/AICoachView.tsx`, `services/coach_service.py` |
 | 6 | **Multi-Agent Coordinator & Chat:** Intent triage, domain-scoped toolkits, session blackboard | `ai/pipelines/coordinator.py`, `ai/tools/*`, `database/repositories/coach_session_repository.py` |
 | 7 | **Cognitive Memory Base (Hybrid RAG):** Dual-write SQLite + ChromaDB with 5-factor ranking and MMR pruning | `services/memory_service.py`, `database/repositories/memory_repository.py` |
 | 8 | **Longitudinal Analytics & Behavioral Patterns:** Daily growth scores & multi-day pattern detection | `services/analytics_service.py`, `services/pattern_service.py` |
 | 9 | **Sovereign Privacy & Data Portability:** Remote AI consent switch, JSON export, auto-backup factory reset | `services/settings_service.py`, `services/data_portability_service.py` |
 | 10 | **FastAPI REST API:** Full CRUD, 512KB payload ceiling, CORS, and constant-time HMAC token auth | `api/main.py` |
-| 11 | **Comprehensive Test Suite:** 106 passing tests across repositories, services, pipelines, and API | `tests/*` |
+| 11 | **Comprehensive Test Suite:** 160 passing tests across repositories, services, pipelines, and API | `tests/*` |
 | 12 | **Production AI Evaluation Framework:** 6 Vision Metrics and leaky-bucket rate limiting for free-tier LLMs | `ai/eval/*`, `scripts/run_model_eval.py` |
 
 ### 2.2 Out of Scope
@@ -66,7 +66,7 @@ The system retrieves relevant memories using hybrid lexical and vector search, i
 | **FR-04** | Multi-horizon goal management (1M, 1Y, 5Y) with cascading milestones | `database/repositories/goal_repository.py` | ✅ |
 | **FR-05** | Dual-write memories to SQLite (`memories`, `memory_fts`) and ChromaDB | `services/memory_service.py` | ✅ |
 | **FR-06** | 5-Factor hybrid RAG retrieval with MMR diversity pruning | `services/memory_service.py` | ✅ |
-| **FR-07** | Execute 5 structured coaching pipelines with grounded evidence | `ai/pipelines/*`, `services/coach_service.py` | ✅ |
+| **FR-07** | Execute 2 structured coaching pipelines (Goal Alignment, Future Self) with grounded evidence | `ai/pipelines/*`, `services/coach_service.py` | ✅ |
 | **FR-08** | Multi-agent conversational coaching with session blackboard | `ai/pipelines/coordinator.py` | ✅ |
 | **FR-09** | Scoped domain toolkits (`JournalToolkit`, `GoalsToolkit`, `MemoryToolkit`, `CalendarToolkit`) | `ai/tools/*` | ✅ |
 | **FR-10** | Deterministic rule fallback when offline or consent disabled | `services/coach_service.py`, `ai/pipelines/coordinator.py` | ✅ |
@@ -79,7 +79,7 @@ The system retrieves relevant memories using hybrid lexical and vector search, i
 
 | ID | Requirement | Target Specification | Enforcement Mechanism |
 |----|-------------|----------------------|-----------------------|
-| **NFR-01** | Test Suite Completeness | 100% green local test suite | `pytest -q` (106 passing tests) |
+| **NFR-01** | Test Suite Completeness | 100% green local test suite | `pytest -q` (160 passing tests) |
 | **NFR-02** | Data Privacy & Zero Leakage | Sovereign local persistence; explicit AI opt-in | `remote_ai_consent` gate in `SettingsService` |
 | **NFR-03** | Local CPU Embedding Inference | $< 20\text{ms}$ embedding generation | `all-MiniLM-L6-v2` with deterministic hash fallback |
 | **NFR-04** | Request Body Protection | Maximum 512KB payload | FastAPI `limit_request_body` middleware |
@@ -127,7 +127,7 @@ FastAPI Application (api/main.py)
 | API Gateway | `api/main.py` | FastAPI routes, 512KB body limiter, HMAC token security |
 | Multi-Agent Coordinator | `ai/pipelines/coordinator.py` | Intent triage, domain toolkits, session blackboard |
 | Domain Toolkits | `ai/tools/*` | Function definitions & execution (`journal`, `goals`, `memory`, `calendar`) |
-| Coaching Orchestration | `services/coach_service.py`, `ai/pipelines/*` | 5 guided pipelines & local rule fallback engine |
+| Coaching Orchestration | `services/coach_service.py`, `ai/pipelines/*` | 2 guided pipelines & local rule fallback engine |
 | Domain Services | `services/*` | `MemoryService`, `LifeCalendarService`, `AnalyticsService`, `ObservabilityService`, etc. |
 | Repositories | `database/repositories/*` | Data access layer using SQLite context managers |
 | Persistence | `goalos.db`, `chroma_db/` | SQLite 3 (relational + FTS5) + ChromaDB (vector cosine index) |
@@ -162,19 +162,19 @@ $$\text{Composite Score} = 0.35 \cdot S_{\text{sem}} + 0.15 \cdot S_{\text{lex}}
 | Category | Endpoint | Method | Role |
 |----------|----------|--------|------|
 | **Health** | `/health`, `/api/health`, `/health/details` | `GET` | Service status, database row counts, vector collection stats |
-| **Life Calendar** | `/calendar/summary`, `/calendar/grid` | `GET` | Lifespan statistics & 3,640 discrete week blocks |
+| **Life Calendar** | `/calendar/summary`, `/calendar/grid`, `/calendar/year` | `GET` | Lifespan statistics, 3,640 week blocks, per-day year grid |
 | **Journal** | `/journal/today`, `/journal/date/{target_date}`, `/journal/history` | `GET` | Fetch daily logs by date or historical limit |
 | | `/journal/upsert` | `POST` | Upsert daily log fields & trigger automatic daily score recomputation |
 | **Goals** | `/goals`, `/goals/horizons`, `/goals/{id}` | `GET` | Multi-horizon goal queries and horizon grouping |
 | | `/goals`, `/goals/{id}` | `POST`, `PUT`, `DELETE` | Goal creation, updates, and cascading deletion |
 | | `/goals/{id}/milestones`, `/milestones/{id}` | `POST`, `PUT`, `PATCH`, `DELETE` | Milestone CRUD and completion toggling |
-| **Coaching Pipelines**| `/coach/morning`, `/coach/evening`, `/coach/weekly`, `/coach/future-self`, `/coach/goal-alignment` | `POST` | 5 guided structured coaching pipelines with grounded evidence |
+| **Coaching Pipelines**| `/coach/progress`, `/coach/future-self` | `POST` | Goal Alignment (monthly/yearly) and Future Self (5/10-year) pacing |
 | **Coach Chat** | `/coach/chat` | `POST` | Multi-agent conversational coaching (intent routing, scoped tools, blackboard) |
 | | `/coach/sessions`, `/coach/sessions/{id}` | `GET`, `POST`, `DELETE` | Chat session creation, history retrieval, and cleanup |
 | **Telemetry** | `/coach/telemetry/summary`, `/coach/telemetry/traces` | `GET` | Aggregated latency percentiles (p50/p95) and token/USD spend |
 | **Memories** | `/memories`, `/memories/search` | `GET`, `POST`, `DELETE` | 5-factor hybrid RAG search, manual memory addition, and purging |
 | **Analytics** | `/analytics/dashboard`, `/analytics/scores` | `GET` | Consolidated averages, behavioral patterns, and historical scores |
-| **Settings & Export** | `/settings` | `GET`, `POST` | Profile, life visions, and remote AI consent configuration |
+| **Settings & Export** | `/settings` | `GET`, `POST` | Profile (birth date, target age) and remote AI consent configuration |
 | | `/export`, `/export/reset` | `GET`, `POST` | Full JSON export and safe factory reset with automated backup |
 
 ---
@@ -183,7 +183,7 @@ $$\text{Composite Score} = 0.35 \cdot S_{\text{sem}} + 0.15 \cdot S_{\text{lex}}
 
 | Metric | Result | Notes |
 |--------|--------|-------|
-| **pytest Suite** | 106/106 passing (100%) | `pytest -q` across all repositories, services, APIs, and pipelines |
+| **pytest Suite** | 160/160 passing (100%) | `pytest -q` across all repositories, services, APIs, and pipelines |
 | **AI Evaluation Framework** | 6 GoalOS Vision Metrics | Evaluates Schema Integrity, Grounding, Actionability, Horizon Alignment, Tool Precision, and Operational Efficiency |
 | **Free-Tier Model Benchmarking** | 76.8% composite score (`nvidia/nemotron-3-super-120b-a12b:free`) | 45-scenario live evaluation with leaky-bucket rate limiting ($\le 14$ RPM) |
 | **Retrieval Evaluation** | `python scripts/generate_retrieval_eval.py` | Generates rubric-based ranking report in `reports/evaluation.md` |

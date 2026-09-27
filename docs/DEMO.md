@@ -20,7 +20,7 @@ cd frontend && npm install && cd ..
 pytest -q
 ```
 
-**Expected Result:** **106/106 tests passing (100%)** across repositories, 5-factor hybrid RAG, Life Calendar, multi-agent Coordinator, Coach Chat, sessions blackboard, telemetry, and rate limiters.
+**Expected Result:** **160/160 tests passing (100%)** across repositories, 5-factor hybrid RAG, Life Calendar, multi-agent Coordinator, Coach Chat, sessions blackboard, telemetry, and rate limiters.
 
 ---
 
@@ -49,11 +49,11 @@ python -m uvicorn api.main:app --reload --port 8000
 curl http://127.0.0.1:8000/health
 ```
 
-### B. Structured Morning Coach:
+### B. Goal Alignment (Monthly Pacing):
 ```bash
-curl -X POST http://127.0.0.1:8000/coach/morning -H "Content-Type: application/json" -d "{\"gratitude\":\"Grateful for uninterrupted focus\",\"tasks\":[{\"text\":\"Ship portfolio architecture docs\",\"priority\":1}]}"
+curl -X POST http://127.0.0.1:8000/coach/progress -H "Content-Type: application/json" -d "{\"date\":\"2026-09-15\"}"
 ```
-Point out structured JSON response: `mentor_rule`, `tools_used`, `source` (`ai_agent` or deterministic fallback), and grounded citations.
+Point out that it paces the month's logged days against active 1-month and 1-year goals, and that without remote AI consent it returns a deterministic fallback with `fallback_reason`.
 
 ### C. Multi-Agent Coordinator Chat Turn:
 ```bash
@@ -73,22 +73,22 @@ run_app.bat
 
 ### Key Views to Highlight:
 1. **Life Calendar (Memento Mori):** 3,640 discrete week blocks (52 weeks × 70 years) calculating lived vs. remaining weeks with decade markers.
-2. **Daily Journal & Tasks:** Morning planning (sleep, mood, intentions, top priority, goal-linked tasks) and evening retrospective (wins, lessons, deep work hours).
-3. **Multi-Horizon Goals:** 1-Month Sprints, 1-Year Horizons, and 5-Year Visions with interactive milestone progress.
+2. **Journal:** Six-section notebook entries (Gratitude, Awake, Plan, Tasks, Review, Takeaway). Click any calendar day to open its full entry in the day drawer.
+3. **Multi-Horizon Goals:** 1-Month, 1-Year, 5-Year, and 10-Year horizons with interactive milestone progress.
 4. **AI Coach Studio:**
-   - **Guided Pipelines:** Morning, Evening, Weekly, Future Self, and Goal Alignment.
+   - **Guided Pipelines:** Goal Alignment (monthly/yearly pacing) and Future Self (5/10-year pacing).
    - **Coach Chat:** Conversational multi-agent thread backed by session history and scoped tool execution.
 5. **Analytics & Patterns:** Vital averages, daily deterministic growth scores, and multi-day behavioral pattern detection.
 6. **Cognitive Memories:** Hybrid search explorer with real-time composite ranking.
-7. **Settings & Sovereign Privacy:** User profile, life visions, one-switch remote AI consent, and safe factory reset with automated SQLite backup.
+7. **Settings & Sovereign Privacy:** User profile (birth date, target age), one-switch remote AI consent, and safe factory reset with automated SQLite backup.
 
 ---
 
 ## Verification Checklist
 
-- [ ] `pytest -q` is 100% green (106 tests passing)
+- [ ] `pytest -q` is 100% green (160 tests passing)
 - [ ] Backend starts cleanly on `http://localhost:8000`
 - [ ] Frontend starts cleanly on `http://localhost:5173`
 - [ ] `/health` returns status and row counts
-- [ ] Morning coach and Coach Chat execute and return structured output
+- [ ] Goal Alignment, Future Self, and Coach Chat execute and return structured output
 - [ ] Life Calendar renders 3,640 interactive week blocks smoothly in Forest Mist Paper Glass theme

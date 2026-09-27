@@ -124,20 +124,20 @@ flowchart TB
 - **Technology Stack:** React 18, TypeScript 5, Vite, Tailwind CSS 3, Lucide Icons, Axios.
 - **Design System:** Forest Mist Paper Glass (opaque emerald/sage glass panels, static pre-computed gradient washes, Plus Jakarta Sans + Newsreader typography, non-redundant metrics).
 - **Core Views:**
-  1. `LifeCalendar.tsx`: 3,640 discrete interactive week blocks (70 years × 52 weeks), decade delimiters, lived/remaining milestone stats.
-  2. `JournalView.tsx`: Two-phase morning planning (sleep, mood, intentions, top priority, goal-linked tasks) and evening review (wins, lessons, distractions, deep work hours).
-  3. `GoalsView.tsx`: 3-tier horizon view (1-Month Sprints, 1-Year Horizons, 5-Year Visions) with interactive milestones and auto-calculated completion percentages.
-  4. `AICoachView.tsx`: Interactive multi-pipeline coaching studio with grounded citations, memory evidence badges, and confidence scoring.
+  1. `YearProductivityCalendar.tsx`: 12-month per-day productivity grid (plus the 70-year week grid); clicking a day opens `DayDetailDrawer.tsx` with that day's full six-section journal.
+  2. `JournalView.tsx`: Six-section notebook journal (Gratitude, Awake, Plan, Tasks, Review, Takeaway) with debounced autosave. Real data arrives by bulk import (`scripts/import_journal_csv.py` → `JournalImportService`), not live entry.
+  3. `GoalsView.tsx`: 4-tier horizon view (1-Month, 1-Year, 5-Year, 10-Year) with interactive milestones and auto-calculated completion percentages. Goal records are the single source of truth for vision.
+  4. `AICoachView.tsx`: Goal Alignment (`/coach/progress`, monthly/yearly pacing) and Future Self (`/coach/future-self`, 5/10-year pacing), plus Coordinator chat.
   5. `AnalyticsView.tsx`: Longitudinal charts, habit consistency radar, fatigue indicators, and growth scores.
   6. `MemoriesView.tsx`: Hybrid search explorer, manual memory creator, commitment tracker, and index reconciliation trigger.
-  7. `SettingsView.tsx`: Profile customization, remote AI privacy toggle, JSON export, and safe factory reset.
+  7. `SettingsView.tsx`: Profile (birth date, target age), remote AI privacy toggle, JSON export, and safe factory reset.
 
 ### 3.2 API Layer (`api/main.py`)
 - **Technology Stack:** FastAPI, Pydantic v2, Uvicorn, Python 3.11+.
 - **Security & Reliability:**
   - `limit_request_body`: Restricts request size to 512KB to prevent memory exhaustion.
   - `require_api_token`: Enforces HMAC Bearer token validation for production environments (`GOALOS_API_TOKEN`).
-  - Strict Pydantic input models (`TaskInput`, `MorningCoachRequest`, `EveningCoachRequest`, `GoalCreate`, `MilestoneCreate`, `MemoryStoreRequest`).
+  - Strict Pydantic input models (`GoalCreate`, `MilestoneCreate`, `DailyLogUpdate`, `MemoryStoreRequest`, `UserSettingsUpdate`, `CoachChatRequest`, `CoachSessionCreate`).
 
 ### 3.3 Hybrid RAG & Memory Service (`services/memory_service.py`)
 GoalOS uses a **5-Factor Composite Retrieval Ranking Algorithm** with dual-write persistence:
@@ -179,15 +179,14 @@ sequenceDiagram
 ```
 
 ### 3.4 AI Coaching Suite (`services/coach_service.py` & `ai/pipelines/`)
-GoalOS provides 6 distinct coaching pipelines:
-1. **`agent_morning_coach.py`**: Agentic tool-calling pipeline that queries memories and active goals before synthesizing tactical daily directives.
-2. **`evening_coach.py`**: Evaluates completed tasks, win/lesson reflection, deep work blocks, and flags fatigue or recovery deficits.
-3. **`weekly_coach.py`**: High-level retrospective summarizing weekly pacing, consistency trends, and sprint adjustments.
-4. **`future_self_coach.py`**: Connects immediate actions to 5-year and 10-year identity architecture.
-5. **`goal_alignment_coach.py`**: Stress-tests active goals against daily execution logs to surface friction.
-6. **`progress_coach.py`**: Longitudinal milestone analysis and pace projections.
+GoalOS runs two guided pipelines plus the chat coordinator. Both guided pipelines are built for batch cadence (the user bulk-imports a week or more of notebook pages at a time), so neither assumes daily check-ins:
+1. **`progress_coach.py`** (Goal Alignment, `/coach/progress`): Monthly and yearly pacing of 1-month and 1-year goals against the month's logged days, with a historical baseline from the prior month.
+2. **`future_self_coach.py`** (Future Self, `/coach/future-self`): Checks whether current execution is on pace for the 5-year and 10-year goals, written from the user's real age (derived from `birth_date`).
+3. **`coordinator.py`** (`CoordinatorPipeline`, `/coach/chat`): Free-form chat with intent triage and domain-scoped tools.
 
-#### Tool Calling Specifications (`ai/tools.py`):
+Morning Planning, Evening Review, Weekly Sync, and the single-goal Goal Alignment picker were removed on 2026-09-27 because they assumed daily interaction.
+
+#### Tool Calling Specifications (`ai/tools/`):
 When calling remote LLMs (via OpenRouter), the agent is equipped with native function tools:
 - `search_memories(query: str, top_k: int = 5)`: Dynamically fetches relevant past insights.
 - `get_active_goals(category: Optional[str] = None)`: Fetches active multi-horizon goals and milestones.
@@ -215,10 +214,11 @@ erDiagram
         string name
         string birth_date
         int target_age
-        string life_vision
-        string one_year_vision
-        string five_year_vision
-        boolean remote_ai_consent
+    }
+
+    SETTINGS {
+        string key PK "e.g. remote_ai_consent"
+        string value
     }
 
     GOALS {
@@ -336,7 +336,7 @@ erDiagram
 | `POST` | `/journal/upsert` | Upsert daily log fields & auto-recompute daily scores | Yes (in prod) |
 | `GET` | `/journal/history` | Fetch historical daily logs with limit | Yes (in prod) |
 | `GET` | `/goals` | List all goals with optional category/status filters | Yes (in prod) |
-| `GET` | `/goals/horizons` | List active goals grouped by 1M, 1Y, and 5Y horizons | Yes (in prod) |
+| `GET` | `/goals/horizons` | List active goals grouped by 1M, 1Y, 5Y, and 10Y horizons | Yes (in prod) |
 | `GET` | `/goals/{goal_id}` | Fetch a single goal by ID | Yes (in prod) |
 | `POST` | `/goals` | Create a new multi-horizon goal | Yes (in prod) |
 | `PUT` | `/goals/{goal_id}` | Update an existing goal | Yes (in prod) |
@@ -345,11 +345,8 @@ erDiagram
 | `PUT` | `/milestones/{milestone_id}` | Update milestone completion status | Yes (in prod) |
 | `PATCH` | `/milestones/{milestone_id}` | Partially update milestone fields | Yes (in prod) |
 | `DELETE` | `/milestones/{milestone_id}` | Delete milestone | Yes (in prod) |
-| `POST` | `/coach/morning` | Execute morning coaching pipeline | Yes (in prod) |
-| `POST` | `/coach/evening` | Execute evening retrospective pipeline | Yes (in prod) |
-| `POST` | `/coach/weekly` | Execute weekly sync coaching pipeline | Yes (in prod) |
-| `POST` | `/coach/future-self` | Execute 10-year future self alignment pipeline | Yes (in prod) |
-| `POST` | `/coach/goal-alignment` | Stress-test goal feasibility and habit pacing | Yes (in prod) |
+| `POST` | `/coach/progress` | Goal Alignment: monthly/yearly goal pacing for the month of `date` | Yes (in prod) |
+| `POST` | `/coach/future-self` | Future Self: 5-year/10-year goal pacing | Yes (in prod) |
 | `POST` | `/coach/chat` | Multi-agent coordinator chat turn (intent routing, scoped tools, blackboard) | Yes (in prod) |
 | `GET` | `/coach/sessions` | List recent coaching chat sessions | Yes (in prod) |
 | `POST` | `/coach/sessions` | Create a new coaching chat session | Yes (in prod) |

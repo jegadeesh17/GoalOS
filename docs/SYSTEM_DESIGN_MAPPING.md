@@ -177,7 +177,7 @@ sequenceDiagram
 | **Authentication / IdP** | HMAC Bearer Token Validator | `api/main.py::require_api_token` | Validates API tokens in constant time (`hmac.compare_digest`). |
 | **PII & Data Guard** | Local-First Sovereign Persistence | `database/migrations.py` | Zero telemetry or personal data leaves the machine unless explicitly consented. |
 | **Coordinator Agent** | Supervisor Coordinator Pipeline | `ai/pipelines/coordinator.py` | Intent classification, domain delegation, response synthesis, and fallback routing. |
-| **Accounts / Tx / Service Subagents** | Domain Coach Subagents | `ai/pipelines/*` | `ExecutionCoach`, `GoalAlignmentCoach`, `ProgressCoach`, `FutureSelfCoach`. |
+| **Accounts / Tx / Service Subagents** | Domain Coach Subagents | `ai/pipelines/*` | `run_progress_coach` (Goal Alignment, monthly/yearly pacing), `run_future_self_coach` (5/10-year pacing). |
 | **Modular MCP Tool Servers** | Domain-Partitioned Toolkits | `ai/tools/*` | `MemoryToolkit`, `GoalsToolkit`, `JournalToolkit`, `CalendarToolkit`. |
 | **Session Store & Inter-Agent State** | SQLite Sessions & Blackboard | `database/repositories/coach_session_repository.py` | `coach_sessions` and `coach_messages` with structured JSON blackboard. |
 | **LLM Gateway (Hybrid)** | OpenRouter Client + Rule Engine | `ai/openrouter_client.py`, `services/coach_service.py` | Leaky-bucket rate limited cloud models + instant deterministic fallback. |

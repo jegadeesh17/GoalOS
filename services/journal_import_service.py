@@ -329,8 +329,11 @@ class JournalImportService:
 
   def _parse_plans(self, text: str) -> list[ParsedTimeBlock]:
     blocks = []
+    # A time token is "H", "H:MM", or a compact no-colon form ("915" = 9:15,
+    # "630" = 6:30) that some days use instead of a colon.
+    time_token = r"\d{1,2}:\d{2}|\d{3,4}|\d{1,2}"
     pattern = re.compile(
-      r"(\d{1,2}(?::\d{2})?)\s*[-–]\s*(\d{1,2}(?::\d{2})?)\s*:?\s*(.+)"
+      rf"({time_token})\s*[-–]\s*({time_token})\s*:?\s*(.+)"
     )
     for line in text.strip().split("\n"):
       line = line.strip()
@@ -390,13 +393,27 @@ class JournalImportService:
     return self._awake_match_to_hours(match.groups())
 
   def _parse_bare_hour(self, token: str) -> Optional[float]:
-    """Parse a bare PLAN time token like '10' or '10:30' (no AM/PM) into a float hour."""
-    match = re.match(r"^\s*(\d{1,2})(?::(\d{2}))?\s*$", token)
-    if not match:
-      return None
-    hour = int(match.group(1))
-    minute = int(match.group(2)) if match.group(2) else 0
-    return hour + minute / 60.0
+    """Parse a bare PLAN time token (no AM/PM) into a float hour.
+
+    Handles '10', '10:30' (colon form), and the compact no-colon form some
+    days use instead - '915' (3 digits -> 9:15) or '1115' (4 digits -> 11:15).
+    """
+    token = token.strip()
+    match = re.match(r"^(\d{1,2}):(\d{2})$", token)
+    if match:
+      hour, minute = int(match.group(1)), int(match.group(2))
+      return hour + minute / 60.0
+    match = re.match(r"^(\d{3,4})$", token)
+    if match:
+      digits = match.group(1)
+      hour, minute = (int(digits[0]), int(digits[1:])) if len(digits) == 3 else (int(digits[:2]), int(digits[2:]))
+      if minute >= 60:
+        return None
+      return hour + minute / 60.0
+    match = re.match(r"^(\d{1,2})$", token)
+    if match:
+      return float(match.group(1))
+    return None
 
   def _resolve_plan_times(
     self, plans: list[ParsedTimeBlock], wake_hour: float
@@ -428,13 +445,19 @@ class JournalImportService:
   def _build_hourly_blocks(
     self, resolved: list[tuple[float, float, str]], wake_hour: float
   ) -> list[ParsedTimeBlock]:
-    """Build a fixed 1-hour-per-block grid from ceil(wake_hour) through midnight."""
+    """Build a fixed 1-hour-per-block grid from ceil(wake_hour) through midnight.
+
+    An hour's activity is whichever written block *overlaps* that hour
+    (start_abs < hour+1 and end_abs > hour) - not merely one whose start
+    falls exactly on the hour boundary, so a sub-hour block (e.g. a written
+    9:15-9:45 line) still lands in the 9-10 bucket instead of vanishing.
+    """
     start_hour = math.ceil(wake_hour)
     blocks = []
     for hour in range(start_hour, 24):
       activity = ""
       for start_abs, end_abs, block_activity in resolved:
-        if start_abs <= hour < end_abs:
+        if start_abs < hour + 1 and end_abs > hour:
           activity = block_activity
           break
       blocks.append(ParsedTimeBlock(start=str(hour), end=str(hour + 1), activity=activity))

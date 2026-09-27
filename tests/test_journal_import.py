@@ -107,6 +107,38 @@ class TestJournalImport:
     assert result.successfully_imported == 1
     assert result.memories_extracted > 0
 
+  def test_parse_plans_compact_no_colon_times(self, temp_db):
+    svc = JournalImportService()
+    plans = svc._parse_plans("915-945 study\n630-7 meeting")
+    assert len(plans) == 2
+    assert plans[0].start == "915"
+    assert plans[0].end == "945"
+    assert plans[0].activity == "study"
+    assert plans[1].start == "630"
+    assert plans[1].end == "7"
+    assert plans[1].activity == "meeting"
+
+  def test_parse_bare_hour_compact_no_colon_forms(self, temp_db):
+    svc = JournalImportService()
+    assert svc._parse_bare_hour("915") == 9 + 15 / 60
+    assert svc._parse_bare_hour("630") == 6.5
+    assert svc._parse_bare_hour("1115") == 11 + 15 / 60
+    assert svc._parse_bare_hour("10:30") == 10.5
+    assert svc._parse_bare_hour("9") == 9.0
+
+  def test_hourly_grid_resolves_compact_no_colon_plan_times(self, temp_db):
+    svc = JournalImportService()
+    entry = svc.parse_entry({
+      "date": "5/8/26",
+      "awake": "8:30 AM - 11:00 PM",
+      "plan": "915-945 study\n630-7 meeting",
+    })
+    # 8:30 AM wake -> grid starts at hour 9; both written blocks fall within
+    # a single hour each once resolved (9:15-9:45 and 18:30-19:00).
+    by_start = {b.start: b for b in entry.plans}
+    assert by_start["9"].activity == "study"
+    assert by_start["18"].activity == "meeting"
+
   def test_plan_column_alias(self, temp_db):
     svc = JournalImportService()
     entry = svc.parse_entry({

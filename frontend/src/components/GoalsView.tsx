@@ -208,7 +208,7 @@ export const GoalsView: React.FC = () => {
                           </div>
                         </div>
 
-                        {goal.reason && <p className="voice italic text-[15px] text-forest-900">{goal.reason}</p>}
+                        {goal.reason && <p className="voice text-[15px] text-forest-900">{goal.reason}</p>}
 
                         <div>
                           <div className="flex justify-between text-xs font-medium text-slate-600 mb-1.5">

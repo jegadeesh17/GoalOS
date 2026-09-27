@@ -182,7 +182,7 @@ export const MemoriesView: React.FC = () => {
                 placeholder="A principle, a rule of thumb, or something you realized…"
                 value={newMemoryText}
                 onChange={(e) => setNewMemoryText(e.target.value)}
-                className="voice w-full text-base p-3 rounded-xl border border-emerald-100 bg-white resize-none placeholder:text-slate-500 placeholder:italic"
+                className="voice w-full text-base p-3 rounded-xl border border-emerald-100 bg-white resize-none placeholder:text-slate-500"
               />
             </div>
 

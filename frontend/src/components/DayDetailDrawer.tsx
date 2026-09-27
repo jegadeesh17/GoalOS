@@ -270,7 +270,7 @@ export const DayDetailDrawer: React.FC<DayDetailDrawerProps> = ({
                         ))}
                       </ul>
                     )}
-                    {log?.intention && <p className="voice italic text-[15px]">“{log.intention}”</p>}
+                    {log?.intention && <p className="voice text-[15px]">“{log.intention}”</p>}
                     {log?.gratitude && (
                       <div>
                         <p className="text-xs text-slate-500">Grateful for</p>
@@ -328,7 +328,7 @@ export const DayDetailDrawer: React.FC<DayDetailDrawerProps> = ({
                     {log?.takeaway && (
                       <div>
                         <p className="text-xs text-slate-500">Rule for tomorrow</p>
-                        <p className="voice italic text-base mt-0.5">{log.takeaway}</p>
+                        <p className="voice text-base mt-0.5">{log.takeaway}</p>
                       </div>
                     )}
                     {log?.journal_entry && (

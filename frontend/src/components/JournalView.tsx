@@ -511,7 +511,7 @@ export const JournalView: React.FC<JournalViewProps> = ({ initialDate }) => {
                 placeholder="What are you grateful for today?"
                 value={log.gratitude || ''}
                 onChange={(e) => setLog({ ...log, gratitude: e.target.value })}
-                className={`${fieldBase} voice text-[17px] px-4 py-2.5 placeholder:italic`}
+                className={`${fieldBase} voice text-[17px] px-4 py-2.5`}
               />
             </div>
 
@@ -770,7 +770,7 @@ export const JournalView: React.FC<JournalViewProps> = ({ initialDate }) => {
                 placeholder="How did today go? What pulled you off course, and what did you notice?"
                 value={log.journal_entry || ''}
                 onChange={(e) => setLog({ ...log, journal_entry: e.target.value })}
-                className={`${fieldBase} voice text-[17px] px-4 py-3 resize-y placeholder:italic`}
+                className={`${fieldBase} voice text-[17px] px-4 py-3 resize-y`}
               />
             </div>
 
@@ -784,7 +784,7 @@ export const JournalView: React.FC<JournalViewProps> = ({ initialDate }) => {
                 placeholder="A rule or reminder to carry into tomorrow"
                 value={log.takeaway || ''}
                 onChange={(e) => setLog({ ...log, takeaway: e.target.value })}
-                className={`${fieldBase} voice italic text-[17px] px-4 py-2.5`}
+                className={`${fieldBase} voice text-[17px] px-4 py-2.5`}
               />
             </div>
 

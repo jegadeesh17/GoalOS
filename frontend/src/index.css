@@ -83,12 +83,11 @@
 }
 
 @layer components {
-  /* The owner's own words and the coach's voice: Newsreader, set for reading. */
+  /* The owner's own words and the coach's voice: sans-serif, set for reading. */
   .voice {
-    font-family: 'Newsreader', Georgia, serif;
-    font-optical-sizing: auto;
-    line-height: 1.55;
-    letter-spacing: -0.004em;
+    font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+    line-height: 1.65;
+    letter-spacing: -0.006em;
     color: #0f291e;
   }
 

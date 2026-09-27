@@ -28,4 +28,4 @@ GoalOS is an agentic executive life operating system that combines structured st
 ## 3. Deployment & Containerization
 - Multi-stage Docker build with non-root user (`appuser`).
 - Automated container healthcheck: `HEALTHCHECK --interval=30s CMD curl -f http://localhost:${PORT:-8080}/health || exit 1`, so it always probes whatever port the app actually bound (Cloud Run injects `PORT=8080` by default; local `docker compose` sets `PORT=8000`).
-- Orchestrated via `docker-compose.yml` (FastAPI REST API on port 8000 + Streamlit on port 8501); the `api` service sets `PORT=8000` via `environment:` rather than overriding the container's start command, so the healthcheck and the running server always agree on the port.
+- Orchestrated via `docker-compose.yml` (single FastAPI `api` service on port 8000, which also serves the built React frontend); the `api` service sets `PORT=8000` via `environment:` rather than overriding the container's start command, so the healthcheck and the running server always agree on the port.

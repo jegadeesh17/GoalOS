@@ -73,9 +73,9 @@ settings = get_settings()
 def reload_settings() -> Settings:
     """Re-read `.env` from disk and update the module-level `settings` singleton in place.
 
-    `Settings()` only reads `.env` once at process start. Some flows (e.g. the
-    Streamlit Settings page writing a new OPENROUTER_API_KEY/OPENROUTER_MODEL to
-    `.env`) need those changes picked up immediately, without restarting the
+    `Settings()` only reads `.env` once at process start. AI calls (via
+    `OpenRouterClient.refresh_config`) need an edited OPENROUTER_API_KEY /
+    OPENROUTER_MODEL in `.env` picked up immediately, without restarting the
     process. Rather than returning a brand-new `Settings` instance (which callers
     that already did `from configs.settings import settings` or
     `from config.settings import settings` would never see), this mutates the

@@ -5,8 +5,6 @@ import os
 from datetime import date, timedelta
 from typing import Any
 
-from database.connection import get_db
-from database.repositories._helpers import row_to_dict
 from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from models.daily_log import DailyLogUpdate
@@ -345,94 +343,3 @@ class WeeklySyncService:
       "one_year_goals": [g.title for g in one_year_goals],
       "five_year_goals": [g.title for g in five_year_goals],
     }
-
-  # Backward compatibility aliases
-  def group_entries_into_weeks(self, entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Legacy helper: group entries into chunks for backwards compatibility."""
-    if not entries:
-      return []
-    sorted_entries = sorted(entries, key=lambda x: x.get("date", ""))
-    chunks = []
-    chunk_size = 7
-    for i in range(0, len(sorted_entries), chunk_size):
-      week_entries = sorted_entries[i : i + chunk_size]
-      first_date = date.fromisoformat(week_entries[0]["date"]) if week_entries[0].get("date") else date.today()
-      last_date = date.fromisoformat(week_entries[-1]["date"]) if week_entries[-1].get("date") else first_date
-      chunks.append(
-        {
-          "week_index": (i // chunk_size) + 1,
-          "week_start": first_date.isoformat(),
-          "week_end": last_date.isoformat(),
-          "entries": week_entries,
-          "days_count": len(week_entries),
-        }
-      )
-    return chunks
-
-  def generate_weekly_report(
-    self,
-    entries: list[dict[str, Any]],
-    active_goals: list[Any] = None,
-    week_index: int = 1,
-    total_weeks_in_month: int = 4,
-  ) -> dict[str, Any]:
-    """Legacy wrapper for weekly report formatting."""
-    progress = self.calculate_monthly_progress(entries, active_goals=active_goals)
-    return {
-      "week_index": week_index,
-      "weeks_remaining_in_month": 4 - week_index,
-      "total_days_logged": len(entries),
-      "goal_alignment_score": progress["monthly_completion_rate"],
-      "urgent_coaching_takeaway": progress["coaching_takeaway"],
-      "next_week_focus": progress["coaching_takeaway"],
-      "task_goal_mapping": f"1-Month Goal: '{progress['primary_monthly_goal']}'",
-      "summary": f"Logged {len(entries)} days in month chunk.",
-      "wins": progress["wins"],
-      "takeaways": progress["takeaways"],
-      "lessons": progress["takeaways"],
-      "short_term_goals": progress["short_term_goals"],
-      "one_year_goals": progress["one_year_goals"],
-      "five_year_goals": progress["five_year_goals"],
-    }
-
-  generate_monthly_summary = generate_monthly_report
-
-  def save_sync_log(
-    self,
-    week_start: date,
-    week_end: date,
-    source_type: str,
-    raw_content: str,
-    summary: str,
-    wins: str,
-    lessons: str,
-    alignment_score: float,
-    next_week_focus: str,
-  ) -> int:
-    with get_db() as conn:
-      cur = conn.execute(
-        """INSERT INTO weekly_sync_logs 
-           (week_start, week_end, source_type, raw_content, summary, wins, lessons, goal_alignment_score, next_week_focus)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (
-          week_start.isoformat() if isinstance(week_start, date) else str(week_start),
-          week_end.isoformat() if isinstance(week_end, date) else str(week_end),
-          source_type,
-          raw_content,
-          summary,
-          wins,
-          lessons,
-          alignment_score,
-          next_week_focus,
-        ),
-      )
-      log_id = cur.lastrowid
-    return log_id
-
-  def get_recent_sync_logs(self, limit: int = 10) -> list[dict[str, Any]]:
-    with get_db() as conn:
-      rows = conn.execute(
-        "SELECT * FROM weekly_sync_logs ORDER BY week_start DESC LIMIT ?",
-        (limit,),
-      ).fetchall()
-    return [row_to_dict(r) for r in rows]

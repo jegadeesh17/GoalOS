@@ -15,16 +15,6 @@ def format_context(context: dict[str, Any]) -> str:
   return json.dumps(context, indent=2, default=str)
 
 
-def fallback_reflection(context: dict) -> dict:
-  return {
-    "insights": ["Reflection is valuable"],
-    "commitments": [],
-    "patterns": [],
-    "memories_to_store": [],
-    "confidence": 0.3,
-  }
-
-
 def fallback_future_self(context: dict) -> dict:
   written_from_age = context.get("current_age_in_10_years") or 35
   visions = context.get("user_vision") or {}

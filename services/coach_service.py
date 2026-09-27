@@ -1,14 +1,12 @@
 """Central coach orchestration service."""
 
 import json
-import logging
 from datetime import date
 from typing import Optional
 
 from ai.openrouter_client import OpenRouterClient
 from ai.pipelines.future_self_coach import run_future_self_coach
 from ai.pipelines.progress_coach import run_progress_coach
-from ai.pipelines.reflection_coach import run_reflection_coach
 from database.connection import get_db
 from database.repositories.coach_repository import CoachRepository
 from database.repositories.goal_repository import GoalRepository
@@ -20,8 +18,6 @@ from services.memory_service import MemoryService
 from services.mentor_briefing import build_mentor_briefing
 from services.pattern_service import PatternService
 from services.settings_service import SettingsService
-
-logger = logging.getLogger(__name__)
 
 
 class CoachService:
@@ -203,66 +199,6 @@ class CoachService:
     )
     return result
 
-  def prefill_from_journal(self, journal_text: str) -> dict:
-    """AI pre-fill win and lesson from journal."""
-    self._refresh_llm()
-    context = self.build_context(date.today())
-    if self._remote_ai_allowed():
-      result = run_reflection_coach(context, journal_text, self.llm)
-    else:
-      from ai.pipelines._base import fallback_reflection
-      result = fallback_reflection(context)
-    return {
-      "one_win": result.get("insights", [""])[0] if result.get("insights") else "",
-      "one_lesson": result.get("patterns", [""])[0] if result.get("patterns") else "",
-    }
-
-  def chat(self, message: str, history: list[dict]) -> dict:
-    """Conversational coach with full context."""
-    self._refresh_llm()
-    context = self.build_context(date.today(), message)
-    system = (
-      "You are the Mentor — a strict personal guide shaping the user into who they want to become. "
-      "Answer based on their journals, goals, and detected behavioral patterns. Be direct. Issue rules, not suggestions. "
-      "CRITICAL PRINCIPLE: Distinguish isolated 1-day friction (noise) from repeating unhealthy patterns (signal). "
-      "Repeating behavioral loops affect goal achievement far more than a heavy single-day slip. Always call out "
-      "the repeating pattern, its root trigger, and provide an actionable pattern-breaking protocol. "
-      "1-year, 5-year, and 10-year goals have equal priority — daily work must advance all three."
-    )
-    history_text = "\n".join(f"{m['role']}: {m['content']}" for m in history[-10:])
-    user_msg = f"Context:\n{json.dumps(context, default=str, indent=2)}\n\nHistory:\n{history_text}\n\nUser: {message}"
-
-    try:
-      if not self._remote_ai_allowed():
-        raise RuntimeError("remote_ai_consent_required")
-      response = self.llm.complete(system, user_msg, temperature=0.7)
-      if isinstance(response, str):
-        ai_text = response
-      else:
-        ai_text = response.get("message", str(response))
-    except Exception as e:
-      logger.error("Chat failed: %s", e)
-      ai_text = "I'm having trouble connecting right now. Please try again."
-
-    if any(kw in message.lower() for kw in ("i will", "i'll", "tomorrow i")):
-      self.memory_service.store(message, "commitment", 0.7, date.today(), "chat")
-
-    self.coach_repo.create(CoachResponseCreate(
-      session_type="chat",
-      user_message=message,
-      ai_response=ai_text,
-      date=date.today(),
-    ))
-    return {
-      "response": ai_text,
-      "memories_used": context.get("relevant_memories", [])[:3],
-      "goals_referenced": [g.get("title") for g in context.get("active_goals", [])[:3]],
-      "commitments": context.get("unfulfilled_commitments", [])[:3],
-    }
-
-  def get_future_self(self) -> dict:
-    return self.get_future_self_coaching(date.today())
-
   def get_future_self_coaching(self, target_date: date | None = None) -> dict:
     self._refresh_llm()
     context = self.build_context(target_date or date.today())
@@ -270,18 +206,3 @@ class CoachService:
       return run_future_self_coach(context, self.llm)
     from ai.pipelines._base import fallback_future_self
     return fallback_future_self(context)
-
-  def get_dashboard_interpretations(self, metrics: dict) -> dict:
-    """Batch interpretations for dashboard metrics."""
-    self._refresh_llm()
-    system = "Generate one short interpretation sentence per metric. Return JSON with metric keys."
-    user_msg = f"Metrics: {json.dumps(metrics)}\nReturn JSON like {{'streak': '...', 'growth': '...'}}"
-    try:
-      if not self._remote_ai_allowed():
-        raise RuntimeError("remote_ai_consent_required")
-      result = self.llm.complete(system, user_msg, response_format={"type": "json_object"}, temperature=0.5)
-      if isinstance(result, dict) and "error" not in result:
-        return result
-    except Exception:
-      pass
-    return {k: f"Your {k} reflects your recent activity." for k in metrics}

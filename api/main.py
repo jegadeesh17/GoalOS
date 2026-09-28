@@ -117,7 +117,7 @@ def startup() -> None:
     from services.demo_seeder import seed_demo_environment
     seed_demo_environment()
   except Exception as e:
-    logger.warning("Authentic demo initialization on startup skipped: %s", e)
+    logger.warning("Demo initialization on startup skipped: %s", e)
   run_migrations()
 
 

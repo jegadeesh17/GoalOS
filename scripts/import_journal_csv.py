@@ -60,25 +60,21 @@ def run_import(csv_path: str | None = None, db_path: str | None = None) -> int:
         if not resolved_db.is_absolute():
             resolved_db = ROOT_DIR / db_path
 
+    # Never substitute the fictional demo journal for a missing real one: that
+    # would silently write demo rows into the user's own database.
     if csv_path is None:
         if settings.ENVIRONMENT.lower() == "demo":
             resolved_csv = ROOT_DIR / "data" / "demo_seed.csv"
         else:
             resolved_csv = ROOT_DIR / "data" / "Journal" / "journal_data.csv"
-            if not resolved_csv.exists():
-                resolved_csv = ROOT_DIR / "data" / "demo_seed.csv"
     else:
         resolved_csv = Path(csv_path)
         if not resolved_csv.is_absolute():
             resolved_csv = ROOT_DIR / csv_path
 
     if not resolved_csv.exists():
-        fallback_csv = ROOT_DIR / "data" / "demo_seed.csv"
-        if fallback_csv.exists():
-            resolved_csv = fallback_csv
-        else:
-            print(f"Error: CSV file not found at {resolved_csv}")
-            return 0
+        print(f"Error: CSV file not found at {resolved_csv}")
+        return 0
 
     svc = JournalImportService()
     conn = sqlite3.connect(str(resolved_db))

@@ -4,6 +4,22 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-09-28 — Private Journal Purged From Public History; Fictional Cloud Demo
+
+- **User decisions:** untrack the private journal files and purge them from history. Delete the eval harness and the legacy weekly-review context (agent's call). No resume changes; keep working on `dev`, and merging to `main` is approved so the live demo stops serving real data.
+- **Scope was wider than the original list.** A content scan (every real journal line ≥28 chars from `journal_data.csv`, `journal_history.json`, and both DBs, matched against every blob in history) found the real journal verbatim in `data/demo_goalos.db` (all 121 days, only the name swapped for "Alex Chen", plus the real birth date), `data/demo_chroma_db/`, `reports/august-ledger.html`, and `reports/evaluation.md`. An old `tests/test_mentor_briefing.py` fixture paraphrased a real 2026-06-24 entry. Keyword scans missed that fixture because pre-July data had been deleted from `goalos.db`; the old demo DB supplied the missing needles.
+- **Purge:** `git filter-repo --invert-paths` on `data/Journal/`, `data/journal_history.json`, `data/demo_goalos.db`, `data/demo_chroma_db/`, `reports/august-ledger.html`, `reports/evaluation.md`, plus `--replace-text` for the fixture. All 108 commits rewritten; `main` and `dev` force-pushed with `--force-with-lease` pinned to the old remote SHAs. Post-rewrite scan of all branch blobs: zero real-journal hits. Pre-purge mirror: `C:/Users/jegad/projects/GoalOS-prepurge-mirror-2026-09-28.git`; purged files: `backups/prepurge-2026-09-28/`. Local journal files restored (now ignored). Doc SHAs remapped via `.git/filter-repo/commit-map` (`0a4c066`).
+- **Still reachable:** GitHub serves old commits by exact SHA until its GC runs (no forks, no PRs). A local `refs/codex/turn-diffs/...` tree ref (left by another tool) still holds old blobs; it is never pushed.
+- **Eval harness deleted (`59215d1`):** `ai/eval/`, `run_model_eval.py`, scenarios, report, tests (-9), and the four prompts only it loaded. Docs no longer cite 76.8% or leaky-bucket limiting (the live client retries with backoff).
+- **Weekly review context removed (`7497468`):** `build_context` no longer passes the stale Sep 11–17 `weekly_reviews` row.
+- **Fictional demo (`d07bcb3`):** `scripts/generate_demo_journal.py` writes a seeded, fictional 42-day journal in the real notebook format; `scripts/build_demo_db.py` builds `data/demo_goalos.db` + `data/demo_chroma_db/` through `import_journal_csv`, `_extract_memories`, and `backfill_analytics` (42 logs, 9 goals across 1-month to 10-year horizons, 173 memories, 42 scores). Verified: 0 real-text hits and 0 PII in the outputs; demo-mode API smoke test on fresh paths; real `goalos.db`/`chroma_db` hashes unchanged.
+- **Local-safety fixes (`74e7b01`):** `seed_demo_environment` copied demo data into any empty local DB/missing chroma dir on every startup, and `import_journal_csv` silently fell back to `demo_seed.csv` when the real CSV was missing. Both are now demo-only (3 new tests). Exporters that copied real data into the public demo paths were deleted (`644a962`), and generated reports are gitignored (`8ee2461`).
+- **New open item:** the real birth date `2002-06-17` is hard-coded as a default in `migrations.py` (column DEFAULT), `models/user.py`, `life_calendar_service.py`, and `api/main.py` (fallback when unset). That is both public PII and a guessed value for anyone else. Needs a Life Calendar empty state; surfaced to the user.
+- **Verification:** `pytest -q` 155 passed, `ruff check .` clean.
+- **Agent Reflection:** "Sanitized" demo data that swaps names but keeps free text is not sanitized. Journal text is the sensitive part. Public demo data must be fictional by construction, and leaks must be checked by content (real lines vs. every blob), not by keywords or a name regex.
+
+---
+
 ## 2026-09-28 — Audit Follow-ups: No Guessed Age, Dead Analytics Tiles, Stale Files
 
 - **User confirmed birth date 2002-06-17** (already stored in `goalos.db`; current age 24.28, so Future Self writes from 34).

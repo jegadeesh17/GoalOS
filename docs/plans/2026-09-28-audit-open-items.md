@@ -2,6 +2,8 @@
 
 Open decisions left over from the 2026-09-28 codebase audit, plus how they affect the GoalOS entry on the resume. What's already done is at the bottom.
 
+> **Status 2026-09-28 (later):** Items 1–3 are resolved; see the evolution log entry "Private Journal Purged From Public History". Item 1: all private files purged from history and force-pushed, and the Cloud Run demo now ships a fictional dataset. Item 2: eval harness deleted (`59215d1`). Item 3: weekly review removed from coaching context (`7497468`). Item 4: user decided **no resume changes**; keep working on `dev` and merge when finalized. **New open item:** the real birth date `2002-06-17` is hard-coded as a default/fallback in `database/migrations.py`, `models/user.py`, `services/life_calendar_service.py`, and `api/main.py`. It's public PII and a guessed value; replacing it needs a Life Calendar empty state.
+
 State when written: branch `dev`, 161 tests passing, `ruff` and `tsc` clean. `dev` is 37 commits ahead of `origin/dev` (counting this file) and **not pushed** (hold until item 1 is decided). `main` is what Cloud Run deploys and what people see on GitHub.
 
 ---

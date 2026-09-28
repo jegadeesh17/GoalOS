@@ -137,6 +137,10 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 - **Observation:** `data/Journal/` and `data/journal_history.json` are listed in `.gitignore`, yet the private journal CSV/JSON files were force-added earlier and are still tracked. They are pushed to the **public** GitHub repo. Agents (and the brain) assumed "gitignored = never committed".
 - **Rule:** Before calling a file "on-disk only" or "private", check `git ls-files <path>`, not `.gitignore`. Untracking requires `git rm --cached`, and removing it from published history requires a history rewrite plus a force push, which is destructive and needs explicit user confirmation.
 
+### 5.7 Public Demo Data Must Be Fictional by Construction (2026-09-28)
+- **Observation:** `export_sanitized_demo_db.py` built the public demo DB from the real `goalos.db`, swapping only the name/university, and `verify_data_and_pii.py` checked only those words and reported it clean. The DB shipped every real journal entry, verbatim, to GitHub and to the unauthenticated Cloud Run demo.
+- **Rule:** Never derive public demo data from real data. Generate it (`scripts/generate_demo_journal.py`) and build it through the real pipeline (`scripts/build_demo_db.py`). To check for leaks, match real journal lines against the candidate files or git blobs by content; a name/keyword regex is not evidence. The demo loader runs only when `ENVIRONMENT=demo`.
+
 ### 5.6 Feature Removal Must Sweep Callers, Prompts, and Docs in the Same Change (2026-09-28)
 - **Observation:** Removing Morning/Evening/Weekly coaching and the Streamlit app left dead `CoachService` methods, an orphaned reflection pipeline and prompt, `.streamlit/`, and five docs describing endpoints that no longer exist.
 - **How to apply:** When deleting a feature, `git grep` its route, service method, prompt name, and UI label across code *and* `README.md`/`docs/`, and update them in the same commit series.

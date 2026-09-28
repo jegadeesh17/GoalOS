@@ -20,7 +20,7 @@ cd frontend && npm install && cd ..
 pytest -q
 ```
 
-**Expected Result:** **152/152 tests passing (100%)** across repositories, 5-factor hybrid RAG, Life Calendar, multi-agent Coordinator, Coach Chat, sessions blackboard, telemetry, and rate limiters.
+**Expected Result:** **155/155 tests passing (100%)** across repositories, 5-factor hybrid RAG, Life Calendar, multi-agent Coordinator, Coach Chat, sessions blackboard, telemetry, and rate limiters.
 
 ---
 
@@ -86,7 +86,7 @@ run_app.bat
 
 ## Verification Checklist
 
-- [ ] `pytest -q` is 100% green (152 tests passing)
+- [ ] `pytest -q` is 100% green (155 tests passing)
 - [ ] Backend starts cleanly on `http://localhost:8000`
 - [ ] Frontend starts cleanly on `http://localhost:5173`
 - [ ] `/health` returns status and row counts

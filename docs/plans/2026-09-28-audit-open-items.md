@@ -79,10 +79,10 @@ Do step 2 before step 3, or a recruiter will see numbers that don't match.
 
 | Commit | Change |
 |---|---|
-| `923b98c` | Removed unreachable CoachService methods, the reflection pipeline, and legacy WeeklySyncService aliases |
-| `c6721cc` | Removed `.streamlit/` and leftover Streamlit references |
-| `3acbc4a`, `37a6d29` | Synced README / ARCHITECTURE / PROJECT_SPEC / DEMO / SYSTEM_DESIGN_MAPPING with the real app |
-| `25c543a` | Future Self no longer guesses age 35 when birth date is unset (confirmed birth date 2002-06-17 → writes from 34) |
-| `9223717` | Removed Analytics Morning mood (showed a fabricated 3.0/5) and Deep work tiles; both are empty in real data |
-| `548c04c` | Deleted 6 one-off scripts, `docs/interview_llm_prep.md`, `WeeklyReviewRepository` |
-| `1c75e5a`, `5478f8e`, `bd902b9` | Brain / test-count updates |
+| `80db208` | Removed unreachable CoachService methods, the reflection pipeline, and legacy WeeklySyncService aliases |
+| `8097978` | Removed `.streamlit/` and leftover Streamlit references |
+| `83ce8b9`, `12c3114` | Synced README / ARCHITECTURE / PROJECT_SPEC / DEMO / SYSTEM_DESIGN_MAPPING with the real app |
+| `5f1cd36` | Future Self no longer guesses age 35 when birth date is unset (confirmed birth date 2002-06-17 → writes from 34) |
+| `04a35e8` | Removed Analytics Morning mood (showed a fabricated 3.0/5) and Deep work tiles; both are empty in real data |
+| `3cdd6aa` | Deleted 6 one-off scripts, `docs/interview_llm_prep.md`, `WeeklyReviewRepository` |
+| `947e4a7`, `44be3ac`, `96dc903` | Brain / test-count updates |

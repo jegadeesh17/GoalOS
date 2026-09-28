@@ -43,8 +43,7 @@ The system retrieves relevant memories using hybrid lexical and vector search, i
 | 8 | **Longitudinal Analytics & Behavioral Patterns:** Daily growth scores & multi-day pattern detection | `services/analytics_service.py`, `services/pattern_service.py` |
 | 9 | **Sovereign Privacy & Data Portability:** Remote AI consent switch, JSON export, auto-backup factory reset | `services/settings_service.py`, `services/data_portability_service.py` |
 | 10 | **FastAPI REST API:** Full CRUD, 512KB payload ceiling, CORS, and constant-time HMAC token auth | `api/main.py` |
-| 11 | **Comprehensive Test Suite:** 161 passing tests across repositories, services, pipelines, and API | `tests/*` |
-| 12 | **Production AI Evaluation Framework:** 6 Vision Metrics and leaky-bucket rate limiting for free-tier LLMs | `ai/eval/*`, `scripts/run_model_eval.py` |
+| 11 | **Comprehensive Test Suite:** 152 passing tests across repositories, services, pipelines, and API | `tests/*` |
 
 ### 2.2 Out of Scope
 
@@ -70,7 +69,7 @@ The system retrieves relevant memories using hybrid lexical and vector search, i
 | **FR-08** | Multi-agent conversational coaching with session blackboard | `ai/pipelines/coordinator.py` | ✅ |
 | **FR-09** | Scoped domain toolkits (`JournalToolkit`, `GoalsToolkit`, `MemoryToolkit`, `CalendarToolkit`) | `ai/tools/*` | ✅ |
 | **FR-10** | Deterministic rule fallback when offline or consent disabled | `services/coach_service.py`, `ai/pipelines/coordinator.py` | ✅ |
-| **FR-11** | OpenRouter integration with leaky-bucket rate limiting | `ai/openrouter_client.py`, `ai/eval/rate_limiter.py` | ✅ |
+| **FR-11** | OpenRouter integration with retry and exponential backoff on HTTP 429/5xx | `ai/openrouter_client.py` | ✅ |
 | **FR-12** | Telemetry and estimated USD spend tracking | `services/observability_service.py` | ✅ |
 | **FR-13** | One-click JSON data export and safe factory reset with auto-backup | `services/data_portability_service.py` | ✅ |
 | **FR-14** | Responsive React 18 SPA with Forest Mist design system | `frontend/src/*` | ✅ |
@@ -79,7 +78,7 @@ The system retrieves relevant memories using hybrid lexical and vector search, i
 
 | ID | Requirement | Target Specification | Enforcement Mechanism |
 |----|-------------|----------------------|-----------------------|
-| **NFR-01** | Test Suite Completeness | 100% green local test suite | `pytest -q` (161 passing tests) |
+| **NFR-01** | Test Suite Completeness | 100% green local test suite | `pytest -q` (152 passing tests) |
 | **NFR-02** | Data Privacy & Zero Leakage | Sovereign local persistence; explicit AI opt-in | `remote_ai_consent` gate in `SettingsService` |
 | **NFR-03** | Local CPU Embedding Inference | $< 20\text{ms}$ embedding generation | `all-MiniLM-L6-v2` with deterministic hash fallback |
 | **NFR-04** | Request Body Protection | Maximum 512KB payload | FastAPI `limit_request_body` middleware |
@@ -183,9 +182,7 @@ $$\text{Composite Score} = 0.35 \cdot S_{\text{sem}} + 0.15 \cdot S_{\text{lex}}
 
 | Metric | Result | Notes |
 |--------|--------|-------|
-| **pytest Suite** | 161/161 passing (100%) | `pytest -q` across all repositories, services, APIs, and pipelines |
-| **AI Evaluation Framework** | 6 GoalOS Vision Metrics | Evaluates Schema Integrity, Grounding, Actionability, Horizon Alignment, Tool Precision, and Operational Efficiency |
-| **Free-Tier Model Benchmarking** | 76.8% composite score (`nvidia/nemotron-3-super-120b-a12b:free`) | 45-scenario live evaluation with leaky-bucket rate limiting ($\le 14$ RPM) |
+| **pytest Suite** | 152/152 passing (100%) | `pytest -q` across all repositories, services, APIs, and pipelines |
 | **Retrieval Evaluation** | `python scripts/generate_retrieval_eval.py` | Generates rubric-based ranking report in `reports/evaluation.md` |
 
 ---
@@ -213,7 +210,6 @@ Coverage domains:
 - Life Calendar calculations (Memento Mori week indices).
 - Guided coaching pipelines, coordinator blackboard state, intent triage, and deterministic fallbacks.
 - REST API route contracts, 512KB payload ceiling, and HMAC token authorization.
-- AI evaluation framework, rate limiter, and vision metrics.
 
 ---
 
@@ -236,7 +232,6 @@ Coverage domains:
 | `api/main.py` | FastAPI REST API with CORS, payload limiters, and endpoint routers |
 | `ai/pipelines/coordinator.py` | Multi-agent supervisor coordinator with intent triage and blackboard bus |
 | `ai/tools/*` | Scoped domain toolkits (`JournalToolkit`, `GoalsToolkit`, `MemoryToolkit`, `CalendarToolkit`) |
-| `ai/eval/*` | Production AI evaluation framework, rate limiter, and vision metrics |
 | `services/coach_service.py` | Coaching orchestration and deterministic rule fallback engine |
 | `services/memory_service.py` | 5-factor hybrid RAG retrieval, dual-write persistence, and MMR diversity |
 | `services/life_calendar_service.py` | 70-year lifespan calculation and week grid generation |

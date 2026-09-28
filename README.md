@@ -8,7 +8,7 @@
 [![Vector DB](https://img.shields.io/badge/Vector%20Store-ChromaDB-purple.svg)](https://www.trychroma.com/)
 [![Database](https://img.shields.io/badge/Database-SQLite%203%20%2B%20FTS5-003B57.svg)](https://www.sqlite.org/)
 [![Validation](https://img.shields.io/badge/Schema-Pydantic%20v2-E92063.svg)](https://docs.pydantic.dev/)
-[![Tests](https://img.shields.io/badge/Tests-pytest%20(161%20passing)-green.svg)](https://docs.pytest.org/)
+[![Tests](https://img.shields.io/badge/Tests-pytest%20(152%20passing)-green.svg)](https://docs.pytest.org/)
 [![License](https://img.shields.io/badge/License-MIT-gray.svg)](LICENSE)
 
 ---
@@ -260,7 +260,7 @@ Run the comprehensive pytest test suite:
 ```bash
 pytest
 ```
-**Results:** **161/161 tests passing (100%)**.
+**Results:** **152/152 tests passing (100%)**.
 
 Run frontend typecheck and build validation:
 ```bash

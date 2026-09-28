@@ -47,7 +47,8 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 - **Observation:** When users have 500+ past logs, passing raw history into the LLM context window exhausts token limits and increases API costs.
 - **Solution:** Context is dynamically curated: top 5 hybrid RAG memories + active multi-horizon goals + 7-day rolling performance metrics.
 
-### 3.3 Free-Tier Model Evaluation & Rate Limit Throttling
+### 3.3 Free-Tier Model Evaluation & Rate Limit Throttling (historical — harness removed 2026-09-28)
+- **Status:** The eval harness (`ai/eval/`, `scripts/run_model_eval.py`, `data/eval_scenarios.json`) was deleted on 2026-09-28: 12 of its 15 scenarios targeted the removed Morning/Evening/Goal-Alignment prompt pipelines. The numbers below are a historical record, not a current benchmark; don't cite them as live results. The live `OpenRouterClient` uses retry with exponential backoff, not the leaky-bucket `RateLimiter`.
 - **Observation:** Free-tier OpenRouter models enforce strict burst limits (10-20 RPM). Unthrottled automated evals fail with HTTP 429 errors within 10 calls.
 - **Solution:** Integrated `RateLimiter` using leaky bucket interval spacing ($\ge 4.29$s between requests) with exponential backoff and jitter. Created automated pre-flight health checks to auto-substitute candidate models with healthy backups (`qwen`, `gemma-2`, `mistral`) if an endpoint is busy or offline.
 - **Benchmark Outcome:** In 45-scenario evaluation across live free models, `nvidia/nemotron-3-super-120b-a12b:free` won 1st place with a 76.8% composite score, 93.3% grounding, and 14/15 successful completions, closely followed by `minimax/minimax-m3:free` (74.4%). `nvidia/nemotron-3-super-120b-a12b:free` is configured as default in `.env`.

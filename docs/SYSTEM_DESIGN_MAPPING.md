@@ -180,9 +180,8 @@ sequenceDiagram
 | **Accounts / Tx / Service Subagents** | Domain Coach Subagents | `ai/pipelines/*` | `run_progress_coach` (Goal Alignment, monthly/yearly pacing), `run_future_self_coach` (5/10-year pacing). |
 | **Modular MCP Tool Servers** | Domain-Partitioned Toolkits | `ai/tools/*` | `MemoryToolkit`, `GoalsToolkit`, `JournalToolkit`, `CalendarToolkit`. |
 | **Session Store & Inter-Agent State** | SQLite Sessions & Blackboard | `database/repositories/coach_session_repository.py` | `coach_sessions` and `coach_messages` with structured JSON blackboard. |
-| **LLM Gateway (Hybrid)** | OpenRouter Client + Rule Engine | `ai/openrouter_client.py`, `services/coach_service.py` | Leaky-bucket rate limited cloud models + instant deterministic fallback. |
+| **LLM Gateway (Hybrid)** | OpenRouter Client + Rule Engine | `ai/openrouter_client.py`, `services/coach_service.py` | Retry-with-backoff cloud models + instant deterministic fallback. |
 | **Observability Hub & Cost Tracker** | Telemetry & APM Service | `services/observability_service.py`, `database/repositories/telemetry_repository.py` | Live token tracking, latency percentiles (p50/p95), and USD model spend estimation. |
-| **Agent Evaluation Suite** | 6 Vision Metrics Evaluator | `ai/eval/` (`evaluator.py`, `metrics.py`) | JSON integrity, Grounding, Actionability, Horizon Alignment, Tool Precision, Efficiency. |
 
 ---
 

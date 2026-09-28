@@ -183,7 +183,7 @@ $$\text{Composite Score} = 0.35 \cdot S_{\text{sem}} + 0.15 \cdot S_{\text{lex}}
 | Metric | Result | Notes |
 |--------|--------|-------|
 | **pytest Suite** | 152/152 passing (100%) | `pytest -q` across all repositories, services, APIs, and pipelines |
-| **Retrieval Evaluation** | `python scripts/generate_retrieval_eval.py` | Generates rubric-based ranking report in `reports/evaluation.md` |
+| **Retrieval Evaluation** | `python scripts/generate_retrieval_eval.py` | Generates rubric-based ranking report in `reports/evaluation.md` (gitignored: quotes real memories) |
 
 ---
 

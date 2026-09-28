@@ -12,6 +12,9 @@ backups/
 data/Journal/
 data/journal_data.csv
 data/journal_history.json
+# Reports generated from the real DB quote journal text
+reports/evaluation.md
+reports/*ledger*.html
 data/**/*.jpg
 data/**/*.png
 data/**/*.jpeg

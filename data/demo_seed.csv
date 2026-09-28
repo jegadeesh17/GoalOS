@@ -1,59 +1,421 @@
-Date,Gratitude,Plan,Tasks,Review,Takeaway
-1/8/26,I am grateful for having read foundational machine learning papers,"09:00-12:00 System design & DSA practice, 13:00-15:00 FastAPI microservice refactor, 15:00-17:00 Vector search benchmarks, 17:30-18:30 5km run, 19:30-22:00 Project deployment","1. Solve 5 LeetCode medium problems (tick)
-2. Review FastAPI dependency injection patterns (tick)
-3. Research hybrid BM25 and dense retrieval (tick)
-4. 5km evening run (tick)
-5. Review AI engineer role requirements (tick)",Productive focus block in the morning. Shifted from ad-hoc planning to structured time blocks.,Tackle the hardest architectural bottleneck early in the morning.
-2/8/26,I am grateful for access to modern developer tools and compute,"09:30-11:30 Model evaluation pipeline, 11:30-13:30 Code kata & tree algorithms, 14:30-17:00 ChromaDB vector index tuning, 17:30-18:30 Running & exercise, 19:30-21:30 Technical writing","1. Solve 4 LeetCode graph problems (tick)
-2. Benchmark retrieval latency across chunk sizes (tick)
-3. 3km recovery run (tick)
-4. Document agent tool-calling schema (tick)
-5. Zero multitasking during coding blocks (tick)",Maintained deep work without distractions during the vector search benchmarking.,Focus on single-task execution to keep mental clarity high.
-3/8/26,I am grateful for health and the ability to build systems daily,"10:00-13:00 RAG pipeline evaluation with Ragas, 14:00-16:30 Multi-agent orchestration testing, 17:00-18:00 Mobility training, 19:00-21:30 Reviewing transformer attention mechanisms","1. Implement Ragas context recall benchmark (tick)
-2. Profile memory usage in SQLite FTS5 queries (tick)
-3. Evening mobility training (tick)
-4. Study LLM gateway failover patterns (tick)",Engineered automated retries for API rate limits. Memory footprint stayed below 150MB.,Automate verification so regressions are caught immediately.
-4/8/26,I am grateful for continuous learning and problem solving,"09:00-12:00 Refactoring customer support classifier, 13:00-15:00 Feature leakage audit on training set, 15:30-17:30 Docker multi-stage container optimization, 18:00-19:00 5km tempo run, 20:00-22:00 Outbound tech networking","1. Audit train/validation splits for target leakage (tick)
-2. Multi-stage Docker build reducing image to 140MB (tick)
-3. 5km tempo run (tick)
-4. Connect with 5 engineering leads on LinkedIn (tick)",Docker image size dropped from 850MB to 140MB using python-slim and wheels cache.,Minimal container footprints drastically accelerate CI/CD deploy velocity.
-5/8/26,I am grateful for high-agency peers and technical mentors,"09:30-12:30 Agent tool calling benchmark harness, 13:30-16:00 Implementing Pydantic v2 strict schemas, 16:30-18:00 Technical reading on speculative decoding, 19:30-21:30 Daily log synchronization","1. Build automated tool calling test suite (tick)
-2. Enforce strict JSON schema contracts with Pydantic (tick)
-3. Test edge-case error recovery in agent coordinator (tick)
-4. 30 minutes reading on LLM inference architectures (tick)",Achieved 100% benchmark score on tool-calling accuracy across 7 test cases.,Strict schema validation eliminates hallucinated argument types completely.
-6/8/26,I am grateful for a calm workspace and clear goals,"10:00-13:00 SQLite FTS5 full text search integration, 14:00-16:30 Hybrid memory ranking with recency decay, 17:00-18:00 4km run, 19:00-21:00 Weekly review and sync","1. Implement BM25 lexical ranking on journal logs (tick)
-2. Combine cosine similarity with exponential decay (tick)
-3. Run 4km run (tick)
-4. Verify memory retrieval against 20 sample queries (tick)",The 5-factor composite memory retrieval consistently retrieved relevant past context.,Combining lexical search with semantic embeddings covers both exact codes and conceptual queries.
-7/8/26,I am grateful for compounding daily efforts,"09:00-12:00 React 18 frontend component architecture, 13:00-15:30 Tailwind UI polish and responsive layout, 16:00-18:00 End-to-end integration testing, 19:30-21:30 Systems design practice","1. Refactor dashboard layout with responsive grid (tick)
-2. Wire real-time API state hooks (tick)
-3. Add loading skeletons and error boundaries (tick)
-4. System design: Distributed rate limiter (tick)",UI state transitions feel crisp and responsive with optimistic updates.,Thoughtful frontend ergonomics elevate a good backend into an exceptional product.
-8/8/26,I am grateful for resilience in tackling hard technical bugs,"09:30-12:30 Debugging async database connection pool, 13:30-16:00 Pytest suite expansion (adding 25 edge cases), 16:30-18:00 5km endurance run, 19:30-21:30 Reviewing distributed tracing patterns","1. Fix database lock contention under concurrent load (tick)
-2. Expand automated test coverage to 109 tests (tick)
-3. 5km endurance run (tick)
-4. Instrument OpenTelemetry spans in agent loops (tick)",Resolved the connection pool exhaustion by properly scoping context managers.,Always verify database sessions are cleanly yielded and closed in async handlers.
-9/8/26,I am grateful for opportunities to build in the AI ecosystem,"09:00-12:30 GCP Cloud Run container deployment, 13:30-15:30 Serverless cold start optimization, 16:00-17:30 Model asset streaming from Hugging Face Hub, 18:00-19:00 Running & core workout, 20:00-22:00 Portfolio documentation","1. Configure Cloud Run service with zero min-instances (tick)
-2. Stream models on boot from Hugging Face Hub (tick)
-3. Verify public HTTPS endpoint and Swagger docs (tick)
-4. Evening running session (tick)",Cloud Run container booted and served inference within 4 seconds from cold.,Storing model weights on Hugging Face keeps container images lightweight and free.
-10/8/26,I am grateful for clear focus and physical energy,"09:30-12:00 UPSC evaluator rubric calibration study, 13:00-15:30 Pearson and Spearman correlation analysis, 16:00-17:30 Indic script translation testing, 18:00-19:00 4.5km run, 19:30-21:30 Research paper notes","1. Benchmark scoring against 40 official questions (tick)
-2. Calculate Pearson r and Spearman rho correlations (tick)
-3. Test Hindi and Tamil feedback prompts (tick)
-4. 4.5km run (tick)",Calibrated scoring reached Pearson r = 0.9551 against official human examiner rubrics.,Grounding evaluator models with fine-grained rubrics drastically cuts variance.
-11/8/26,I am grateful for the discipline of shipping daily,"09:00-12:00 Financial copilot RAG chunking pipeline, 13:00-15:30 PDF table extraction with PyMuPDF, 16:00-18:00 Reciprocal Rank Fusion implementation, 19:00-20:00 5km evening run, 20:30-22:00 Technical blogging","1. Implement paragraph-aware PDF semantic splitter (tick)
-2. Build Reciprocal Rank Fusion ranking function (tick)
-3. Test retrieval against BFSI circulars (tick)
-4. 5km evening run (tick)",RRF successfully lifted Top-5 hit rate to 70.0% on regulatory compliance queries.,Combining dense vector embeddings with BM25 keyword matching catches domain acronyms reliably.
-12/8/26,I am grateful for constant curiosity and growth,"10:00-12:30 LeetCode dynamic programming review, 13:30-16:00 Writing unit tests for PDF extraction edge cases, 16:30-18:00 Cloud security and IAM least privilege review, 19:00-21:00 Mock interview practice","1. Solve 3 hard DP problems (tick)
-2. Add pytest fixtures for corrupt PDF handling (tick)
-3. Review GCP IAM service account roles (tick)
-4. Practice explaining system architecture trade-offs (tick)",Deepened understanding of memoization vs tabulation trade-offs in DP.,Practice articulating technical design trade-offs out loud before interviews.
-13/8/26,I am grateful for the progress achieved over the last month,"09:00-12:00 End-to-end integration testing across services, 13:00-15:30 Performance profiling and latency reduction, 16:00-17:30 Documentation and README architecture diagrams, 18:00-19:00 5km tempo run, 20:00-22:00 Target company outreach prep","1. Profile FastAPI endpoint response times with cProfile (tick)
-2. Generate Mermaid architecture flowcharts for READMEs (tick)
-3. 5km tempo run (tick)
-4. Curate project highlights for startup founder pitches (tick)",End-to-end latency stayed under 250ms for local SQLite and ChromaDB lookups.,Visual architecture diagrams make technical depth immediately obvious to hiring leads.
-14/8/26,I am grateful for clarity of vision and steady execution,"09:30-12:30 Finalizing production build artifacts, 13:30-16:00 Automated regression testing across all flagships, 16:30-18:00 Weekly review and forward sprint planning, 18:30-19:30 Recovery workout, 20:00-21:30 Evening reflection","1. Run full pytest suite across all flagship repositories (tick)
-2. Verify all Docker container entrypoints (tick)
-3. Plan upcoming application sprint (tick)
-4. Recovery workout and evening reset (tick)",All test suites passed cleanly with zero regressions. Systems are production ready.,Consistency over intensity. Daily disciplined execution compounds exponentially.
+Date,Gratitude,Plan,Tasks,Review,Takeaway,Awake
+17/8/26,I am grateful for a body that can run again.,"8-10 Run, shower, breakfast
+10-12 Work: payments service tickets
+12-2 Work: API migration
+2-4 Lunch, walk
+4-6 Work: API migration
+6-8 YouTube rabbit hole
+8-10 Chill, TV","1. Log expenses (tick)
+2. Call parents (tick)
+3. Prepare for mock interview (tick)
+4. Cook dinner instead of ordering (tick)
+5. Write unit tests for the ranking module (tick)","Mock interview felt smoother, system design answers are getting clearer.",Avoided tasks grow heavier the longer they sit.,8:30 AM - 12:30 AM
+18/8/26,I am grateful for finally sleeping eight hours.,"8-10 Run, shower, breakfast
+10-12 Lunch, walk
+12-2 Work: on-call + code review
+2-4 Work: API migration
+4-6 Work: payments service tickets
+6-8 YouTube rabbit hole
+8-10 Chill, TV","1. Solve 2 LeetCode mediums (X)
+2. Call parents (tick)
+3. Prepare for mock interview (X)","Overplanned again. Too many tasks, finished almost none.",Finish the resume update before touching new features.,8:00 AM - 11:30 PM
+19/8/26,I am grateful for my team covering for me on a slow day.,"7-9 Walk, breakfast
+9-11 Work: on-call + code review
+11-1 Work: payments service tickets
+1-3 Work: data pipeline fix
+3-5 Lunch, walk
+5-7 Work: payments service tickets
+7-9 Phone scrolling, lost track","1. Run 5 km (X)
+2. Clean the apartment (X)
+3. Read one chapter of Designing ML Systems (X)","Overplanned again. Too many tasks, finished almost none.",Movement first thing clears my head better than coffee.,7:30 AM - 12:00 AM
+20/8/26,I am grateful for a paycheck that covers rent and savings.,"8-10 Stretch, coffee, plan day
+10-12 Lunch, walk
+12-2 Work: data pipeline fix
+2-4 Lunch, walk
+4-6 Work: API migration
+6-8 Side project: tests + CI
+8-10 Blog draft","1. Clean the apartment (tick)
+2. Solve 2 LeetCode mediums (tick)
+3. Prepare for mock interview (X)
+4. Ship recipe-search API endpoint (tick)","Deep work block before lunch went well, shipped the endpoint I planned.",Small daily progress on the side project beats weekend marathons.,8:00 AM - 12:00 AM
+21/8/26,I am grateful for the rain cooling the city down.,"7-9 Walk, breakfast
+9-11 Work: payments service tickets
+11-1 Work: data pipeline fix
+1-3 Lunch, walk
+3-5 Work: sprint planning, standup
+5-7 Work: data pipeline fix
+7-9 LeetCode practice","1. Write unit tests for the ranking module (tick)
+2. Apply to 2 ML engineer roles (tick)
+3. Ship recipe-search API endpoint (X)
+4. Clean the apartment (tick)
+5. Read one chapter of Designing ML Systems (X)","Got the run in, however the evening disappeared into YouTube.","Run before work on Tuesday, Thursday and Saturday.",7:30 AM - 12:00 AM
+22/8/26,I am grateful for finally sleeping eight hours.,"8-10 Run, shower, breakfast
+10-12 Chill, TV
+12-2 Friends, lunch
+2-4 Groceries, cook
+4-6 Fast.ai lesson
+6-8 Side project: ranking module
+8-10 Side project: tests + CI","1. Review embeddings notebook (tick)
+2. Write blog draft on hybrid search (tick)
+3. Solve 2 LeetCode mediums (tick)
+4. Apply to 2 ML engineer roles (tick)
+5. Call parents (tick)","Deep work block before lunch went well, shipped the endpoint I planned.",A written plan the night before makes the morning easy.,
+23/8/26,I am grateful for a long walk after dinner.,"8-10 Run, shower, breakfast
+10-12 Groceries, cook
+12-2 Blog draft
+2-4 Side project: tests + CI
+4-6 LeetCode practice
+6-8 Mock interview prep
+8-10 Groceries, cook","1. Log expenses (X)
+2. Write blog draft on hybrid search (X)
+3. Review embeddings notebook (X)
+4. Write unit tests for the ranking module (X)
+5. Cook dinner instead of ordering (X)",On-call pages broke the day into pieces. Very little focus.,Movement first thing clears my head better than coffee.,8:00 AM - 12:00 AM
+24/8/26,I am grateful for a quiet morning to think.,"7-9 Stretch, coffee, plan day
+9-11 Work: on-call + code review
+11-1 Lunch, walk
+1-3 Work: sprint planning, standup
+3-5 Lunch, walk
+5-7 Work: on-call + code review
+7-9 Phone scrolling, lost track","1. Run 5 km (X)
+2. Write unit tests for the ranking module (X)
+3. Write blog draft on hybrid search (X)
+4. Apply to 2 ML engineer roles (tick)",Low energy day. Did the minimum at work and nothing after.,Plan only three tasks tomorrow.,7:00 AM - 11:00 PM
+25/8/26,I am grateful for a long walk after dinner.,"6-8 Walk, breakfast
+8-10 Work: payments service tickets
+10-12 Work: API migration
+12-2 Work: data pipeline fix
+2-4 Work: data pipeline fix
+4-6 Work: data pipeline fix
+6-8 Chill, TV
+8-10 Mock interview prep","1. Apply to 2 ML engineer roles (X)
+2. Run 5 km (X)
+3. Call parents (X)","Slept late, felt foggy, and scrolled most of the afternoon.",Finish the resume update before touching new features.,6:30 AM - 10:30 PM
+26/8/26,I am grateful for good coffee and a clear desk.,"6-8 Stretch, coffee, plan day
+8-10 Work: API migration
+10-12 Work: API migration
+12-2 Work: API migration
+2-4 Lunch, walk
+4-6 Work: data pipeline fix
+6-8 Fast.ai lesson
+8-10 Phone scrolling, lost track","1. Solve 2 LeetCode mediums (X)
+2. Run 5 km (X)
+3. Update resume with side-project results (X)",On-call pages broke the day into pieces. Very little focus.,Plan only three tasks tomorrow.,6:30 AM - 10:30 PM
+27/8/26,I am grateful for my team covering for me on a slow day.,"7-9 Run, shower, breakfast
+9-11 Work: API migration
+11-1 Work: data pipeline fix
+1-3 Work: sprint planning, standup
+3-5 Work: on-call + code review
+5-7 Lunch, walk
+7-9 Chill, TV","1. Clean the apartment (tick)
+2. Log expenses (X)
+3. Solve 2 LeetCode mediums (tick)
+4. Apply to 2 ML engineer roles (X)
+5. Read one chapter of Designing ML Systems (X)","Work went fine, but not the side project; I kept postponing it.",Book two job applications into the calendar like meetings.,7:30 AM - 10:30 PM
+28/8/26,I am grateful for a quiet morning to think.,"7-9 Stretch, coffee, plan day
+9-11 Work: sprint planning, standup
+11-1 Work: data pipeline fix
+1-3 Work: data pipeline fix
+3-5 Work: data pipeline fix
+5-7 Work: payments service tickets
+7-9 Blog draft","1. Ship recipe-search API endpoint (X)
+2. Read one chapter of Designing ML Systems (tick)
+3. Write blog draft on hybrid search (X)
+4. Cook dinner instead of ordering (X)","Slept late, felt foggy, and scrolled most of the afternoon.",Plan only three tasks tomorrow.,7:30 AM - 11:30 PM
+29/8/26,I am grateful for the open-source maintainers whose code I use.,"8-10 Stretch, coffee, plan day
+10-12 Mock interview prep
+12-2 Mock interview prep
+2-4 Friends, lunch
+4-6 Fast.ai lesson
+6-8 Blog draft
+8-10 Friends, lunch","1. Solve 2 LeetCode mediums (tick)
+2. Call parents (tick)
+3. Stretch 15 min (X)","Work went fine, but not the side project; I kept postponing it.",Finish the resume update before touching new features.,8:00 AM - 11:30 PM
+30/8/26,I am grateful for the library being open late.,"7-9 Stretch, coffee, plan day
+9-11 Fast.ai lesson
+11-1 Fast.ai lesson
+1-3 Embeddings notebook
+3-5 Fast.ai lesson
+5-7 Designing ML Systems reading
+7-9 Nap","1. Ship recipe-search API endpoint (X)
+2. Clean the apartment (tick)
+3. Write unit tests for the ranking module (tick)
+4. Solve 2 LeetCode mediums (X)
+5. Update resume with side-project results (X)","Some progress, but the resume slipped again. I keep avoiding it.",Movement first thing clears my head better than coffee.,7:30 AM - 11:00 PM
+31/8/26,I am grateful for finally sleeping eight hours.,"7-9 Stretch, coffee, plan day
+9-11 Work: sprint planning, standup
+11-1 Work: API migration
+1-3 Work: payments service tickets
+3-5 Work: data pipeline fix
+5-7 Work: sprint planning, standup
+7-9 YouTube rabbit hole","1. Write unit tests for the ranking module (tick)
+2. Cook dinner instead of ordering (tick)
+3. Log expenses (tick)
+4. Review embeddings notebook (X)","Deep work block before lunch went well, shipped the endpoint I planned.",Start the day with the hardest task before opening Slack.,7:00 AM - 10:30 PM
+1/9/26,I am grateful for a body that can run again.,"7-9 Run, shower, breakfast
+9-11 Work: on-call + code review
+11-1 Work: on-call + code review
+1-3 Work: data pipeline fix
+3-5 Work: API migration
+5-7 Work: API migration
+7-9 YouTube rabbit hole","1. Log expenses (tick)
+2. Prepare for mock interview (tick)
+3. Apply to 2 ML engineer roles (tick)
+4. Write unit tests for the ranking module (tick)",Good energy all day. The run in the morning set the tone.,Energy follows sleep; late nights cost the next afternoon.,7:30 AM - 10:30 PM
+2/9/26,I am grateful for the open-source maintainers whose code I use.,"8-10 Run, shower, breakfast
+10-12 Work: API migration
+12-2 Work: payments service tickets
+2-4 Work: sprint planning, standup
+4-6 Work: data pipeline fix
+6-8 Side project: ranking module
+8-10 YouTube rabbit hole","1. Apply to 2 ML engineer roles (tick)
+2. Cook dinner instead of ordering (tick)
+3. Write blog draft on hybrid search (tick)
+4. Review embeddings notebook (tick)",Kept the phone in another room and it made a real difference.,Energy follows sleep; late nights cost the next afternoon.,
+3/9/26,I am grateful for a body that can run again.,"7-9 Run, shower, breakfast
+9-11 Work: data pipeline fix
+11-1 Work: sprint planning, standup
+1-3 Work: on-call + code review
+3-5 Lunch, walk
+5-7 Work: payments service tickets
+7-9 Side project: deploy to Cloud Run","1. Call parents (tick)
+2. Ship recipe-search API endpoint (tick)
+3. Write blog draft on hybrid search (X)
+4. Update resume with side-project results (X)","Some progress, but the resume slipped again. I keep avoiding it.",Small daily progress on the side project beats weekend marathons.,7:00 AM - 10:30 PM
+4/9/26,I am grateful for a body that can run again.,"7-9 Stretch, coffee, plan day
+9-11 Lunch, walk
+11-1 Work: payments service tickets
+1-3 Work: on-call + code review
+3-5 Work: payments service tickets
+5-7 Work: API migration
+7-9 Blog draft","1. Apply to 2 ML engineer roles (X)
+2. Ship recipe-search API endpoint (tick)
+3. Stretch 15 min (tick)","Productive morning, but not a single job application again.",Plan only three tasks tomorrow.,7:30 AM - 10:30 PM
+5/9/26,I am grateful for a paycheck that covers rent and savings.,"8-10 Run, shower, breakfast
+10-12 Chill, TV
+12-2 Fast.ai lesson
+2-4 Side project: tests + CI
+4-6 Embeddings notebook
+6-8 Chill, TV
+8-10 Side project: ranking module","1. Apply to 2 ML engineer roles (tick)
+2. Read one chapter of Designing ML Systems (tick)
+3. Cook dinner instead of ordering (tick)
+4. Run 5 km (X)","Mock interview felt smoother, system design answers are getting clearer.",Start the day with the hardest task before opening Slack.,8:00 AM - 10:30 PM
+6/9/26,I am grateful for a long walk after dinner.,"7-9 Stretch, coffee, plan day
+9-11 Embeddings notebook
+11-1 Groceries, cook
+1-3 Side project: tests + CI
+3-5 Friends, lunch
+5-7 Blog draft
+7-9 Designing ML Systems reading","1. Apply to 2 ML engineer roles (X)
+2. Solve 2 LeetCode mediums (tick)
+3. Clean the apartment (X)
+4. Write blog draft on hybrid search (X)",On-call pages broke the day into pieces. Very little focus.,Book two job applications into the calendar like meetings.,7:00 AM - 11:30 PM
+7/9/26,I am grateful for the library being open late.,"7-9 Stretch, coffee, plan day
+9-11 Work: API migration
+11-1 Work: data pipeline fix
+1-3 Work: sprint planning, standup
+3-5 Work: sprint planning, standup
+5-7 Lunch, walk
+7-9 YouTube rabbit hole","1. Log expenses (X)
+2. Solve 2 LeetCode mediums (X)
+3. Ship recipe-search API endpoint (X)
+4. Update resume with side-project results (X)","Overplanned again. Too many tasks, finished almost none.",Start the day with the hardest task before opening Slack.,7:30 AM - 12:00 AM
+8/9/26,I am grateful for a body that can run again.,"7-9 Walk, breakfast
+9-11 Lunch, walk
+11-1 Work: data pipeline fix
+1-3 Work: on-call + code review
+3-5 Work: on-call + code review
+5-7 Lunch, walk
+7-9 Chill, TV","1. Write unit tests for the ranking module (X)
+2. Review embeddings notebook (tick)
+3. Cook dinner instead of ordering (X)
+4. Clean the apartment (tick)","Work went fine, but not the side project; I kept postponing it.",Avoided tasks grow heavier the longer they sit.,7:30 AM - 12:00 AM
+9/9/26,I am grateful for friends who keep me honest.,"8-10 Walk, breakfast
+10-12 Work: sprint planning, standup
+12-2 Work: API migration
+2-4 Lunch, walk
+4-6 Work: data pipeline fix
+6-8 Designing ML Systems reading
+8-10 Chill, TV","1. Clean the apartment (X)
+2. Stretch 15 min (X)
+3. Ship recipe-search API endpoint (tick)
+4. Review embeddings notebook (X)",Low energy day. Did the minimum at work and nothing after.,Finish the resume update before touching new features.,8:00 AM - 12:00 AM
+10/9/26,I am grateful for a mentor who answers my questions.,"9-11 Stretch, coffee, plan day
+11-1 Work: data pipeline fix
+1-3 Work: data pipeline fix
+3-5 Work: data pipeline fix
+5-7 Work: payments service tickets
+7-9 Mock interview prep","1. Clean the apartment (tick)
+2. Cook dinner instead of ordering (tick)
+3. Ship recipe-search API endpoint (tick)",Good energy all day. The run in the morning set the tone.,Saying no to extra work keeps room for what matters.,9:00 AM - 12:30 AM
+11/9/26,I am grateful for the library being open late.,"8-10 Stretch, coffee, plan day
+10-12 Work: sprint planning, standup
+12-2 Work: API migration
+2-4 Work: payments service tickets
+4-6 Work: sprint planning, standup
+6-8 Phone scrolling, lost track
+8-10 YouTube rabbit hole","1. Apply to 2 ML engineer roles (X)
+2. Run 5 km (X)
+3. Read one chapter of Designing ML Systems (tick)
+4. Update resume with side-project results (X)","Slept late, felt foggy, and scrolled most of the afternoon.",A written plan the night before makes the morning easy.,8:30 AM - 12:00 AM
+12/9/26,I am grateful for friends who keep me honest.,"8-10 Stretch, coffee, plan day
+10-12 Designing ML Systems reading
+12-2 YouTube rabbit hole
+2-4 Embeddings notebook
+4-6 Groceries, cook
+6-8 LeetCode practice
+8-10 Designing ML Systems reading","1. Clean the apartment (tick)
+2. Log expenses (X)
+3. Review embeddings notebook (tick)
+4. Run 5 km (tick)",Finished what I planned and still had time to read.,Small daily progress on the side project beats weekend marathons.,8:30 AM - 11:30 PM
+13/9/26,I am grateful for the open-source maintainers whose code I use.,"8-10 Walk, breakfast
+10-12 Side project: tests + CI
+12-2 Blog draft
+2-4 Mock interview prep
+4-6 Groceries, cook
+6-8 Groceries, cook
+8-10 Friends, lunch","1. Write unit tests for the ranking module (X)
+2. Call parents (tick)
+3. Run 5 km (tick)
+4. Review embeddings notebook (tick)","Mock interview felt smoother, system design answers are getting clearer.",A written plan the night before makes the morning easy.,
+14/9/26,I am grateful for the library being open late.,"7-9 Run, shower, breakfast
+9-11 Work: on-call + code review
+11-1 Lunch, walk
+1-3 Work: payments service tickets
+3-5 Work: on-call + code review
+5-7 Work: payments service tickets
+7-9 Chill, TV","1. Log expenses (tick)
+2. Read one chapter of Designing ML Systems (tick)
+3. Review embeddings notebook (tick)",Good energy all day. The run in the morning set the tone.,Saying no to extra work keeps room for what matters.,7:00 AM - 11:00 PM
+15/9/26,I am grateful for a body that can run again.,"7-9 Run, shower, breakfast
+9-11 Work: sprint planning, standup
+11-1 Lunch, walk
+1-3 Work: API migration
+3-5 Lunch, walk
+5-7 Work: payments service tickets
+7-9 Phone scrolling, lost track","1. Ship recipe-search API endpoint (tick)
+2. Prepare for mock interview (tick)
+3. Log expenses (tick)
+4. Clean the apartment (X)
+5. Update resume with side-project results (tick)","Deep work block before lunch went well, shipped the endpoint I planned.",Plan only three tasks tomorrow.,7:00 AM - 11:00 PM
+16/9/26,I am grateful for the open-source maintainers whose code I use.,"7-9 Run, shower, breakfast
+9-11 Lunch, walk
+11-1 Lunch, walk
+1-3 Lunch, walk
+3-5 Work: API migration
+5-7 Work: payments service tickets
+7-9 Side project: deploy to Cloud Run","1. Stretch 15 min (tick)
+2. Solve 2 LeetCode mediums (tick)
+3. Ship recipe-search API endpoint (tick)
+4. Read one chapter of Designing ML Systems (tick)",Good energy all day. The run in the morning set the tone.,Avoided tasks grow heavier the longer they sit.,7:00 AM - 11:00 PM
+17/9/26,I am grateful for friends who keep me honest.,"7-9 Stretch, coffee, plan day
+9-11 Work: on-call + code review
+11-1 Work: payments service tickets
+1-3 Work: API migration
+3-5 Work: payments service tickets
+5-7 Work: API migration
+7-9 Side project: API endpoints","1. Clean the apartment (tick)
+2. Solve 2 LeetCode mediums (X)
+3. Apply to 2 ML engineer roles (X)
+4. Run 5 km (tick)","Learning block was solid, however I skipped dinner prep and ordered in.",Book two job applications into the calendar like meetings.,7:30 AM - 11:00 PM
+18/9/26,I am grateful for a mentor who answers my questions.,"7-9 Stretch, coffee, plan day
+9-11 Work: data pipeline fix
+11-1 Lunch, walk
+1-3 Lunch, walk
+3-5 Work: sprint planning, standup
+5-7 Work: data pipeline fix
+7-9 Chill, TV","1. Solve 2 LeetCode mediums (tick)
+2. Run 5 km (tick)
+3. Stretch 15 min (tick)",Finished what I planned and still had time to read.,Energy follows sleep; late nights cost the next afternoon.,7:30 AM - 11:00 PM
+19/9/26,I am grateful for my team covering for me on a slow day.,"8-10 Run, shower, breakfast
+10-12 Embeddings notebook
+12-2 Fast.ai lesson
+2-4 Blog draft
+4-6 Designing ML Systems reading
+6-8 Side project: API endpoints
+8-10 Nap","1. Run 5 km (tick)
+2. Log expenses (tick)
+3. Write unit tests for the ranking module (tick)
+4. Update resume with side-project results (X)","Deep work block before lunch went well, shipped the endpoint I planned.",A written plan the night before makes the morning easy.,8:00 AM - 11:00 PM
+20/9/26,I am grateful for finally sleeping eight hours.,"6-8 Walk, breakfast
+8-10 LeetCode practice
+10-12 Fast.ai lesson
+12-2 Side project: ranking module
+2-4 LeetCode practice
+4-6 Side project: ranking module
+6-8 Designing ML Systems reading
+8-10 Embeddings notebook","1. Call parents (X)
+2. Solve 2 LeetCode mediums (tick)
+3. Prepare for mock interview (tick)","Productive morning, but not a single job application again.",Plan only three tasks tomorrow.,6:30 AM - 11:30 PM
+21/9/26,I am grateful for a mentor who answers my questions.,"7-9 Stretch, coffee, plan day
+9-11 Work: data pipeline fix
+11-1 Work: data pipeline fix
+1-3 Work: on-call + code review
+3-5 Work: payments service tickets
+5-7 Lunch, walk
+7-9 Blog draft","1. Call parents (tick)
+2. Run 5 km (X)
+3. Prepare for mock interview (X)
+4. Solve 2 LeetCode mediums (X)
+5. Review embeddings notebook (tick)","Productive morning, but not a single job application again.",Book two job applications into the calendar like meetings.,7:00 AM - 10:30 PM
+22/9/26,I am grateful for finally sleeping eight hours.,"7-9 Walk, breakfast
+9-11 Work: API migration
+11-1 Work: API migration
+1-3 Work: sprint planning, standup
+3-5 Work: payments service tickets
+5-7 Work: payments service tickets
+7-9 Side project: deploy to Cloud Run","1. Review embeddings notebook (tick)
+2. Ship recipe-search API endpoint (tick)
+3. Cook dinner instead of ordering (tick)
+4. Clean the apartment (tick)
+5. Run 5 km (tick)",Finished what I planned and still had time to read.,Saying no to extra work keeps room for what matters.,7:00 AM - 11:00 PM
+23/9/26,I am grateful for the rain cooling the city down.,"8-10 Stretch, coffee, plan day
+10-12 Work: API migration
+12-2 Work: sprint planning, standup
+2-4 Work: payments service tickets
+4-6 Work: sprint planning, standup
+6-8 Nap
+8-10 Fast.ai lesson","1. Ship recipe-search API endpoint (tick)
+2. Review embeddings notebook (tick)
+3. Write blog draft on hybrid search (tick)
+4. Update resume with side-project results (tick)","Mock interview felt smoother, system design answers are getting clearer.",Keep the phone out of the bedroom tonight.,8:00 AM - 11:00 PM
+24/9/26,I am grateful for small wins that add up.,"7-9 Run, shower, breakfast
+9-11 Work: data pipeline fix
+11-1 Work: data pipeline fix
+1-3 Work: payments service tickets
+3-5 Work: sprint planning, standup
+5-7 Lunch, walk
+7-9 Side project: tests + CI","1. Log expenses (X)
+2. Prepare for mock interview (tick)
+3. Write blog draft on hybrid search (tick)
+4. Stretch 15 min (X)","Got the run in, however the evening disappeared into YouTube.",Start the day with the hardest task before opening Slack.,
+25/9/26,I am grateful for a mentor who answers my questions.,"7-9 Walk, breakfast
+9-11 Lunch, walk
+11-1 Work: on-call + code review
+1-3 Work: data pipeline fix
+3-5 Lunch, walk
+5-7 Work: sprint planning, standup
+7-9 Embeddings notebook","1. Log expenses (X)
+2. Stretch 15 min (X)
+3. Call parents (tick)",On-call pages broke the day into pieces. Very little focus.,Keep the phone out of the bedroom tonight.,7:00 AM - 11:30 PM
+26/9/26,I am grateful for good coffee and a clear desk.,"8-10 Stretch, coffee, plan day
+10-12 Side project: deploy to Cloud Run
+12-2 Designing ML Systems reading
+2-4 Friends, lunch
+4-6 Phone scrolling, lost track
+6-8 Fast.ai lesson
+8-10 Side project: ranking module","1. Run 5 km (tick)
+2. Log expenses (X)
+3. Apply to 2 ML engineer roles (tick)
+4. Write blog draft on hybrid search (tick)",Finished what I planned and still had time to read.,Avoided tasks grow heavier the longer they sit.,8:00 AM - 11:00 PM
+27/9/26,I am grateful for good coffee and a clear desk.,"6-8 Walk, breakfast
+8-10 LeetCode practice
+10-12 Chill, TV
+12-2 Friends, lunch
+2-4 LeetCode practice
+4-6 Embeddings notebook
+6-8 Groceries, cook
+8-10 Fast.ai lesson","1. Clean the apartment (tick)
+2. Apply to 2 ML engineer roles (tick)
+3. Update resume with side-project results (X)","Some progress, but the resume slipped again. I keep avoiding it.",A written plan the night before makes the morning easy.,6:30 AM - 11:00 PM

@@ -82,13 +82,6 @@ class CoachService:
     goals = self.goal_repo.get_active()
     recent_logs = self.log_repo.get_recent(14)
     scores = self.score_repo.get_by_date(target_date)
-    weekly = None
-    with get_db() as conn:
-      row = conn.execute(
-        "SELECT * FROM weekly_reviews ORDER BY week_start DESC LIMIT 1"
-      ).fetchone()
-      if row:
-        weekly = dict(row)
 
     recent_coach = [
       r.model_dump(mode="json") for r in self.coach_repo.get_recent(5)
@@ -129,7 +122,6 @@ class CoachService:
       "journal_text_digest": journal_digest,
       "recent_logs": [self._serialize_log(l) for l in recent_logs],
       "current_scores": scores.model_dump(mode="json") if scores else {},
-      "recent_weekly_review": weekly,
       "pattern_analysis": pattern_report,
       "relevant_memories": [
         m.model_dump(mode="json") for m in self.memory_service.retrieve(query or "mistakes patterns lessons", 8)

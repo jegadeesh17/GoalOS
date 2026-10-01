@@ -8,7 +8,7 @@
 [![Vector DB](https://img.shields.io/badge/Vector%20Store-ChromaDB-purple.svg)](https://www.trychroma.com/)
 [![Database](https://img.shields.io/badge/Database-SQLite%203%20%2B%20FTS5-003B57.svg)](https://www.sqlite.org/)
 [![Validation](https://img.shields.io/badge/Schema-Pydantic%20v2-E92063.svg)](https://docs.pydantic.dev/)
-[![Tests](https://img.shields.io/badge/Tests-pytest%20(155%20passing)-green.svg)](https://docs.pytest.org/)
+[![Tests](https://img.shields.io/badge/Tests-pytest%20(267%20passing)-green.svg)](https://docs.pytest.org/)
 [![License](https://img.shields.io/badge/License-MIT-gray.svg)](LICENSE)
 
 ---
@@ -61,6 +61,7 @@
   - **5-Year Vision:** Long-term trajectory.
   - **10-Year Identity:** Who the user is becoming.
 - **Interactive Checklists & Pacing:** Granular milestone progress tracking and auto-calculated completion percentages.
+- **Numeric Targets & Yearly Pacing:** Any goal can carry a number to track (metric, unit, optional start, target) and a monthly check-in. Pace is judged against a straight line from start to target by the deadline (ahead / on pace / behind, plus a projection once there are three check-ins). Goals without a number are reported as unmeasured, never given a made-up percentage.
 
 ### 🤖 4. AI Coach Studio
 - **Batch-Cadence Coaching Pipelines** (built for weekly/biweekly journal imports, not daily check-ins):
@@ -71,7 +72,11 @@
 
 ### 📊 5. Longitudinal Analytics & Pattern Engine
 - **Multi-Day Behavioral Detection:** Automatically flags consistency warnings, recovery deficits, or compounding streaks.
-- **Deterministic Growth Scores:** Daily scores for Goal Alignment, Consistency, Health, Productivity, and Overall Growth.
+- **Deterministic Growth Scores:** Daily scores for Goal Alignment, Consistency, Health, Productivity, and Overall Growth. Unrecorded inputs are left out of a score (and its weights renormalised), never counted as zero.
+- **Goal Alignment From Real Links:** Alignment is the share of completed tasks (14-day window) that serve a goal. You say which goal a task served once (or add cues to a goal so matching tasks link themselves); a task with no known goal is left out, never counted as misaligned. The Goals page shows the tasks still to link and, per goal, how many completed tasks it got.
+- **Consistency From Execution Rhythm:** Share of logged days where at least half the tasks were ticked, blended 70/30 with how steady the wake-up time was. The importer's morning/evening flags and "a row exists" are not inputs.
+- **Month-by-Month Snapshots:** Each month's facts (tasks done, solid days, sleep and schedule, score means, stuck tasks, goal state) are stored in `monthly_snapshots`, recomputed from the daily logs after every import or save, and marked provisional until the month is fully imported.
+- **Levers, Not Just Averages:** A rank-correlation analysis with a seeded permutation test over the trailing 90 days reports which habits go with more tasks done (for example wake-up time), with the sample size, a correction for the number of levers tested, and an "association, not proof of cause" caveat.
 
 ### 🧠 6. Cognitive Memory Base (Hybrid RAG)
 - **Dual-Write Storage:** Stored in SQLite with local vector embeddings in ChromaDB.
@@ -135,19 +140,19 @@ flowchart TD
 
 ## 🛠️ Agentic AI Coaching & Tool Calling
 
-`CoordinatorPipeline` exposes 6 tools across 4 isolated domain namespaces, each behind a strict Pydantic/OpenAPI-compatible function schema:
+`CoordinatorPipeline` exposes 8 tools across 4 isolated domain namespaces, each behind a strict Pydantic/OpenAPI-compatible function schema:
 
 | Domain | Registered Tools |
 | :--- | :--- |
 | `memory` | `search_memories` |
-| `goals` | `get_active_goals`, `get_horizon_pacing` |
-| `journal` | `get_recent_logs`, `get_monthly_progress` |
+| `goals` | `get_active_goals`, `get_horizon_pacing`, `get_goal_pacing` |
+| `journal` | `get_recent_logs`, `get_monthly_progress`, `get_monthly_snapshots` |
 | `calendar` | `get_lifespan_stats` |
 
 **Tool-calling reliability benchmark** (`scripts/benchmark_tool_calling.py`, results in [`reports/TOOL_CALLING_BENCHMARK.md`](reports/TOOL_CALLING_BENCHMARK.md)):
-- 7 test scenarios: one execution case per registered tool (6 across the 4 domains), plus 1 negative security case verifying that a call to an unregistered tool (`UNKNOWN_TOOL`) is correctly rejected.
+- 9 test scenarios: one execution case per registered tool (8 across the 4 domains), plus 1 negative security case verifying that a call to an unregistered tool (`UNKNOWN_TOOL`) is correctly rejected.
 - Each positive case asserts the target tool is registered in its domain (`registry.can_handle`) and executes against representative arguments without a schema or runtime error. The negative case asserts the registry returns an `unknown_tool` error instead of executing.
-- **Result:** 7/7 (100%) scenarios passing; average execution latency 4176.5 ms (P95 29218.62 ms, dominated by the memory-search case — all other calls resolve in under 10 ms).
+- **Result:** 9/9 (100%) scenarios passing; average execution latency 2565.25 ms (P95 22471.54 ms, dominated by the memory-search case). `get_monthly_snapshots` took 598.75 ms because that run built the stored snapshots on first read; the other calls resolved in under 10 ms.
 - **Scope:** this benchmark validates tool registration, parameter-schema compliance, execution reliability, and rejection of unauthorized tools. Each test case's target tool is pre-specified and directly invoked rather than chosen by a model, and each case is a single tool call rather than a multi-step task chain — it does not, by itself, measure an LLM's tool-*selection* accuracy from a natural-language query. Live LLM-driven intent classification and routing happens in `CoordinatorPipeline` during real coaching sessions but is a separate concern from what this benchmark scores.
 
 ---
@@ -232,7 +237,14 @@ Open `http://localhost:5173` in your browser.
 | `/journal/upsert` | `POST` | Upsert daily log fields |
 | `/goals/horizons` | `GET` | Active goals grouped by 1-month, 1-year, 5-year, 10-year horizons |
 | `/goals` | `GET`, `POST` | List and create goals |
+| `/goals/pacing` | `GET` | Measured pace of 1-year, 5-year and 10-year goals against numeric targets |
+| `/goals/attention` | `GET` | Completed tasks per active goal over the last `days` (default 14) and how long each has been quiet |
+| `/tasks/review` | `GET` | Completed tasks whose goal is still unknown, most-repeated first (`limit`) |
+| `/tasks/links` | `PUT` | Link a task to a goal, or mark it as serving none; re-scores every day |
+| `/tasks/links/{key}` | `DELETE` | Remove a saved link |
 | `/goals/{id}` | `GET`, `PUT`, `DELETE` | Goal management |
+| `/goals/{id}/measurements` | `GET`, `PUT` | List or save a monthly check-in against the goal's target |
+| `/goals/{id}/measurements/{YYYY-MM}` | `DELETE` | Remove a check-in |
 | `/goals/{id}/milestones` | `POST` | Add milestone to goal |
 | `/milestones/{id}` | `PUT`, `PATCH`, `DELETE` | Update or remove milestone |
 | `/coach/progress` | `POST` | Goal Alignment: monthly/yearly goal pacing for the month of `date` |
@@ -244,6 +256,9 @@ Open `http://localhost:5173` in your browser.
 | `/coach/telemetry/traces` | `GET` | Individual coordinator trace spans |
 | `/analytics/dashboard` | `GET` | Aggregated metrics, scores, and behavioral patterns |
 | `/analytics/scores` | `GET` | Daily score history |
+| `/analytics/monthly` | `GET` | Stored month-by-month analytics (built on first read if none exist) |
+| `/analytics/monthly/{YYYY-MM}` | `GET` | One stored month with its levers and goal state |
+| `/analytics/monthly/recompute` | `POST` | Rebuild one month (`?month=`) or all of them |
 | `/memories` | `GET`, `POST` | List and record cognitive memories |
 | `/memories/search` | `GET` | Hybrid lexical & vector semantic search |
 | `/settings` | `GET`, `POST` | Profile and AI privacy configuration |
@@ -260,7 +275,7 @@ Run the comprehensive pytest test suite:
 ```bash
 pytest
 ```
-**Results:** **155/155 tests passing (100%)**.
+**Results:** **267/267 tests passing (100%)**.
 
 Run frontend typecheck and build validation:
 ```bash

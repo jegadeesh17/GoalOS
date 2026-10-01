@@ -144,3 +144,20 @@ This document records the accumulated technical discoveries, bug fixes, edge cas
 ### 5.6 Feature Removal Must Sweep Callers, Prompts, and Docs in the Same Change (2026-09-28)
 - **Observation:** Removing Morning/Evening/Weekly coaching and the Streamlit app left dead `CoachService` methods, an orphaned reflection pipeline and prompt, `.streamlit/`, and five docs describing endpoints that no longer exist.
 - **How to apply:** When deleting a feature, `git grep` its route, service method, prompt name, and UI label across code *and* `README.md`/`docs/`, and update them in the same commit series.
+
+### 5.8 Derived Analytics Are Caches: Recomputable, Honest About Incomplete Months (2026-10-01)
+- **Rule:** Monthly snapshots (`monthly_snapshots`) are rebuilt from `daily_logs` and `scores` by `MonthlyAnalyticsService.recompute_month`; they never hold data that cannot be recomputed. The one exception is a goal's title and progress, which change over time, so `monthly_goal_results` is written only while a month is current or previous and not yet final, then frozen.
+- **Why:** the user bulk-imports weekly or biweekly, so a month can be incomplete when first computed. `status` is `final` only when the month is over **and** the last logged day is the month's last day; otherwise it is `provisional` with `data_through`.
+- **Never run a first-time snapshot build after renewing goals:** September's goal state would be missing. The first build captures whatever goals exist at that moment.
+
+### 5.9 Unit Traps in Stored Task Rates (2026-10-01)
+- `daily_logs.task_completion_rate` is a **percent** from `scripts/import_journal_csv.py` and a **0-1 fraction** from the Journal editor autosave (`JournalView.tsx`) and `JournalImportService.parse_entry`. Derive rates from `planned_tasks` JSON (`journal_helpers.planned_task_rate`), never from the stored column.
+- Task text fallbacks (`tasks_completed`) use a different done-mark convention (`parse_tasks` counts a bare X as done; the user's notebook means a bare X is *not* done). Use `planned_task_list`, which reads the JSON only.
+
+### 5.10 Statistics Rules for Lever Findings (2026-10-01)
+- Report a lever only with n >= 30 matched days, a seeded permutation p-value, the sample size, and an "association, not proof of cause" caveat. A tier of "strong" needs `p x levers_tested < 0.05`; raw `p < 0.05` is only "suggestive". Sleep length and wake time move together in this data, so a sleep finding always carries the confound note.
+
+### 5.11 A Score Built on a Flag the Importer Sets Is a Constant (2026-10-01)
+- `morning_completed`/`evening_completed` are set to 1 for every imported day, so any score derived from them (consistency, the calendar's `is_productive`) says nothing. Before basing a score on a column, check its distribution in the real data.
+- Alignment cannot be inferred from word overlap when goals are terse (`Getting a job`) and tasks are free text. The honest design is a user decision (link or cue) with *unknown* kept separate from *misaligned*: unreviewed tasks are excluded and the score is `None` until enough are reviewed.
+- Scores that read a window (14 days) or other tables (links, cues) go stale when those change. Re-score everything on a link/cue change and from the edited day on a journal save (`recompute_all_scores`), not just the saved day.

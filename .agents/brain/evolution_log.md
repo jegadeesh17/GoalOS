@@ -4,6 +4,26 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-10-01 — Goal Alignment and Consistency Rebuilt
+
+- **User Directive:** "build the consistency and goal alignment plan and also commit and push the changes".
+- **Replaced:** alignment was Jaccard word overlap against goal titles (1.6-8.7%, 30% of overall); consistency counted rows whose morning/evening flags the importer sets on every day (always ~100). Alignment is now the share of completed, reviewed tasks that serve a goal, from task links and per-goal cues; consistency is execution rhythm plus wake-time regularity. Both are `None` (left out of overall) when data is too thin.
+- **Built:** migration 9 (`task_links`, `goals.cues`), `TaskLinkService` (resolve, review queue, per-goal attention), `recompute_all_scores`, routes `/tasks/review`, `/tasks/links`, `/goals/attention`, coach context `goal_attention` and fallback wording, the "Tasks to link" section and per-goal attention on the Goals page, a Task cues field, dashes for unknown scores. The monthly report in `weekly_sync_service.py` no longer guesses 50 for alignment.
+- **Data:** backed up, migration 9 applied, 92 days re-scored. Alignment is unknown until the user links tasks (133 distinct completed tasks waiting); no link or cue was invented.
+- **Verification:** 267 tests, `ruff` and `tsc` clean, consistency for 2026-09-30 recomputed independently from raw rows (51.1), Playwright run of the Goals and Analytics pages with writes mocked.
+
+---
+
+## 2026-10-01 — Sleep and Score Fixes, Monthly Snapshots, Levers and Yearly Pacing
+
+- **User Directives:** Verify suspected miscalculations in the scores and sleep, then add month-by-month analytics stored in the DB that the agent compares against yearly goals, with high-ROI metrics. Sleep for a day is yesterday's bedtime to today's wake-up. Missing inputs are left out of health/productivity. The user stated their 10-year goals (one financial, one personal).
+- **Fixed:** sleep was `24 - (bedtime - wake)` per day, i.e. tonight's bedtime with an assumed wake time (2.25 h average error); productivity compared a percent to a fraction; health was capped at 40 because unrecorded workout/energy counted as zero; momentum got the last 7 scores newest-first and not the 7 before the day; the Journal editor saves `task_completion_rate` as a 0-1 fraction while the import script saves a percent, so scores now derive the rate from the task list.
+- **Built:** migration 8 (`monthly_snapshots`, `monthly_goal_results`, `goal_measurements`, goal `metric_name/metric_unit/start_value/target_value`), `MonthlyAnalyticsService`, `monthly_levers` (Spearman plus seeded permutation test, Bonferroni-corrected tiers), `YearlyPacingService`, `/analytics/monthly*`, `/goals/pacing`, `/goals/{id}/measurements`, agent tools `get_goal_pacing` and `get_monthly_snapshots`, coach context keys `monthly_history` and `goal_pacing`, and the Month-by-month panel and goal check-ins in the UI. Plans: `docs/plans/2026-10-01-*.md` (the goal alignment and consistency redesign is still unbuilt).
+- **Data:** the user confirmed three bedtimes written as AM were PM (09-05, 09-06, 09-10); fixed in `journal_data.csv` and the DB, all 30 September nights now have sleep. Added two 10-year goals (one with a numeric target, one qualitative). September's goal state is frozen in `monthly_goal_results`.
+- **Verification:** 221 tests, `ruff` and `tsc` clean, real-data spot checks against hand counts (Sep: 100 planned, 48 done, 18 solid days; wake-time lever rho -0.37 over 57 days), Playwright run of the Analytics and Goals pages.
+
+---
+
 ## 2026-10-01 — September 12–30 Journal Ingestion (Local Only)
 
 - **User Directives:** Transcribe notebook images in `data/Journal/September 2026/` matching all 7 standard template columns (`Date`, `Gratitude`, `Awake`, `Plan`, `Tasks`, `Review`, `Takeaway`). Strict data separation: real private journal data remains local-only (offline/personal), cloud/demo version is untouched. User confirmed Sept 29 awake window as `8:30 AM - 4:30 AM` (4.0h sleep).

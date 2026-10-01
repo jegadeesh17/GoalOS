@@ -14,6 +14,7 @@ This chronological log captures all significant architectural updates, bug fixes
   - Extracted and indexed 58 memories across lessons, commitments, and insights into local SQLite `memories` and local `chroma_db/`.
   - Recalculated growth scores for all 92 daily logs via `scripts/backfill_analytics.py`.
   - Deterministically verified: 24/24 tests passed in `tests/test_journal_import.py`.
+  - 11 Sept Sleep Update: User confirmed sleep time for 11/9/26 is 10:30 PM. Updated Awake to '6:00 AM - 10:30 PM' (sleep: 7.5h) in `journal_data.csv` and `daily_logs`, and recalculated growth scores.
   - Git discipline: Verified `git status --short` remains completely clean; all personal data, photos, and databases are strictly ignored by `.gitignore` and uncommitted.
 
 ---

@@ -4,6 +4,20 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-10-01 — September 12–30 Journal Ingestion (Local Only)
+
+- **User Directives:** Transcribe notebook images in `data/Journal/September 2026/` matching all 7 standard template columns (`Date`, `Gratitude`, `Awake`, `Plan`, `Tasks`, `Review`, `Takeaway`). Strict data separation: real private journal data remains local-only (offline/personal), cloud/demo version is untouched. User confirmed Sept 29 awake window as `8:30 AM - 4:30 AM` (4.0h sleep).
+- **Execution & Data Safety:**
+  - Backed up local `goalos.db` to `backups/goalos-backup-20261001-115642.zip` via `DataPortabilityService`.
+  - Persisted 19 entries to `data/Journal/september_2026_days12_30.json` and appended to `data/Journal/journal_data.csv` (rows grew from 73 to 92).
+  - Synchronized `daily_logs` via `scripts/import_journal_csv.py` with parsed hourly time blocks, task completion rates, and sleep metrics.
+  - Extracted and indexed 58 memories across lessons, commitments, and insights into local SQLite `memories` and local `chroma_db/`.
+  - Recalculated growth scores for all 92 daily logs via `scripts/backfill_analytics.py`.
+  - Deterministically verified: 24/24 tests passed in `tests/test_journal_import.py`.
+  - Git discipline: Verified `git status --short` remains completely clean; all personal data, photos, and databases are strictly ignored by `.gitignore` and uncommitted.
+
+---
+
 ## 2026-09-28 — Private Journal Purged From Public History; Fictional Cloud Demo
 
 - **User decisions:** untrack the private journal files and purge them from history. Delete the eval harness and the legacy weekly-review context (agent's call). No resume changes; keep working on `dev`, and merging to `main` is approved so the live demo stops serving real data.

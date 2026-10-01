@@ -170,22 +170,23 @@ class WeeklySyncService:
     short_term_goals = categorized_goals.get("1-month", [])
     one_year_goals = categorized_goals.get("1-year", [])
     five_year_goals = categorized_goals.get("5-year", [])
-    active_goals_list = active_goals or (short_term_goals + one_year_goals + five_year_goals)
 
     primary_1m_goal = short_term_goals[0].title if short_term_goals else "Establish core daily habits"
 
-    # Evaluate semantic alignment between month's actual tasks/reflections and active goals
+    # Share of the month's completed tasks that serve a goal, from the user's task links (None = not enough
+    # reviewed tasks to say; never a guess).
     from services.analytics_service import goal_alignment_score
-    eval_text_snippets = all_tasks + all_reviews + all_takeaways
-    if eval_text_snippets and active_goals_list:
-      semantic_align = round(goal_alignment_score(eval_text_snippets, active_goals_list), 1)
-    else:
-      semantic_align = 50.0
+    from services.task_link_service import TaskLinkService
+    month_end = month_start.replace(day=days_in_month)
+    month_logs = LogRepository().get_range(month_start, month_end)
+    alignment = goal_alignment_score(month_logs, TaskLinkService().resolver())
+    semantic_align = round(alignment.score, 1) if alignment.score is not None else None
 
-    # Composite alignment score: 30% logging consistency + 30% task execution + 40% goal semantic alignment
+    # Composite: 30% logging consistency + 30% task execution + 40% goal alignment, over the parts that are known
+    parts = [(completion_rate, 0.30), (avg_task_execution, 0.30), (semantic_align, 0.40)]
+    known = [(value, weight) for value, weight in parts if value is not None]
     overall_monthly_alignment = round(
-      (completion_rate * 0.30) + (avg_task_execution * 0.30) + (semantic_align * 0.40),
-      1
+      sum(value * weight for value, weight in known) / sum(weight for _, weight in known), 1
     ) if days_logged > 0 else 0.0
 
     # Pacing assessment based on actual composite alignment & execution

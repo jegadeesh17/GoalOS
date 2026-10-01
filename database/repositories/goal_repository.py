@@ -1,5 +1,6 @@
 """Goal repository."""
 
+import json
 from typing import Optional
 
 from database.connection import get_db
@@ -11,7 +12,9 @@ class GoalRepository:
   """CRUD operations for goals."""
 
   def create(self, goal: GoalCreate) -> Goal:
-    data = goal.model_dump()
+    data = goal.model_dump(mode="json")  # dates as ISO strings: the sqlite3 date adapter is deprecated
+    if data.get("cues") is not None:
+      data["cues"] = json.dumps(data["cues"])
     with get_db() as conn:
       columns = ", ".join(data.keys())
       placeholders = ", ".join("?" * len(data))
@@ -115,6 +118,8 @@ class GoalRepository:
     data = goal.model_dump(exclude_unset=True)
     if not data:
       return self.get_by_id(goal_id)
+    if data.get("cues") is not None:
+      data["cues"] = json.dumps(data["cues"])
     set_clause, values = build_update(data)
     values.append(goal_id)
     with get_db() as conn:

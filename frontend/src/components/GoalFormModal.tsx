@@ -23,9 +23,12 @@ const emptyGoal: Partial<Goal> = {
 export const GoalFormModal: React.FC<GoalFormModalProps> = ({ mode, initialGoal, onCancel, onSubmit }) => {
   const [goal, setGoal] = useState<Partial<Goal>>({ ...emptyGoal, ...initialGoal });
   const [saving, setSaving] = useState(false);
+  const [cuesText, setCuesText] = useState((initialGoal.cues || []).join(', '));
+  const [cueError, setCueError] = useState<string | null>(null);
 
   useEffect(() => {
     setGoal({ ...emptyGoal, ...initialGoal });
+    setCuesText((initialGoal.cues || []).join(', '));
   }, [initialGoal]);
 
   useEffect(() => {
@@ -39,9 +42,26 @@ export const GoalFormModal: React.FC<GoalFormModalProps> = ({ mode, initialGoal,
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!goal.title?.trim()) return;
+    const cues = cuesText.split(',').map((c) => c.trim()).filter(Boolean);
+    if (cues.some((c) => c.length < 3)) {
+      setCueError('Each cue needs at least 3 characters.');
+      return;
+    }
+    setCueError(null);
+    // Empty text/number inputs are omitted, not sent as '' or NaN (the API validates dates and numbers).
+    const payload: Partial<Goal> = { ...goal };
+    // Editing sends the list even when empty, so clearing the field clears the cues.
+    if (cues.length > 0 || mode === 'edit') payload.cues = cues;
+    else delete payload.cues;
+    for (const key of ['deadline', 'metric_name', 'metric_unit'] as const) {
+      if (!payload[key]?.toString().trim()) delete payload[key];
+    }
+    for (const key of ['start_value', 'target_value'] as const) {
+      if (payload[key] == null || Number.isNaN(payload[key])) delete payload[key];
+    }
     try {
       setSaving(true);
-      await onSubmit(goal);
+      await onSubmit(payload);
     } finally {
       setSaving(false);
     }
@@ -142,6 +162,18 @@ export const GoalFormModal: React.FC<GoalFormModalProps> = ({ mode, initialGoal,
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Deadline
+            </label>
+            <input
+              type="date"
+              value={goal.deadline || ''}
+              onChange={(e) => setGoal({ ...goal, deadline: e.target.value })}
+              className="w-full text-sm px-3.5 py-2 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 text-slate-900"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
               Success criteria
             </label>
             <textarea
@@ -151,6 +183,77 @@ export const GoalFormModal: React.FC<GoalFormModalProps> = ({ mode, initialGoal,
               onChange={(e) => setGoal({ ...goal, success_criteria: e.target.value })}
               className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 resize-none text-slate-900"
             />
+          </div>
+
+          <fieldset className="space-y-2 rounded-xl border border-emerald-100 px-3.5 pt-2 pb-3">
+            <legend className="px-1 text-xs font-semibold text-slate-700">Number to track (optional)</legend>
+            <p className="text-[11px] text-slate-500 font-normal">
+              Give the goal a number and GoalOS can show whether you’re on pace, from a check-in each month. Leave it
+              empty for goals that can’t be measured.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                aria-label="What you measure"
+                placeholder="What you measure, e.g. Net worth"
+                value={goal.metric_name || ''}
+                onChange={(e) => setGoal({ ...goal, metric_name: e.target.value })}
+                className="w-full text-sm px-3 py-2 rounded-xl border border-emerald-100 bg-white/95 text-slate-900 placeholder:text-slate-500"
+              />
+              <input
+                type="text"
+                aria-label="Unit"
+                placeholder="Unit, e.g. crore INR"
+                value={goal.metric_unit || ''}
+                onChange={(e) => setGoal({ ...goal, metric_unit: e.target.value })}
+                className="w-full text-sm px-3 py-2 rounded-xl border border-emerald-100 bg-white/95 text-slate-900 placeholder:text-slate-500"
+              />
+              <label className="block text-[11px] font-semibold text-slate-600">
+                Starting value
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="Optional"
+                  value={goal.start_value ?? ''}
+                  onChange={(e) => setGoal({ ...goal, start_value: e.target.value === '' ? undefined : Number(e.target.value) })}
+                  className="mt-1 w-full text-sm font-normal px-3 py-2 rounded-xl border border-emerald-100 bg-white/95 text-slate-900 placeholder:text-slate-500"
+                />
+              </label>
+              <label className="block text-[11px] font-semibold text-slate-600">
+                Target value
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="Where you want to get to"
+                  value={goal.target_value ?? ''}
+                  onChange={(e) => setGoal({ ...goal, target_value: e.target.value === '' ? undefined : Number(e.target.value) })}
+                  className="mt-1 w-full text-sm font-normal px-3 py-2 rounded-xl border border-emerald-100 bg-white/95 text-slate-900 placeholder:text-slate-500"
+                />
+              </label>
+            </div>
+          </fieldset>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Task cues
+              <input
+                type="text"
+                placeholder="e.g. apply, interview, resume"
+                value={cuesText}
+                onChange={(e) => setCuesText(e.target.value)}
+                aria-describedby="cue-help"
+                className="mt-1 w-full text-sm font-normal px-3.5 py-2 rounded-xl border border-emerald-100 focus:ring-2 focus:ring-emerald-600 bg-white/95 text-slate-900 placeholder:text-slate-500"
+              />
+            </label>
+            <p id="cue-help" className="text-[11px] text-slate-500 mt-1 font-normal">
+              Words that mark a task as serving this goal, separated by commas. “appl” also matches “apply” and
+              “applications”. Tasks that match more than one goal stay in your list to link by hand.
+            </p>
+            {cueError && (
+              <p className="text-[11px] text-rose-700 mt-1" role="alert">
+                {cueError}
+              </p>
+            )}
           </div>
 
           <div>

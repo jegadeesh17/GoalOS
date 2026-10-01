@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AnalyticsDashboardData, goalOSApi } from '../api/client';
+import { MonthlyReview } from './MonthlyReview';
 import { PageHeader } from './PageHeader';
 import {
   TrendingUp,
@@ -61,6 +62,7 @@ export const AnalyticsView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showAllInsights, setShowAllInsights] = useState(false);
   const [showAllScores, setShowAllScores] = useState(false);
+  const [unlinked, setUnlinked] = useState(0);
 
   useEffect(() => {
     goalOSApi.getAnalyticsDashboard()
@@ -73,6 +75,12 @@ export const AnalyticsView: React.FC = () => {
         setError('Analytics couldn’t load. Check that GoalOS is running, then open this tab again.');
         setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    goalOSApi.getTaskReview(1)
+      .then((review) => setUnlinked(review.unreviewed_completed_keys))
+      .catch((err) => console.error('Failed to load tasks to link:', err));
   }, []);
 
   const insights = useMemo(() => buildInsights(data?.patterns || []), [data]);
@@ -131,6 +139,8 @@ export const AnalyticsView: React.FC = () => {
         })}
       </div>
 
+      <MonthlyReview />
+
       {insights.length > 0 && (
         <section className="glass-panel rounded-3xl p-6 sm:p-7 shadow-forest" aria-labelledby="insights-title">
           <h2 id="insights-title" className="font-bold text-sm text-slate-900 flex items-center gap-2">
@@ -184,7 +194,8 @@ export const AnalyticsView: React.FC = () => {
             Daily scores
           </h2>
           <p className="text-xs text-slate-600 mt-0.5 max-w-2xl">
-            Calculated from task completion, deep work, sleep and goal alignment.
+            Each score looks at the 14 days up to that date. A dash means there isn’t enough data yet, and it is left
+            out of the overall score.
           </p>
         </div>
 
@@ -208,10 +219,10 @@ export const AnalyticsView: React.FC = () => {
                   {visibleScores.map((s: any, idx: number) => (
                     <tr key={idx} className="text-slate-700 tabular-nums">
                       <td className="py-2.5 pr-4 font-semibold text-slate-900">{s.date}</td>
-                      <td className="py-2.5 px-3">{Math.round(s.goal_alignment_score || 0)}%</td>
-                      <td className="py-2.5 px-3">{Math.round(s.consistency_score || 0)}%</td>
-                      <td className="py-2.5 px-3">{Math.round(s.health_score || 0)}%</td>
-                      <td className="py-2.5 px-3">{Math.round(s.productivity_score || 0)}%</td>
+                      <td className="py-2.5 px-3">{s.goal_alignment_score == null ? '–' : `${Math.round(s.goal_alignment_score)}%`}</td>
+                      <td className="py-2.5 px-3">{s.consistency_score == null ? '–' : `${Math.round(s.consistency_score)}%`}</td>
+                      <td className="py-2.5 px-3">{s.health_score == null ? '–' : `${Math.round(s.health_score)}%`}</td>
+                      <td className="py-2.5 px-3">{s.productivity_score == null ? '–' : `${Math.round(s.productivity_score)}%`}</td>
                       <td className="py-2.5 pl-3 text-right font-bold text-emerald-800">
                         {Math.round(s.overall_growth_score || 0)}%
                       </td>
@@ -220,6 +231,11 @@ export const AnalyticsView: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            <p className="text-xs text-slate-600 max-w-2xl">
+              Goal alignment is the share of completed tasks that served a goal, counting only tasks you have linked on
+              the Goals page{unlinked ? `. ${unlinked} different ${unlinked === 1 ? 'task' : 'tasks'} still to link` : ''}.
+              Consistency is how many days went at least half to plan, blended with how steady your wake-up time was.
+            </p>
             {data.recent_scores.length > VISIBLE_SCORE_ROWS && (
               <button
                 type="button"

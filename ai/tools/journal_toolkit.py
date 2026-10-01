@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from ai.tools.registry import DomainToolkit
 from database.repositories.log_repository import LogRepository
+from services.monthly_analytics_service import MonthlyAnalyticsService
 from services.weekly_sync_service import WeeklySyncService
 
 
@@ -49,6 +50,11 @@ def build_journal_toolkit(
       "count": len(logs),
     }
 
+  def get_monthly_snapshots_handler(args: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+    months = max(1, min(int(args.get("months", 6)), 12))
+    digest = (kwargs.get("monthly_service") or MonthlyAnalyticsService()).history_digest(months)
+    return {"months": digest, "count": len(digest)}
+
   toolkit.register(
     name="get_monthly_progress",
     description="Get current month's journal logging progress, completion rate, and goal alignment pacing.",
@@ -69,6 +75,25 @@ def build_journal_toolkit(
       },
     },
     handler=get_recent_logs_handler,
+  )
+
+  toolkit.register(
+    name="get_monthly_snapshots",
+    description=(
+      "Saved month-by-month analytics, oldest first: task completion, sleep and schedule, scores, stuck tasks, "
+      "statistically tested levers (with tier and n), next-month focus lines, and each month's goal state. "
+      "Use it to compare months and judge the trend toward yearly goals."
+    ),
+    parameters={
+      "type": "object",
+      "properties": {
+        "months": {
+          "type": "integer",
+          "description": "How many of the latest saved months to return (default 6, maximum 12)",
+        },
+      },
+    },
+    handler=get_monthly_snapshots_handler,
   )
 
   return toolkit

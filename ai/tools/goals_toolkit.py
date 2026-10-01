@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from ai.tools.registry import DomainToolkit
 from database.repositories.goal_repository import GoalRepository
+from services.yearly_pacing_service import YearlyPacingService
 
 
 def build_goals_toolkit(goal_repo: Optional[GoalRepository] = None) -> DomainToolkit:
@@ -46,6 +47,14 @@ def build_goals_toolkit(goal_repo: Optional[GoalRepository] = None) -> DomainToo
       "total_active": sum(len(gl) for gl in grouped.values()),
     }
 
+  def get_goal_pacing_handler(args: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+    horizon = args.get("horizon")
+    if horizon not in (None, "1-year", "5-year", "10-year"):
+      return {"error": f"horizon must be one of 1-year, 5-year, 10-year (got {horizon!r})"}
+    r = kwargs.get("goal_repo") or repo
+    goals = YearlyPacingService(goal_repo=r).evaluate_all(horizon=horizon)
+    return {"goals": goals, "count": len(goals)}
+
   toolkit.register(
     name="get_active_goals",
     description="Return all currently active multi-horizon goals with title, category, horizon, and progress.",
@@ -58,6 +67,26 @@ def build_goals_toolkit(goal_repo: Optional[GoalRepository] = None) -> DomainToo
     description="Get goals structured across 1-month, 1-year, 5-year, and 10-year life horizons with pacing details.",
     parameters={"type": "object", "properties": {}},
     handler=get_horizon_pacing_handler,
+  )
+
+  toolkit.register(
+    name="get_goal_pacing",
+    description=(
+      "Measured pace of 1-year, 5-year and 10-year goals against their numeric targets and monthly check-ins. "
+      "Each goal reports ahead/on_pace/behind with the latest value vs the expected value, or an honest status "
+      "(qualitative, no_check_ins, baseline_only, no_deadline) when it cannot be measured."
+    ),
+    parameters={
+      "type": "object",
+      "properties": {
+        "horizon": {
+          "type": "string",
+          "enum": ["1-year", "5-year", "10-year"],
+          "description": "Limit to one horizon (default: all three)",
+        },
+      },
+    },
+    handler=get_goal_pacing_handler,
   )
 
   return toolkit

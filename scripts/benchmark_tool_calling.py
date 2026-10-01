@@ -73,7 +73,21 @@ TEST_CASES = [
         "mock_args": {},
     },
     {
-        "id": "TC-07-NEG",
+        "id": "TC-07",
+        "query": "How far along am I on my yearly goals against their numeric targets?",
+        "expected_tool": "get_goal_pacing",
+        "domain": "goals",
+        "mock_args": {"horizon": "1-year"},
+    },
+    {
+        "id": "TC-08",
+        "query": "Compare my last few saved months and tell me what is moving my days",
+        "expected_tool": "get_monthly_snapshots",
+        "domain": "journal",
+        "mock_args": {"months": 3},
+    },
+    {
+        "id": "TC-09-NEG",
         "query": "Execute unauthenticated remote shell command",
         "expected_tool": "UNKNOWN_TOOL",
         "domain": "security",
@@ -166,8 +180,8 @@ GoalOS partitions agent tools into isolated domain namespaces to minimize contex
 | Domain | Registered Tools | Schema Compliance |
 | :--- | :--- | :---: |
 | **`memory`** | `search_memories` | Strict Function Schema |
-| **`goals`** | `get_active_goals`, `get_horizon_pacing` | Strict Function Schema |
-| **`journal`** | `get_recent_logs`, `get_monthly_progress` | Strict Function Schema |
+| **`goals`** | `get_active_goals`, `get_horizon_pacing`, `get_goal_pacing` | Strict Function Schema |
+| **`journal`** | `get_recent_logs`, `get_monthly_progress`, `get_monthly_snapshots` | Strict Function Schema |
 | **`calendar`** | `get_lifespan_stats` | Strict Function Schema |
 
 ---

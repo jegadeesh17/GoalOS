@@ -16,8 +16,11 @@ from models.coach_response import CoachResponseCreate
 from models.daily_log import DailyLog
 from services.memory_service import MemoryService
 from services.mentor_briefing import build_mentor_briefing
+from services.monthly_analytics_service import MonthlyAnalyticsService
 from services.pattern_service import PatternService
 from services.settings_service import SettingsService
+from services.task_link_service import TaskLinkService
+from services.yearly_pacing_service import YearlyPacingService
 
 
 class CoachService:
@@ -31,6 +34,9 @@ class CoachService:
     self.memory_service = MemoryService()
     self.llm = OpenRouterClient()
     self.settings_service = SettingsService()
+    self.monthly_service = MonthlyAnalyticsService()
+    self.pacing_service = YearlyPacingService()
+    self.task_link_service = TaskLinkService()
 
   def _get_user_vision(self) -> dict:
     """Derive the user's vision narrative from their active Goal records.
@@ -130,6 +136,11 @@ class CoachService:
         m.model_dump(mode="json") for m in self.memory_service.get_commitments()
       ],
       "recent_coach_advice": recent_coach,
+      # Saved month-by-month analytics and measured pacing of 1-year/5-year/10-year goals.
+      "monthly_history": self.monthly_service.history_digest(6),
+      "goal_pacing": self.pacing_service.evaluate_all(),
+      # Completed tasks per active goal in the last 14 logged days, from the user's task links.
+      "goal_attention": self.task_link_service.goal_attention(),
     }
     ctx["mentor_briefing"] = build_mentor_briefing(
       target_date,

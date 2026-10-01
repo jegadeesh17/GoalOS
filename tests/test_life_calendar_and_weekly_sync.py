@@ -37,7 +37,7 @@ def test_weekly_sync_csv_parser():
   assert entries[0]["wins"] == "Completed task"
 
 
-def test_july_journal_folder_scan_and_monthly_progress():
+def test_july_journal_folder_scan_and_monthly_progress(temp_db):
   sync = WeeklySyncService()
   july_folder = r"c:\Users\jegad\projects\GoalOS\data\Journal"
   if not os.path.exists(july_folder):
@@ -61,3 +61,25 @@ def test_july_journal_folder_scan_and_monthly_progress():
   yearly_report = sync.generate_yearly_report([monthly_summary], "2026")
   assert yearly_report["total_months"] == 1
   assert yearly_report["total_days_logged"] == 31
+
+
+def test_monthly_progress_alignment_comes_from_task_links_and_is_never_guessed(temp_db):
+  import json
+
+  from database.repositories.goal_repository import GoalRepository
+  from database.repositories.log_repository import LogRepository
+  from models.daily_log import DailyLogCreate
+  from models.goal import GoalCreate
+
+  tasks = [{"text": "Apply", "completed": True}, {"text": "Wash clothes", "completed": True}]
+  for day in range(1, 6):
+    LogRepository().create(DailyLogCreate(date=date(2026, 9, day), planned_tasks=json.dumps(tasks)))
+  entries = [{"date": date(2026, 9, day), "task_completion_rate": 100.0} for day in range(1, 6)]
+  sync = WeeklySyncService()
+
+  unlinked = sync.calculate_monthly_progress(entries, month_start=date(2026, 9, 1))
+  assert unlinked["semantic_goal_alignment"] is None  # nothing reviewed yet: unknown, not 50
+  assert unlinked["monthly_completion_rate"] == 58.4  # logging 16.7% and execution 100%, weights renormalised
+
+  GoalRepository().create(GoalCreate(title="Job", category="career", horizon="1-month", cues=["appl"]))
+  assert sync.calculate_monthly_progress(entries, month_start=date(2026, 9, 1))["semantic_goal_alignment"] == 100.0

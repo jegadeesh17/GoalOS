@@ -292,6 +292,56 @@ def _migration_7_goals_are_the_vision_source_of_truth(conn: sqlite3.Connection) 
       conn.execute(f"ALTER TABLE user DROP COLUMN {column}")
 
 
+def _migration_8_monthly_snapshots_and_goal_targets(conn: sqlite3.Connection) -> None:
+  """Stored month-by-month analytics, frozen per-month goal state, and measurable goal targets."""
+  conn.execute("""CREATE TABLE IF NOT EXISTS monthly_snapshots (
+      month TEXT PRIMARY KEY,
+      status TEXT NOT NULL CHECK (status IN ('provisional', 'final')),
+      data_through DATE,
+      metrics_json TEXT NOT NULL,
+      insights_json TEXT,
+      schema_version INTEGER NOT NULL,
+      computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )""")
+  # No FK to goals on purpose: this is history, and it must survive a goal being renewed or deleted.
+  conn.execute("""CREATE TABLE IF NOT EXISTS monthly_goal_results (
+      month TEXT NOT NULL,
+      goal_id INTEGER NOT NULL,
+      goal_title TEXT NOT NULL,
+      horizon TEXT NOT NULL,
+      progress_at_close REAL,
+      status_at_close TEXT,
+      as_of DATE NOT NULL,
+      PRIMARY KEY (month, goal_id)
+  )""")
+  for definition in (
+    "metric_name TEXT",
+    "metric_unit TEXT",
+    "start_value REAL",
+    "target_value REAL",
+  ):
+    _add_column(conn, "goals", definition)
+  conn.execute("""CREATE TABLE IF NOT EXISTS goal_measurements (
+      goal_id INTEGER NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+      month TEXT NOT NULL,
+      value REAL NOT NULL,
+      note TEXT,
+      PRIMARY KEY (goal_id, month)
+  )""")
+
+
+def _migration_9_task_links_and_goal_cues(conn: sqlite3.Connection) -> None:
+  """Goal alignment is measured from links between tasks and goals, not word overlap."""
+  _add_column(conn, "goals", "cues TEXT")  # JSON list of normalised words the user writes per goal
+  conn.execute("""CREATE TABLE IF NOT EXISTS task_links (
+      task_key TEXT PRIMARY KEY,
+      kind TEXT NOT NULL CHECK (kind IN ('goal', 'none')),
+      goal_id INTEGER REFERENCES goals(id) ON DELETE CASCADE,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      CHECK ((kind = 'goal') = (goal_id IS NOT NULL))
+  )""")
+
+
 MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
   (1, _migration_1_integrity),
   (2, _migration_2_memory_search),
@@ -300,6 +350,8 @@ MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
   (5, _migration_5_agentic_sessions_and_telemetry),
   (6, _migration_6_coach_persona),
   (7, _migration_7_goals_are_the_vision_source_of_truth),
+  (8, _migration_8_monthly_snapshots_and_goal_targets),
+  (9, _migration_9_task_links_and_goal_cues),
 ]
 
 

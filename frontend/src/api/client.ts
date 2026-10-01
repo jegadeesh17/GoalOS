@@ -156,7 +156,132 @@ export interface Goal {
   status: string;
   reason?: string | null;
   success_criteria?: string | null;
+  metric_name?: string | null;
+  metric_unit?: string | null;
+  start_value?: number | null;
+  target_value?: number | null;
+  cues?: string[] | null;
   milestones?: Milestone[];
+}
+
+export interface TaskReviewItem {
+  key: string;
+  text: string;
+  done: number;
+  planned: number;
+  last_date: string;
+}
+
+export interface TaskReview {
+  unreviewed_completed_keys: number;
+  items: TaskReviewItem[];
+}
+
+export interface GoalAttention {
+  goal_id: number;
+  title: string;
+  horizon: string;
+  done_recent: number;
+  done_30d: number;
+  last_done_date: string | null;
+  days_quiet: number | null;
+  window_days: number;
+  as_of: string;
+}
+
+export interface GoalMeasurement {
+  goal_id: number;
+  month: string;
+  value: number;
+  note?: string | null;
+}
+
+export interface GoalPacing {
+  goal_id: number;
+  title: string;
+  horizon: string;
+  deadline: string | null;
+  metric_name: string | null;
+  metric_unit: string | null;
+  start_value: number | null;
+  target_value: number | null;
+  check_ins: number;
+  status: 'ahead' | 'on_pace' | 'behind' | 'no_check_ins' | 'baseline_only' | 'qualitative' | 'no_deadline';
+  baseline: { value: number; source: 'start_value' | 'first_check_in'; date: string } | null;
+  latest: { month: string; value: number } | null;
+  expected_now: number | null;
+  gap: number | null;
+  pct_of_target: number | null;
+  projection: { value_at_deadline: number; on_track: boolean } | null;
+}
+
+export interface Lever {
+  lever: string;
+  label: string;
+  rho: number;
+  n: number;
+  p: number;
+  tier: 'strong' | 'suggestive';
+  groups: { label: string; mean: number | null; n: number }[];
+  contrast: string | null;
+  caveat: string;
+}
+
+export interface MonthlyMetrics {
+  days_in_month: number;
+  days_logged: number;
+  tasks: {
+    planned: number;
+    done: number;
+    completion_rate: number | null;
+    per_day: number | null;
+    solid_days: number;
+    zero_days: number;
+    weekly: { week_start: string; planned: number; done: number; rate: number | null }[];
+  };
+  sleep: {
+    nights_known: number;
+    avg_hours: number | null;
+    under_6: number;
+    at_least_7: number;
+    wake: { n: number; avg_hour: number | null; avg_clock: string | null; sd: number | null };
+    bedtime: { n: number; avg_hour: number | null; avg_clock: string | null; sd: number | null; excluded: number };
+    unknown_reasons: Record<string, number>;
+  };
+  plan: { avg_hours_filled: number | null; n: number };
+  scores: Record<string, number | null>;
+  stuck_tasks: { task: string; planned: number; done: number }[];
+  delta_vs_previous: Record<string, number>;
+}
+
+export interface MonthlyInsights {
+  method_version: number;
+  window_days: number;
+  findings: Lever[];
+  observations: {
+    plan_size: { bucket: string; days: number; avg_planned: number; avg_done: number }[];
+    task_position: { position: string; done: number; total: number; rate: number }[];
+  };
+  focus: string[];
+}
+
+export interface MonthlyGoalResult {
+  month: string;
+  goal_id: number;
+  goal_title: string;
+  horizon: string;
+  progress_at_close: number | null;
+  status_at_close: string | null;
+  as_of: string;
+}
+
+export interface MonthlySnapshot {
+  month: string;
+  status: 'provisional' | 'final';
+  data_through: string | null;
+  metrics: MonthlyMetrics;
+  insights: MonthlyInsights | null;
+  goal_results: MonthlyGoalResult[];
 }
 
 export interface Memory {
@@ -326,6 +451,32 @@ export const goalOSApi = {
     const res = await api.delete<{ success: boolean }>(`/goals/${id}`);
     return res.data;
   },
+  getTaskReview: async (limit = 8): Promise<TaskReview> => {
+    const res = await api.get<TaskReview>('/tasks/review', { params: { limit } });
+    return res.data;
+  },
+  putTaskLink: async (
+    key: string,
+    link: { kind: 'goal'; goal_id: number } | { kind: 'none' },
+  ): Promise<{ key: string }> => {
+    const res = await api.put<{ key: string }>('/tasks/links', { key, ...link });
+    return res.data;
+  },
+  getGoalAttention: async (days = 14): Promise<GoalAttention[]> => {
+    const res = await api.get<GoalAttention[]>('/goals/attention', { params: { days } });
+    return res.data;
+  },
+  getGoalPacing: async (): Promise<GoalPacing[]> => {
+    const res = await api.get<GoalPacing[]>('/goals/pacing');
+    return res.data;
+  },
+  putGoalMeasurement: async (
+    goalId: number,
+    measurement: { month: string; value: number; note?: string },
+  ): Promise<GoalMeasurement> => {
+    const res = await api.put<GoalMeasurement>(`/goals/${goalId}/measurements`, measurement);
+    return res.data;
+  },
   createMilestone: async (goalId: number, milestone: Partial<Milestone>): Promise<Milestone> => {
     const res = await api.post<Milestone>(`/goals/${goalId}/milestones`, milestone);
     return res.data;
@@ -403,6 +554,14 @@ export const goalOSApi = {
   },
 
   // Analytics
+  getMonthlyAnalytics: async (): Promise<MonthlySnapshot[]> => {
+    const res = await api.get<MonthlySnapshot[]>('/analytics/monthly');
+    return res.data;
+  },
+  recomputeMonthlyAnalytics: async (): Promise<{ recomputed: string[] }> => {
+    const res = await api.post<{ recomputed: string[] }>('/analytics/monthly/recompute');
+    return res.data;
+  },
   getAnalyticsDashboard: async (): Promise<AnalyticsDashboardData> => {
     const res = await api.get<AnalyticsDashboardData>('/analytics/dashboard');
     return res.data;

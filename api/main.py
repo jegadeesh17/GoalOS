@@ -6,10 +6,11 @@ import hmac
 import logging
 import os
 import sys
-from datetime import date, timedelta
+from datetime import date
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query, Request, status
+from fastapi import Path as PathParam
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
@@ -27,6 +28,7 @@ from database.repositories.goal_repository import GoalRepository
 from database.repositories.log_repository import LogRepository
 from database.repositories.memory_repository import MemoryRepository
 from database.repositories.milestone_repository import MilestoneRepository
+from database.repositories.monthly_repository import MonthlyRepository
 from database.repositories.score_repository import ScoreRepository
 from models.coach_session import (
   CoachChatRequest,
@@ -39,17 +41,23 @@ from models.coach_session import (
 from models.daily_log import DailyLog, DailyLogUpdate
 from models.goal import GoalCreate, GoalUpdate
 from models.milestone import MilestoneCreate, MilestoneUpdate
+from models.monthly import GoalMeasurementCreate
+from models.task_link import TaskLinkWrite
 from services.coach_service import CoachService
 from services.data_portability_service import DataPortabilityService
 from services.life_calendar_service import LifeCalendarService
 from services.memory_service import MemoryService
+from services.monthly_analytics_service import MonthlyAnalyticsService
 from services.observability_service import ObservabilityService
 from services.pattern_service import PatternService
 from services.report_service import ReportService
 from services.settings_service import SettingsService
+from services.task_link_service import TaskLinkService
+from services.yearly_pacing_service import YearlyPacingService
 
 logger = logging.getLogger(__name__)
 MAX_REQUEST_BYTES = 512 * 1024
+MONTH_PATTERN = r"^\d{4}-(0[1-9]|1[0-2])$"
 
 app = FastAPI(
   title="GoalOS Operating System API",
@@ -188,6 +196,25 @@ def calendar_year(
 # ---------------------------------------------------------------------------
 
 
+def _refresh_month_snapshot(month: str) -> None:
+  """Keep the stored month in step with the data. Facts only: the lever analysis runs on import/recompute."""
+  try:
+    MonthlyAnalyticsService().recompute_month(month, with_insights=False)
+  except Exception as exc:
+    logger.warning("Failed to refresh monthly snapshot %s: %s", month, exc)
+
+
+def _rescore_all(reason: str) -> None:
+  """Scores read task links and goal cues, so changing either re-scores every day (about 90 rows, cheap)."""
+  try:
+    from services.analytics_service import recompute_all_scores
+
+    recompute_all_scores()
+    MonthlyAnalyticsService().recompute_all(with_insights=False)  # facts only; levers don't read these scores
+  except Exception as exc:
+    logger.warning("Failed to re-score after %s: %s", reason, exc)
+
+
 @api_router.get("/journal/today", dependencies=[Depends(require_api_token)])
 def journal_today() -> dict:
   today = date.today()
@@ -221,14 +248,13 @@ def journal_upsert(payload: dict) -> dict:
 
   # Automatically update daily scores
   try:
-    from services.analytics_service import calculate_daily_scores
-    logs_30d = LogRepository().get_range(target_date - timedelta(days=30), target_date)
-    goals = GoalRepository().get_active()
-    recent_scores = ScoreRepository().get_recent(7)
-    scores_7d = [s.overall_growth_score or 50.0 for s in recent_scores]
-    calculate_daily_scores(log, goals, logs_30d, scores_7d)
+    from services.analytics_service import recompute_all_scores
+    # This day's score, and the later days whose 14-day window or momentum includes it.
+    recompute_all_scores(since=target_date)
   except Exception as exc:
     logger.warning("Failed to calculate daily score on journal upsert: %s", exc)
+
+  _refresh_month_snapshot(f"{target_date.year:04d}-{target_date.month:02d}")
 
   return log.model_dump(mode="json")
 
@@ -275,6 +301,45 @@ def get_goals_horizons() -> dict[str, list[dict]]:
   return output
 
 
+@api_router.get("/tasks/review", dependencies=[Depends(require_api_token)])
+def get_task_review_queue(limit: int = Query(default=50, ge=1, le=500)) -> dict:
+  """Completed tasks whose goal is still unknown, most-repeated first."""
+  return TaskLinkService().review_queue(limit=limit)
+
+
+@api_router.put("/tasks/links", dependencies=[Depends(require_api_token)])
+def put_task_link(payload: TaskLinkWrite) -> dict:
+  """Say which goal a task serves (or that it serves none). The decision applies to every day it appears."""
+  try:
+    key = TaskLinkService().set_link(payload.key, payload.kind, payload.goal_id)
+  except LookupError:
+    raise HTTPException(status_code=404, detail="Goal not found") from None
+  except ValueError as exc:
+    raise HTTPException(status_code=422, detail=str(exc)) from exc
+  _rescore_all("task link saved")
+  return {"key": key, "kind": payload.kind, "goal_id": payload.goal_id}
+
+
+@api_router.delete("/tasks/links/{key}", dependencies=[Depends(require_api_token)])
+def delete_task_link(key: str) -> dict:
+  if not TaskLinkService().clear_link(key):
+    raise HTTPException(status_code=404, detail="No saved link for that task")
+  _rescore_all("task link removed")
+  return {"success": True}
+
+
+@api_router.get("/goals/pacing", dependencies=[Depends(require_api_token)])
+def get_goals_pacing(horizon: Optional[str] = Query(default=None, pattern=r"^(1-year|5-year|10-year)$")) -> list[dict]:
+  """Pace of yearly-and-beyond goals against their numeric targets and monthly check-ins."""
+  return YearlyPacingService().evaluate_all(horizon=horizon)
+
+
+@api_router.get("/goals/attention", dependencies=[Depends(require_api_token)])
+def get_goals_attention(days: int = Query(default=14, ge=1, le=90)) -> list[dict]:
+  """Completed tasks per active goal over the last `days` days, and how long each has been quiet."""
+  return TaskLinkService().goal_attention(days=days)
+
+
 @api_router.get("/goals/{goal_id}", dependencies=[Depends(require_api_token)])
 def get_goal(goal_id: int) -> dict:
   goal = GoalRepository().get_by_id(goal_id)
@@ -288,6 +353,9 @@ def get_goal(goal_id: int) -> dict:
 @api_router.post("/goals", dependencies=[Depends(require_api_token)])
 def create_goal(goal_in: GoalCreate) -> dict:
   created = GoalRepository().create(goal_in)
+  if created.cues:
+    _rescore_all("goal created with cues")
+  _refresh_month_snapshot(date.today().strftime("%Y-%m"))
   return created.model_dump(mode="json")
 
 
@@ -296,6 +364,9 @@ def update_goal(goal_id: int, goal_in: GoalUpdate) -> dict:
   updated = GoalRepository().update(goal_id, goal_in)
   if not updated:
     raise HTTPException(status_code=404, detail="Goal not found")
+  if goal_in.cues is not None:
+    _rescore_all("goal cues changed")
+  _refresh_month_snapshot(date.today().strftime("%Y-%m"))
   return updated.model_dump(mode="json")
 
 
@@ -304,6 +375,32 @@ def delete_goal(goal_id: int) -> dict:
   success = GoalRepository().delete(goal_id)
   if not success:
     raise HTTPException(status_code=404, detail="Goal not found")
+  _rescore_all("goal deleted")  # its task links went with it
+  return {"success": True}
+
+
+def _require_goal(goal_id: int) -> None:
+  if GoalRepository().get_by_id(goal_id) is None:
+    raise HTTPException(status_code=404, detail="Goal not found")
+
+
+@api_router.get("/goals/{goal_id}/measurements", dependencies=[Depends(require_api_token)])
+def list_goal_measurements(goal_id: int) -> list[dict]:
+  _require_goal(goal_id)
+  return [m.model_dump(mode="json") for m in MonthlyRepository().get_measurements(goal_id)]
+
+
+@api_router.put("/goals/{goal_id}/measurements", dependencies=[Depends(require_api_token)])
+def put_goal_measurement(goal_id: int, measurement: GoalMeasurementCreate) -> dict:
+  _require_goal(goal_id)
+  return MonthlyRepository().upsert_measurement(goal_id, measurement).model_dump(mode="json")
+
+
+@api_router.delete("/goals/{goal_id}/measurements/{month}", dependencies=[Depends(require_api_token)])
+def delete_goal_measurement(goal_id: int, month: str = PathParam(pattern=MONTH_PATTERN)) -> dict:
+  _require_goal(goal_id)
+  if not MonthlyRepository().delete_measurement(goal_id, month):
+    raise HTTPException(status_code=404, detail="Check-in not found")
   return {"success": True}
 
 
@@ -533,6 +630,39 @@ def analytics_dashboard() -> dict:
 def analytics_scores(limit: int = Query(default=30, ge=1, le=180)) -> list[dict]:
   scores = ScoreRepository().get_recent(last_n=limit)
   return [s.model_dump(mode="json") for s in scores]
+
+
+def _snapshot_payload(service: MonthlyAnalyticsService, snapshot) -> dict:
+  payload = snapshot.model_dump(mode="json")
+  payload["goal_results"] = [r.model_dump(mode="json") for r in service.get_goal_results(snapshot.month)]
+  return payload
+
+
+@api_router.get("/analytics/monthly", dependencies=[Depends(require_api_token)])
+def analytics_monthly() -> list[dict]:
+  """Stored month-by-month analytics, oldest first. Built on first read if nothing is stored yet."""
+  service = MonthlyAnalyticsService()
+  return [_snapshot_payload(service, s) for s in service.snapshots_ensuring_built()]
+
+
+@api_router.post("/analytics/monthly/recompute", dependencies=[Depends(require_api_token)])
+def analytics_monthly_recompute(month: Optional[str] = Query(default=None, pattern=MONTH_PATTERN)) -> dict:
+  service = MonthlyAnalyticsService()
+  if month is None:
+    return {"recomputed": [s.month for s in service.recompute_all()]}
+  snapshot = service.recompute_month(month)
+  if snapshot is None:
+    raise HTTPException(status_code=404, detail="No journal entries for that month")
+  return _snapshot_payload(service, snapshot)
+
+
+@api_router.get("/analytics/monthly/{month}", dependencies=[Depends(require_api_token)])
+def analytics_monthly_one(month: str = PathParam(pattern=MONTH_PATTERN)) -> dict:
+  service = MonthlyAnalyticsService()
+  snapshot = service.get_snapshot(month)
+  if snapshot is None:
+    raise HTTPException(status_code=404, detail="No stored analytics for that month")
+  return _snapshot_payload(service, snapshot)
 
 
 # ---------------------------------------------------------------------------

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Goal, Milestone, goalOSApi } from '../api/client';
+import { Goal, GoalAttention, GoalPacing, Milestone, goalOSApi } from '../api/client';
 import { GoalFormModal } from './GoalFormModal';
+import { GoalPace } from './GoalPace';
 import { PageHeader } from './PageHeader';
+import { TaskLinker } from './TaskLinker';
 import {
   Plus,
   CheckCircle2,
@@ -28,11 +30,31 @@ export const GoalsView: React.FC = () => {
     '5-year': [],
     '10-year': [],
   });
+  const [pacing, setPacing] = useState<Record<number, GoalPacing>>({});
+  const [attention, setAttention] = useState<Record<number, GoalAttention>>({});
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [addingMilestoneFor, setAddingMilestoneFor] = useState<number | null>(null);
   const [newMilestoneText, setNewMilestoneText] = useState('');
+
+  const loadPacing = async () => {
+    try {
+      const list = await goalOSApi.getGoalPacing();
+      setPacing(Object.fromEntries(list.map((p) => [p.goal_id, p])));
+    } catch (err) {
+      console.error('Failed to load goal pacing:', err);
+    }
+  };
+
+  const loadAttention = async () => {
+    try {
+      const list = await goalOSApi.getGoalAttention();
+      setAttention(Object.fromEntries(list.map((a) => [a.goal_id, a])));
+    } catch (err) {
+      console.error('Failed to load goal attention:', err);
+    }
+  };
 
   const loadGoals = async () => {
     try {
@@ -44,6 +66,8 @@ export const GoalsView: React.FC = () => {
     } finally {
       setLoading(false);
     }
+    loadPacing();
+    loadAttention();
   };
 
   useEffect(() => {
@@ -121,6 +145,16 @@ export const GoalsView: React.FC = () => {
     }
   };
 
+  // Counts only mean something once some tasks are linked; until then a zero would read as neglect.
+  const anyLinked = Object.values(attention).some((a) => a.done_30d > 0);
+  const attentionNote = (goalId: number): string | null => {
+    const a = attention[goalId];
+    if (!a || !anyLinked) return null;
+    if (a.done_recent > 0) return `Moved ${a.done_recent} ${a.done_recent === 1 ? 'time' : 'times'} in ${a.window_days} days`;
+    if (a.days_quiet === null) return 'No completed task linked yet';
+    return a.days_quiet === 0 ? 'Quiet today' : `Quiet for ${a.days_quiet} days`;
+  };
+
   const closeMilestoneInput = () => {
     setAddingMilestoneFor(null);
     setNewMilestoneText('');
@@ -142,6 +176,13 @@ export const GoalsView: React.FC = () => {
           </button>
         }
       />
+
+      {!loading && (
+        <TaskLinker
+          goals={Object.values(horizons).flat()}
+          onChanged={loadAttention}
+        />
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 motion-safe:animate-pulse" aria-hidden="true">
@@ -232,6 +273,12 @@ export const GoalsView: React.FC = () => {
                             />
                           </div>
                         </div>
+
+                        {attentionNote(goal.id) && (
+                          <p className="text-xs text-slate-600">{attentionNote(goal.id)}</p>
+                        )}
+
+                        <GoalPace goal={goal} pacing={pacing[goal.id]} onChanged={loadPacing} />
 
                         <div className="pt-3 border-t border-emerald-100/70 space-y-1.5">
                           {milestones.length > 0 && (

@@ -1,13 +1,15 @@
 """Analytics service tests."""
 
-from datetime import date, timedelta
+import json
+from datetime import date
 
+from database.repositories.score_repository import ScoreRepository
 from models.daily_log import DailyLog, DailyLogCreate
 from models.goal import Goal, GoalCreate
+from models.score import ScoreCreate
 from services.analytics_service import (
-  consistency_score,
+  calculate_daily_scores,
   gap_score,
-  goal_alignment_score,
   health_score,
   learning_score,
   linear_regression_slope,
@@ -15,6 +17,7 @@ from services.analytics_service import (
   normalize,
   overall_growth_score,
   productivity_score,
+  recent_overall_scores,
 )
 
 
@@ -44,34 +47,6 @@ class TestNormalize:
     assert normalize(None, 0, 10) == 0.0
 
 
-class TestGoalAlignment:
-  def test_matching_tasks(self):
-    goals = [_make_goal(title="Learn Python coding", reason="career growth")]
-    tasks = ["Solve Python coding problems"]
-    score = goal_alignment_score(tasks, goals)
-    assert 0 <= score <= 100
-    assert score > 0
-
-  def test_empty_inputs(self):
-    assert goal_alignment_score([], []) == 0.0
-    assert goal_alignment_score(["task"], []) == 0.0
-
-
-class TestConsistency:
-  def test_empty_logs(self):
-    assert consistency_score([]) == 0.0
-
-  def test_full_streak(self):
-    logs = [_make_log(date(2026, 6, 23) - timedelta(days=i), morning=True) for i in range(10)]
-    score = consistency_score(logs)
-    assert 0 < score <= 100
-
-  def test_partial_completion(self):
-    logs = [_make_log(date(2026, 6, 20) + timedelta(days=i), morning=(i % 2 == 0)) for i in range(10)]
-    score = consistency_score(logs)
-    assert 0 < score < 100
-
-
 class TestHealth:
   def test_optimal(self):
     score = health_score(8.0, 5, True, 5)
@@ -81,9 +56,16 @@ class TestHealth:
     score = health_score(None, None, False, None)
     assert score == 0.0
 
-  def test_workout_only(self):
-    score = health_score(None, None, True, None)
-    assert score == 30.0
+  def test_all_missing_is_unknown_not_zero(self):
+    assert health_score(None, None, None, None) is None
+
+  def test_workout_only_scores_just_the_workout(self):
+    assert health_score(None, None, True, None) == 100.0
+    assert health_score(None, None, False, None) == 0.0
+
+  def test_sleep_only_is_not_capped_by_missing_inputs(self):
+    # 8.5h is 90% of the 4-9h sleep range; workout/energy were never recorded.
+    assert health_score(8.5, None, None, None) == 90.0
 
 
 class TestLearning:
@@ -102,6 +84,18 @@ class TestProductivity:
 
   def test_zero(self):
     assert productivity_score(0, 0, 1) >= 0
+
+  def test_all_missing_is_unknown_not_zero(self):
+    assert productivity_score(None, None, None) is None
+
+  def test_task_rate_only_scores_the_rate(self):
+    assert productivity_score(None, 0.5, None) == 50.0
+    assert productivity_score(None, 1.0, None) == 100.0
+    assert productivity_score(None, 0.0, None) == 0.0
+
+  def test_missing_parts_are_left_out_not_zeroed(self):
+    # deep work (50 pts) at 3 of 6 h plus tasks (30 pts) at 100% -> 55 of 80 -> 68.75
+    assert productivity_score(3.0, 1.0, None) == 68.75
 
 
 class TestMomentum:
@@ -153,3 +147,48 @@ class TestOverallGrowth:
   def test_zero(self):
     score = overall_growth_score(0, 0, 0, 0, 0, 0)
     assert score == 0.0
+
+  def test_unknown_components_are_left_out_and_weights_renormalised(self):
+    assert overall_growth_score(80, 80, None, 80, 80, 80) == 80.0
+    # goal 0.30*100 + consistency 0.25*0 over their combined weight 0.55
+    assert round(overall_growth_score(100, 0, None, None, None, None), 4) == round(30 / 55 * 100, 4)
+
+  def test_everything_unknown(self):
+    assert overall_growth_score(None, None, None, None, None, None) is None
+
+
+class TestDailyScoresFromRealFields:
+  def test_percent_task_rate_drives_productivity_and_missing_fields_are_ignored(self, temp_db):
+    # task_completion_rate is stored as a percent (0-100); sleep_hours present, nothing else.
+    log = _make_log(date(2026, 9, 20), evening=True, task_completion_rate=50.0, sleep_hours=8.5)
+    score = calculate_daily_scores(log, [], [log], [])
+    assert score.productivity_score == 50.0
+    assert score.health_score == 90.0
+
+  def test_task_rate_comes_from_the_task_list_not_a_fraction_saved_by_the_editor(self, temp_db):
+    # The Journal editor autosaves task_completion_rate as a 0-1 fraction; the task list is authoritative.
+    tasks = json.dumps([{"text": "a", "completed": True}, {"text": "b", "completed": False}])
+    log = _make_log(date(2026, 9, 22), evening=True, planned_tasks=tasks, task_completion_rate=0.5)
+    assert calculate_daily_scores(log, [], [log], []).productivity_score == 50.0
+
+  def test_unknown_inputs_are_stored_as_null_not_zero(self, temp_db):
+    log = _make_log(date(2026, 9, 21), evening=True)
+    score = calculate_daily_scores(log, [], [log], [])
+    assert score.productivity_score is None
+    assert score.health_score is None
+
+
+class TestRecentOverallScores:
+  def test_only_scores_before_the_date_oldest_first(self, temp_db):
+    repo = ScoreRepository()
+    for day in range(1, 11):
+      repo.create(ScoreCreate(date=date(2026, 9, day), scope="daily", overall_growth_score=float(day * 10)))
+    # Scoring Sept 8 must see Sept 1-7 (oldest first), never Sept 8-10 or the newest 7 overall.
+    assert recent_overall_scores(date(2026, 9, 8)) == [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0]
+    assert momentum_score(recent_overall_scores(date(2026, 9, 8))) > 50
+
+  def test_skips_unknown_overall_scores(self, temp_db):
+    repo = ScoreRepository()
+    repo.create(ScoreCreate(date=date(2026, 9, 1), scope="daily", overall_growth_score=40.0))
+    repo.create(ScoreCreate(date=date(2026, 9, 2), scope="daily", overall_growth_score=None))
+    assert recent_overall_scores(date(2026, 9, 3)) == [40.0]

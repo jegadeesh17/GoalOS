@@ -1,9 +1,36 @@
 """Goal model."""
 
+import json
+import re
 from datetime import date, datetime
-from typing import Optional
+from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+MIN_CUE_LENGTH = 3
+
+
+def normalise_cues(value: Any) -> Optional[list[str]]:
+  """Cues are words the user writes per goal so tasks can be matched to it. Stored normalised the same way
+  as task keys (casefolded, punctuation-free, single-spaced); a cue shorter than 3 characters matches too
+  much to mean anything, so it is rejected rather than silently dropped."""
+  if value is None:
+    return None
+  if isinstance(value, str):
+    try:
+      value = json.loads(value)
+    except json.JSONDecodeError:
+      return None  # unreadable stored value: unknown, not an error for the whole goal
+  cues: list[str] = []
+  for raw in value:
+    cue = " ".join(re.sub(r"[^\w\s]", " ", str(raw).casefold()).split())
+    if not cue:
+      continue
+    if len(cue) < MIN_CUE_LENGTH:
+      raise ValueError(f"Cue '{raw}' is too short: use at least {MIN_CUE_LENGTH} characters")
+    if cue not in cues:
+      cues.append(cue)
+  return cues
 
 
 class GoalBase(BaseModel):
@@ -17,6 +44,15 @@ class GoalBase(BaseModel):
   status: str = "active"
   reason: Optional[str] = None
   success_criteria: Optional[str] = None
+  # Optional numeric target, checked in monthly (see YearlyPacingService). Unmeasured goals leave these empty.
+  metric_name: Optional[str] = None
+  metric_unit: Optional[str] = None
+  start_value: Optional[float] = None
+  target_value: Optional[float] = None
+  # Words that mark a task as serving this goal (see services/task_link_service.py).
+  cues: Optional[list[str]] = None
+
+  _normalise_cues = field_validator("cues", mode="before")(normalise_cues)
 
 
 class GoalCreate(GoalBase):
@@ -34,6 +70,13 @@ class GoalUpdate(BaseModel):
   status: Optional[str] = None
   reason: Optional[str] = None
   success_criteria: Optional[str] = None
+  metric_name: Optional[str] = None
+  metric_unit: Optional[str] = None
+  start_value: Optional[float] = None
+  target_value: Optional[float] = None
+  cues: Optional[list[str]] = None
+
+  _normalise_cues = field_validator("cues", mode="before")(normalise_cues)
 
 
 class Goal(GoalBase):

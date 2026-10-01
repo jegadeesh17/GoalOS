@@ -120,7 +120,7 @@ def run_import(csv_path: str | None = None, db_path: str | None = None) -> int:
             completed_count = sum(1 for t in tasks if t.completed)
             completion_rate = round((completed_count / len(tasks)) * 100, 1) if tasks else 0.0
 
-            awake_range, sleep_hours = svc._parse_awake_range(awake_text or None)
+            awake_range = svc._parse_awake_range(awake_text or None)
 
             existing = conn.execute("SELECT id FROM daily_logs WHERE date = ?", (iso_date,)).fetchone()
 
@@ -129,7 +129,6 @@ def run_import(csv_path: str | None = None, db_path: str | None = None) -> int:
                     UPDATE daily_logs SET
                         gratitude = ?,
                         awake_range = ?,
-                        sleep_hours = ?,
                         time_blocks = ?,
                         planned_tasks = ?,
                         tasks_completed = ?,
@@ -145,7 +144,6 @@ def run_import(csv_path: str | None = None, db_path: str | None = None) -> int:
                 """, (
                     gratitude,
                     awake_range,
-                    sleep_hours,
                     time_blocks_json,
                     planned_tasks_json,
                     tasks_raw,
@@ -157,15 +155,14 @@ def run_import(csv_path: str | None = None, db_path: str | None = None) -> int:
             else:
                 conn.execute("""
                     INSERT INTO daily_logs (
-                        date, gratitude, awake_range, sleep_hours, time_blocks, planned_tasks,
+                        date, gratitude, awake_range, time_blocks, planned_tasks,
                         tasks_completed, task_completion_rate, journal_entry, takeaway,
                         morning_completed, evening_completed, imported, import_source
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, 1, 'journal_data.csv')
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, 1, 'journal_data.csv')
                 """, (
                     iso_date,
                     gratitude,
                     awake_range,
-                    sleep_hours,
                     time_blocks_json,
                     planned_tasks_json,
                     tasks_raw,
@@ -175,6 +172,15 @@ def run_import(csv_path: str | None = None, db_path: str | None = None) -> int:
                 ))
 
             count += 1
+
+    # Sleep is last night's bedtime to today's wake-up, so it can only be derived once
+    # every day is in; unknown (NULL) when the previous day has no AWAKE line.
+    rows = conn.execute("SELECT id, date, awake_range, sleep_hours, imported FROM daily_logs").fetchall()
+    sleep_by_date = svc.compute_sleep_series([(date.fromisoformat(r["date"]), r["awake_range"]) for r in rows])
+    for r in rows:
+        derived = sleep_by_date[date.fromisoformat(r["date"])]
+        if r["imported"] and derived != r["sleep_hours"]:
+            conn.execute("UPDATE daily_logs SET sleep_hours = ? WHERE id = ?", (derived, r["id"]))
 
     conn.commit()
     print(f"Successfully imported/synchronized {count} journal entries from {resolved_csv.name} into {resolved_db.name}!")

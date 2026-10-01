@@ -82,6 +82,14 @@ class LogRepository:
       )
     return self.get_by_id(log_id)
 
+  def set_sleep_hours(self, log_id: int, hours: Optional[float]) -> None:
+    """Write sleep_hours verbatim, including NULL (``update`` skips unset fields)."""
+    with get_db() as conn:
+      conn.execute(
+        "UPDATE daily_logs SET sleep_hours = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (hours, log_id),
+      )
+
   def upsert_by_date(self, log: DailyLogCreate) -> DailyLog:
     """Legacy full-form upsert that does not erase existing optional fields."""
     existing = self.get_by_date(log.date)

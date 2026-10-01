@@ -151,6 +151,36 @@ def parse_plans(text: str) -> list[dict]:
   return blocks
 
 
+def task_key(text: str) -> str:
+  """Stable identity for a task's wording: casefolded, punctuation-free, single-spaced."""
+  return " ".join(re.sub(r"[^\w\s]", " ", (text or "").casefold()).split())
+
+
+def planned_task_list(log: DailyLog | None) -> list[dict]:
+  """Tasks from the planned_tasks JSON only.
+
+  The free-text fallbacks (`tasks_completed`) use a different done-mark convention, so a log
+  without the JSON has *unknown* tasks, not an empty or all-done list.
+  """
+  if not log or not log.planned_tasks:
+    return []
+  try:
+    raw = json.loads(log.planned_tasks)
+  except json.JSONDecodeError:
+    return []
+  if not isinstance(raw, list):
+    return []
+  return [t for t in raw if isinstance(t, dict) and str(t.get("text", "")).strip()]
+
+
+def planned_task_rate(log: DailyLog | None) -> float | None:
+  """Percent (0-100) of the day's planned tasks ticked, or None when the day has no task list."""
+  tasks = planned_task_list(log)
+  if not tasks:
+    return None
+  return round(sum(1 for t in tasks if t.get("completed")) / len(tasks) * 100, 1)
+
+
 def completion_rate(tasks: list[dict]) -> float | None:
   if not tasks:
     return None

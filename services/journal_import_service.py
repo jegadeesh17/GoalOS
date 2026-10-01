@@ -4,7 +4,7 @@ import json
 import math
 import re
 from collections import Counter
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -21,6 +21,25 @@ VERBS = re.compile(
 )
 
 AWAKE_TIME = re.compile(r"(\d{1,2})(?:[:.](\d{2}))?\s*(AM|PM)", re.IGNORECASE)
+
+
+def awake_match_to_hours(match: tuple[str, str, str]) -> float:
+  hour_str, minute_str, meridiem = match
+  hour = int(hour_str) % 12
+  if meridiem.upper() == "PM":
+    hour += 12
+  minute = int(minute_str) if minute_str else 0
+  return hour + minute / 60.0
+
+
+def awake_times(text: Optional[str]) -> Optional[tuple[float, float]]:
+  """(wake hour, bedtime hour) from an AWAKE line, or None unless both times read confidently."""
+  if not text:
+    return None
+  matches = AWAKE_TIME.findall(text)
+  if len(matches) != 2:
+    return None
+  return awake_match_to_hours(matches[0]), awake_match_to_hours(matches[1])
 
 
 class JournalImportService:
@@ -180,7 +199,7 @@ class JournalImportService:
     completed = sum(1 for t in tasks if t.completed)
     rate = completed / len(tasks) if tasks else 0.0
     awake_text = normalized.get("awake")
-    awake_range, sleep_hours = self._parse_awake_range(awake_text)
+    awake_range = self._parse_awake_range(awake_text)
 
     wake_hour = self._parse_wake_hour(awake_text)
     if wake_hour is not None and plans:
@@ -196,7 +215,6 @@ class JournalImportService:
       takeaway=self._clean(normalized.get("takeaway")),
       task_completion_rate=rate,
       awake_range=awake_range,
-      sleep_hours=sleep_hours,
     )
 
   def store_entry(self, entry: ParsedEntry, source: str = "import") -> int:
@@ -209,7 +227,6 @@ class JournalImportService:
       date=entry.date,
       gratitude=entry.gratitude,
       awake_range=entry.awake_range,
-      sleep_hours=entry.sleep_hours,
       time_blocks=time_blocks_json,
       planned_tasks=tasks_json,
       tasks_completed=tasks_text,
@@ -223,7 +240,19 @@ class JournalImportService:
       morning_ai_output=json.dumps([b.model_dump() for b in entry.plans]) if entry.plans else None,
     )
     stored = self.log_repo.upsert_by_date(log)
+    self.recompute_sleep_hours()
     return self._extract_memories(entry, stored.id)
+
+  def recompute_sleep_hours(self) -> int:
+    """Re-derive sleep_hours for every imported log from the AWAKE lines. Returns rows changed."""
+    logs = sorted(self.log_repo.get_all(), key=lambda log: log.date)
+    series = self.compute_sleep_series([(log.date, log.awake_range) for log in logs])
+    changed = 0
+    for log in logs:
+      if log.imported and series[log.date] != log.sleep_hours:
+        self.log_repo.set_sleep_hours(log.id, series[log.date])
+        changed += 1
+    return changed
 
   def generate_onboarding_summary(self) -> str:
     """Generate summary after import."""
@@ -348,40 +377,39 @@ class JournalImportService:
         ))
     return blocks
 
-  def _parse_awake_range(self, text: Optional[str]) -> tuple[Optional[str], Optional[float]]:
-    """Parse an AWAKE line like '9:00 AM - 12.30 AM.' into (cleaned range, sleep_hours).
-
-    Never guesses: if the two times can't both be confidently read, or the
-    resulting sleep duration is outside a sane 0-16h window, the raw cleaned
-    text is kept (for the user to review) but sleep_hours stays None.
-    """
+  def _parse_awake_range(self, text: Optional[str]) -> Optional[str]:
+    """Clean an AWAKE line like '9:00 AM - 12.30 AM.' for storage; the raw text is kept for review."""
     if not text:
-      return None, None
+      return None
     cleaned = text.strip().rstrip(".").strip()
-    if not cleaned:
-      return None, None
+    return cleaned or None
 
-    matches = AWAKE_TIME.findall(cleaned)
-    if len(matches) != 2:
-      return cleaned, None
+  def _awake_times(self, text: Optional[str]) -> Optional[tuple[float, float]]:
+    return awake_times(text)
 
-    start_hours = self._awake_match_to_hours(matches[0])
-    end_hours = self._awake_match_to_hours(matches[1])
-    awake_duration = end_hours - start_hours
-    if awake_duration <= 0:
-      awake_duration += 24
-    sleep_hours = round(24 - awake_duration, 1)
-    if not (0.0 <= sleep_hours <= 16.0):
-      return cleaned, None
-    return cleaned, sleep_hours
+  def sleep_between(self, previous_awake: Optional[str], awake: Optional[str]) -> Optional[float]:
+    """Hours slept before today's wake-up: previous day's bedtime until today's wake time.
+
+    Never guesses: unknown when either line is missing/unreadable, or when the result
+    falls outside a sane 0-16h window (e.g. a bedtime written as AM instead of PM).
+    """
+    previous = self._awake_times(previous_awake)
+    today = self._awake_times(awake)
+    if previous is None or today is None:
+      return None
+    sleep_hours = round((today[0] - previous[1]) % 24, 1)
+    return sleep_hours if 0.0 <= sleep_hours <= 16.0 else None
+
+  def compute_sleep_series(self, entries: list[tuple[date, Optional[str]]]) -> dict[date, Optional[float]]:
+    """sleep_hours for each (date, awake_range); unknown when the previous calendar day has no entry."""
+    awake_by_date = dict(entries)
+    return {
+      day: self.sleep_between(awake_by_date.get(day - timedelta(days=1)), awake)
+      for day, awake in entries
+    }
 
   def _awake_match_to_hours(self, match: tuple[str, str, str]) -> float:
-    hour_str, minute_str, meridiem = match
-    hour = int(hour_str) % 12
-    if meridiem.upper() == "PM":
-      hour += 12
-    minute = int(minute_str) if minute_str else 0
-    return hour + minute / 60.0
+    return awake_match_to_hours(match)
 
   def _parse_wake_hour(self, text: Optional[str]) -> Optional[float]:
     """Extract the AWAKE section's wake-up hour as a float (e.g. 9.0), or None if unparseable."""

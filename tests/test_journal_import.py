@@ -154,22 +154,55 @@ class TestJournalImport:
     assert len(plans) == 2
     assert plans[0].activity == "Quandao project"
 
-  def test_parse_awake_range_computes_sleep_hours(self, temp_db):
+  def test_parse_awake_range_cleans_text_only(self, temp_db):
     svc = JournalImportService()
-    awake_range, sleep_hours = svc._parse_awake_range("9:00 AM - 12.30 AM.")
-    assert awake_range == "9:00 AM - 12.30 AM"
-    assert sleep_hours == 8.5
-
-  def test_parse_awake_range_unparseable_does_not_guess(self, temp_db):
-    svc = JournalImportService()
-    awake_range, sleep_hours = svc._parse_awake_range("woke up late")
-    assert awake_range == "woke up late"
-    assert sleep_hours is None
+    assert svc._parse_awake_range("9:00 AM - 12.30 AM.") == "9:00 AM - 12.30 AM"
+    assert svc._parse_awake_range("woke up late") == "woke up late"
 
   def test_parse_awake_range_empty(self, temp_db):
     svc = JournalImportService()
-    assert svc._parse_awake_range("") == (None, None)
-    assert svc._parse_awake_range(None) == (None, None)
+    assert svc._parse_awake_range("") is None
+    assert svc._parse_awake_range(None) is None
+
+  def test_sleep_is_last_bedtime_to_todays_wake(self, temp_db):
+    svc = JournalImportService()
+    # Went to bed 4:30 AM, woke 9:30 AM -> 5h. Not today's own bedtime.
+    assert svc.sleep_between("8:30 AM - 4:30 AM", "9:30 AM - 1.00 AM") == 5.0
+
+  def test_sleep_when_bedtime_was_before_midnight(self, temp_db):
+    svc = JournalImportService()
+    assert svc.sleep_between("6:30 AM - 11:00 PM", "6:00 AM - 10:30 PM") == 7.0
+
+  def test_sleep_unknown_without_previous_day_or_times(self, temp_db):
+    svc = JournalImportService()
+    assert svc.sleep_between(None, "9:00 AM - 1:00 AM") is None
+    assert svc.sleep_between("9:00 AM - 1:00 AM", None) is None
+    assert svc.sleep_between("woke up late", "9:00 AM - 1:00 AM") is None
+
+  def test_sleep_unknown_when_previous_bedtime_is_implausible(self, temp_db):
+    svc = JournalImportService()
+    # An "11:00 AM" bedtime would imply 21.5h of sleep; keep it unknown, never guess a PM.
+    assert svc.sleep_between("8:30 AM - 11:00 AM", "8:30 AM - 1:00 AM") is None
+
+  def test_store_entry_derives_sleep_from_previous_day(self, temp_db):
+    svc = JournalImportService()
+    for day, awake in (("18/9/26", "9:00 AM - 1:00 AM"), ("19/9/26", "9:00 AM - 12.30 AM")):
+      svc.store_entry(svc.parse_entry({"date": day, "awake": awake, "review": "fine"}))
+    assert svc.log_repo.get_by_date(date(2026, 9, 18)).sleep_hours is None  # no day before it
+    assert svc.log_repo.get_by_date(date(2026, 9, 19)).sleep_hours == 8.0  # 1:00 AM -> 9:00 AM
+
+  def test_sleep_is_unknown_after_a_missing_day(self, temp_db):
+    svc = JournalImportService()
+    for day, awake in (("17/9/26", "9:00 AM - 1:00 AM"), ("19/9/26", "9:00 AM - 1:00 AM")):
+      svc.store_entry(svc.parse_entry({"date": day, "awake": awake, "review": "fine"}))
+    assert svc.log_repo.get_by_date(date(2026, 9, 19)).sleep_hours is None
+
+  def test_storing_an_earlier_day_later_fills_in_the_next_day(self, temp_db):
+    svc = JournalImportService()
+    svc.store_entry(svc.parse_entry({"date": "19/9/26", "awake": "9:00 AM - 12.30 AM", "review": "x"}))
+    assert svc.log_repo.get_by_date(date(2026, 9, 19)).sleep_hours is None
+    svc.store_entry(svc.parse_entry({"date": "18/9/26", "awake": "9:00 AM - 1:00 AM", "review": "x"}))
+    assert svc.log_repo.get_by_date(date(2026, 9, 19)).sleep_hours == 8.0
 
   def test_parse_entry_includes_awake_section(self, temp_db):
     svc = JournalImportService()
@@ -183,7 +216,7 @@ class TestJournalImport:
       "takeaway": "I am gonna regret very much.",
     })
     assert entry.awake_range == "9:00 AM - 12.30 AM"
-    assert entry.sleep_hours == 8.5
+    assert entry.sleep_hours is None  # needs the previous day's bedtime; derived on store
 
   def test_markdown_block_parses_awake_section(self, temp_db):
     svc = JournalImportService()
@@ -212,7 +245,7 @@ I am gonna regret very much.
     row = svc._parse_markdown_block(text)
     assert row["awake"] == "9:00 AM - 12.30 AM."
     entry = svc.parse_entry(row)
-    assert entry.sleep_hours == 8.5
+    assert entry.awake_range == "9:00 AM - 12.30 AM"
     assert len(entry.tasks) == 3
     assert entry.tasks[0].completed is True
     assert entry.tasks[1].completed is False  # bare X marks a NOT-done task
@@ -308,4 +341,4 @@ I am gonna regret very much.
     svc.store_entry(entry)
     log = svc.log_repo.get_by_date(date(2026, 9, 20))
     assert log.awake_range == "9:00 AM - 12.30 AM"
-    assert log.sleep_hours == 8.5
+    assert log.sleep_hours is None  # no entry for 19/9 to take the bedtime from

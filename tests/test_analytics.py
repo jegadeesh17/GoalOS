@@ -3,6 +3,8 @@
 import json
 from datetime import date
 
+import pytest
+
 from database.repositories.score_repository import ScoreRepository
 from models.daily_log import DailyLog, DailyLogCreate
 from models.goal import Goal, GoalCreate
@@ -149,7 +151,7 @@ class TestOverallGrowth:
     assert score == 0.0
 
   def test_unknown_components_are_left_out_and_weights_renormalised(self):
-    assert overall_growth_score(80, 80, None, 80, 80, 80) == 80.0
+    assert overall_growth_score(80, 80, None, 80, 80, 80) == pytest.approx(80.0)
     # goal 0.30*100 + consistency 0.25*0 over their combined weight 0.55
     assert round(overall_growth_score(100, 0, None, None, None, None), 4) == round(30 / 55 * 100, 4)
 

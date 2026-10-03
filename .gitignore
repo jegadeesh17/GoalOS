@@ -50,6 +50,9 @@ web/
 .mypy_cache/
 .ruff_cache/
 
+# Claude Code hook scratch state (per-session git baselines, not shared)
+.claude/.hookstate/
+
 # DVC and Model artifacts
 .dvc/
 *.pth

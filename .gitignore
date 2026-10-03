@@ -79,3 +79,15 @@ docs/orchestrate/
 .agents/
 AGENTS.md
 GEMINI.md
+
+# Coverage, editor, packaging and local tool state
+.coverage
+htmlcov/
+.idea/
+.vscode/
+.superpowers/
+*.egg-info/
+.ipynb_checkpoints/
+*.tsbuildinfo
+.claude/settings.local.json
+.impeccable/hook.cache.json

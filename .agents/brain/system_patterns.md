@@ -88,6 +88,11 @@ $$S = 0.35 \cdot S_{\text{sem}} + 0.15 \cdot S_{\text{lex}} + 0.25 \cdot S_{\tex
 - **Session & Blackboard State:** Multi-turn conversational history is persisted in `coach_sessions` and `coach_messages` with a dynamic `blackboard` JSON bus for inter-agent context sharing.
 - **Non-Blocking Telemetry & Cost Metering:** Every LLM completion and tool loop automatically emits latency, token consumption, and estimated USD spend to `ai_telemetry` via `ObservabilityService`.
 
+### 3.5 Journal Section Semantics
+- **`PLAN` is a log, `TASKS` is the intent.** The notebook's `PLAN` section records what the user actually did each hour. It is evidence of where time went, never a schedule. Only `TASKS` is forward-looking.
+- User-facing copy, coach text, lever labels and prompts must not call PLAN blocks "planned", "scheduled" or "to fill before the day starts". The UI calls the section "Hour by hour".
+- The storage names (`time_blocks`, `ParsedEntry.plans`, `plan_filled`, `plan_hours_filled`) are legacy and unchanged. Renaming them is a separate migration decision.
+
 ---
 
 ## 4. 🌿 Git Discipline & Repository Patterns

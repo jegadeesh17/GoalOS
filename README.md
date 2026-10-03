@@ -50,8 +50,8 @@
 - **Non-Redundant Information:** Single source of truth for metrics with clean visual legend and hover inspector.
 
 ### 📓 2. Notebook Journal Import
-- **Six-Section Journal:** Each day follows a fixed structure — Gratitude, Awake (wake–sleep range), Plan (hour-range blocks), Tasks (numbered, ticked when done), Review, and Takeaway.
-- **Bulk Import, Not Live Entry:** Handwritten notebook pages are transcribed and bulk-imported (`scripts/import_journal_csv.py` → `JournalImportService`), which normalizes Plan entries into an hourly grid and computes sleep hours only from real Awake times.
+- **Six-Section Journal:** Each day follows a fixed structure — Gratitude, Awake (wake–sleep range), Plan (an hour-by-hour log of what you actually did, as hour-range blocks), Tasks (what you intended to do; numbered, ticked when done), Review, and Takeaway.
+- **Bulk Import, Not Live Entry:** Handwritten notebook pages are transcribed and bulk-imported (`scripts/import_journal_csv.py` → `JournalImportService`), which normalizes Plan entries (the hourly log) into an hourly grid and computes sleep hours only from real Awake times.
 - **Day Drawer:** Clicking any day on the calendar opens the full six-section entry for that date.
 
 ### 🎯 3. Multi-Horizon Goals Architecture

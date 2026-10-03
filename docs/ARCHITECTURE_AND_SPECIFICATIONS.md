@@ -125,7 +125,7 @@ flowchart TB
 - **Design System:** Forest Mist Paper Glass (opaque emerald/sage glass panels, static pre-computed gradient washes, Plus Jakarta Sans + Newsreader typography, non-redundant metrics).
 - **Core Views:**
   1. `YearProductivityCalendar.tsx`: 12-month per-day productivity grid (plus the 70-year week grid); clicking a day opens `DayDetailDrawer.tsx` with that day's full six-section journal.
-  2. `JournalView.tsx`: Six-section notebook journal (Gratitude, Awake, Plan, Tasks, Review, Takeaway) with debounced autosave. Real data arrives by bulk import (`scripts/import_journal_csv.py` → `JournalImportService`), not live entry.
+  2. `JournalView.tsx`: Six-section notebook journal (Gratitude, Awake, Plan, Tasks, Review, Takeaway) with debounced autosave. Plan is an hour-by-hour log of what was done (shown as "Hour by hour"); Tasks is the only forward-looking section. Real data arrives by bulk import (`scripts/import_journal_csv.py` → `JournalImportService`), not live entry.
   3. `GoalsView.tsx`: 4-tier horizon view (1-Month, 1-Year, 5-Year, 10-Year) with interactive milestones and auto-calculated completion percentages. Goal records are the single source of truth for vision.
   4. `AICoachView.tsx`: Goal Alignment (`/coach/progress`, monthly/yearly pacing) and Future Self (`/coach/future-self`, 5/10-year pacing), plus Coordinator chat.
   5. `AnalyticsView.tsx`: Longitudinal charts, habit consistency radar, fatigue indicators, and growth scores.

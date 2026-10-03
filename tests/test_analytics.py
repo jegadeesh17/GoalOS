@@ -13,7 +13,6 @@ from services.analytics_service import (
   calculate_daily_scores,
   gap_score,
   health_score,
-  learning_score,
   linear_regression_slope,
   momentum_score,
   normalize,
@@ -70,15 +69,6 @@ class TestHealth:
     assert health_score(8.5, None, None, None) == 90.0
 
 
-class TestLearning:
-  def test_keywords(self):
-    score = learning_score("I studied coding and read a book", ["codekata practice"])
-    assert score >= 40
-
-  def test_empty(self):
-    assert learning_score("", []) == 0.0
-
-
 class TestProductivity:
   def test_high_productivity(self):
     score = productivity_score(5.0, 0.9, 5)
@@ -109,8 +99,12 @@ class TestMomentum:
     scores = [50.0] * 7
     assert momentum_score(scores) == 50.0
 
-  def test_empty(self):
-    assert momentum_score([]) == 50.0
+  def test_no_history_is_unknown_not_neutral(self):
+    assert momentum_score([]) is None
+
+  def test_too_little_history_is_unknown(self):
+    assert momentum_score([50.0, 60.0, 70.0, 80.0]) is None
+    assert momentum_score([50.0, 60.0, 70.0, 80.0, 90.0]) is not None
 
 
 class TestLinearRegression:
@@ -139,24 +133,24 @@ class TestGapScore:
 
 class TestOverallGrowth:
   def test_weighted_average(self):
-    score = overall_growth_score(80, 80, 80, 80, 80, 80)
+    score = overall_growth_score(80, 80, 80, 80, 80)
     assert score == 80.0
 
   def test_bounds(self):
-    score = overall_growth_score(100, 100, 100, 100, 100, 100)
+    score = overall_growth_score(100, 100, 100, 100, 100)
     assert score == 100.0
 
   def test_zero(self):
-    score = overall_growth_score(0, 0, 0, 0, 0, 0)
+    score = overall_growth_score(0, 0, 0, 0, 0)
     assert score == 0.0
 
   def test_unknown_components_are_left_out_and_weights_renormalised(self):
-    assert overall_growth_score(80, 80, None, 80, 80, 80) == pytest.approx(80.0)
+    assert overall_growth_score(80, 80, None, 80, 80) == pytest.approx(80.0)
     # goal 0.30*100 + consistency 0.25*0 over their combined weight 0.55
-    assert round(overall_growth_score(100, 0, None, None, None, None), 4) == round(30 / 55 * 100, 4)
+    assert round(overall_growth_score(100, 0, None, None, None), 4) == round(30 / 55 * 100, 4)
 
   def test_everything_unknown(self):
-    assert overall_growth_score(None, None, None, None, None, None) is None
+    assert overall_growth_score(None, None, None, None, None) is None
 
 
 class TestDailyScoresFromRealFields:
@@ -178,6 +172,9 @@ class TestDailyScoresFromRealFields:
     score = calculate_daily_scores(log, [], [log], [])
     assert score.productivity_score is None
     assert score.health_score is None
+    # No keyword guessing and no neutral filler: both stay unknown without data.
+    assert score.learning_score is None
+    assert score.momentum_score is None
 
 
 class TestRecentOverallScores:

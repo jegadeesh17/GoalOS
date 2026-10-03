@@ -20,12 +20,7 @@ MIN_WAKE_TIMES = 5  # fewer readable wake times than this and regularity is unkn
 SOLID_DAY_SHARE = 0.5  # a day is "solid" when at least half of its tasks are ticked
 RHYTHM_WEIGHT = 0.7
 WAKE_SD_ZERO_SCORE_HOURS = 2.0  # a wake-time spread of this many hours or more scores 0 regularity
-
-LEARNING_KEYWORDS = [
-  "read", "studied", "learned", "practiced", "course", "book",
-  "research", "codekata", "coding", "leetcode", "study", "prep",
-  "nlp", "rag", "docker", "ml", "ds", "project", "algorithm",
-]
+MIN_MOMENTUM_SCORES = 5  # fewer known overall scores in the previous week than this and momentum is unknown
 
 
 def normalize(value: Optional[float], min_val: float, max_val: float) -> float:
@@ -133,15 +128,6 @@ def health_score(
   ])
 
 
-def learning_score(journal_text: str, tasks: list[str]) -> float:
-  """Keyword detection in journal and tasks."""
-  combined = f"{journal_text} {' '.join(tasks)}".lower()
-  if not combined.strip():
-    return 0.0
-  matches = sum(1 for kw in LEARNING_KEYWORDS if kw in combined)
-  return min(matches * 20, 100.0)
-
-
 def productivity_score(
   deep_work_hours: Optional[float],
   tasks_completed: Optional[float],
@@ -169,10 +155,10 @@ def linear_regression_slope(values: list[float]) -> float:
   return numerator / denominator
 
 
-def momentum_score(scores_7d: list[float]) -> float:
-  """Linear regression slope on 7-day overall scores."""
-  if not scores_7d:
-    return 50.0
+def momentum_score(scores_7d: list[float]) -> Optional[float]:
+  """Linear regression slope on the previous week's overall scores; None with fewer than 5 of them."""
+  if len(scores_7d) < MIN_MOMENTUM_SCORES:
+    return None
   slope = linear_regression_slope(scores_7d)
   return min(max(normalize(slope, -10, 10) * 100, 0.0), 100.0)
 
@@ -209,7 +195,6 @@ def overall_growth_score(
   consistency: Optional[float],
   health: Optional[float],
   productivity: Optional[float],
-  learning: Optional[float],
   momentum: Optional[float],
 ) -> Optional[float]:
   """Weighted combination of the scores that are known; unknown ones are left out and weights renormalised."""
@@ -218,7 +203,6 @@ def overall_growth_score(
     (consistency, 0.25),
     (health, 0.15),
     (productivity, 0.15),
-    (learning, 0.10),
     (momentum, 0.05),
   ]
   known = [(score, weight) for score, weight in weighted if score is not None]
@@ -268,20 +252,6 @@ def calculate_daily_scores(
 ) -> Score:
   """Calculate all scores for a single day. `resolve` maps a task's text to its goal (built from the saved
   links and goal cues when omitted; pass one when scoring many days in a row)."""
-  tasks: list[str] = []
-  if log.top_priority:
-    tasks.append(log.top_priority)
-  if log.supporting_task_1:
-    tasks.append(log.supporting_task_1)
-  if log.supporting_task_2:
-    tasks.append(log.supporting_task_2)
-  if log.tasks_completed:
-    tasks.append(log.tasks_completed)
-  if log.journal_entry:
-    tasks.append(log.journal_entry)
-  if log.takeaway:
-    tasks.append(log.takeaway)
-
   if resolve is None:
     from services.task_link_service import TaskLinkService
 
@@ -292,7 +262,6 @@ def calculate_daily_scores(
   health = health_score(
     log.sleep_hours, log.sleep_quality, log.workout_completed, log.energy_level
   )
-  learning = learning_score(log.journal_entry or "", tasks)
   # Derive the rate from the task list: the stored task_completion_rate is a percent from the import
   # script but a 0-1 fraction when the Journal editor autosaves, so it is only a fallback.
   rate = planned_task_rate(log)
@@ -302,7 +271,7 @@ def calculate_daily_scores(
   productivity = productivity_score(log.deep_work_hours, task_fraction, log.expected_focus)
   momentum = momentum_score(scores_7d)
   gap = gap_score(goals, logs_30d, log.date)
-  overall = overall_growth_score(alignment, consistency, health, productivity, learning, momentum)
+  overall = overall_growth_score(alignment, consistency, health, productivity, momentum)
 
   from database.repositories.score_repository import ScoreRepository
   from models.score import ScoreCreate
@@ -313,7 +282,6 @@ def calculate_daily_scores(
     goal_alignment_score=alignment,
     consistency_score=consistency,
     health_score=health,
-    learning_score=learning,
     productivity_score=productivity,
     momentum_score=momentum,
     overall_growth_score=overall,

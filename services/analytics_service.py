@@ -175,11 +175,12 @@ def gap_score(goals: list[Goal], logs: list[DailyLog], today: Optional[date] = N
     if not goal.deadline:
       gaps.append(100.0 - goal.progress * 100)
       continue
-    total_days = (goal.deadline - goal.created_at.date() if goal.created_at else today).days
+    start = goal.created_at.date() if goal.created_at else today
+    total_days = (goal.deadline - start).days
     if total_days <= 0:
       gaps.append(100.0 if goal.progress < 1.0 else 0.0)
       continue
-    elapsed = (today - (goal.created_at.date() if goal.created_at else today)).days
+    elapsed = (today - start).days
     required_pace = min(elapsed / total_days, 1.0)
     actual_pace = goal.progress
     gap = max(0.0, (required_pace - actual_pace) * 100)

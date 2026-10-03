@@ -130,6 +130,10 @@ class TestGapScore:
     score = gap_score([goal], [], today=date(2026, 6, 1))
     assert 0 <= score <= 100
 
+  def test_goal_without_created_at_does_not_crash(self):
+    goal = Goal(id=1, title="G", category="c", horizon="y", progress=0.2, deadline=date(2027, 1, 1), created_at=None)
+    assert gap_score([goal], [], today=date(2026, 10, 3)) == 100.0
+
 
 class TestOverallGrowth:
   def test_weighted_average(self):

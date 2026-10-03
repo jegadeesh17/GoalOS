@@ -4,6 +4,14 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-10-03 — Analytics Audit: Learning Score Removed, Momentum Left Unknown Without History
+
+- **Audit finding:** `learning_score` matched keywords as substrings ("ds", "rag", "ml", "read" fire inside "friends", "storage", "html", "already"), scored 0.0 instead of unknown on empty text, and fed the overall at 10%. `momentum_score` returned a made-up 50 with no history. Both broke the no-guessing rule.
+- **Changes:** deleted `learning_score` and `LEARNING_KEYWORDS` outright (the column and `Score.learning_score` stay, now always NULL). `momentum_score` returns `None` with fewer than 5 known overall scores in the previous week (`MIN_MOMENTUM_SCORES`). `overall_growth_score` no longer takes a learning part; weights are renormalised over the known parts as before.
+- **Not done:** stored scores keep their old learning and momentum values until `recompute_all_scores()` runs (back up the DB first). Still open from the audit: task completion feeds alignment, consistency and productivity at once; pacing assumes linear progress; lever p-values assume independent days; `gap_score` raises `AttributeError` for a goal with a deadline but no `created_at` and is stored but never shown.
+
+---
+
 ## 2026-10-03 — PLAN Is an Hourly Log of What Was Done
 
 - **User Directive:** the PLAN section tracks what was done each hour, not what was planned.

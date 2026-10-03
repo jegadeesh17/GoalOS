@@ -16,13 +16,13 @@ class OpenRouterClient:
   """Client for OpenRouter API."""
 
   BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
+  # Ranked best-first for coaching and reasoning quality; all are $0 on OpenRouter.
   FREE_FALLBACK_MODELS = [
+    "thinkingmachines/inkling:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
     "google/gemma-4-31b-it:free",
-    "google/gemma-4-26b-a4b-it:free",
-    "nex-agi/nex-n2.5-pro:free",
-    "nex-agi/nex-n2.5-mini:free",
-    "nvidia/nemotron-3.5-lightning:free",
-    "liquid/lfm-2.5-2.6b:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "qwen/qwen3.8-27b:free",
   ]
 
   def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):

@@ -138,11 +138,11 @@ class TestGapScore:
 class TestOverallGrowth:
   def test_weighted_average(self):
     score = overall_growth_score(80, 80, 80, 80, 80)
-    assert score == 80.0
+    assert score == pytest.approx(80.0)
 
   def test_bounds(self):
     score = overall_growth_score(100, 100, 100, 100, 100)
-    assert score == 100.0
+    assert score == pytest.approx(100.0)
 
   def test_zero(self):
     score = overall_growth_score(0, 0, 0, 0, 0)

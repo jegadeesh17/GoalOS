@@ -158,6 +158,13 @@ def health_details() -> dict:
 # ---------------------------------------------------------------------------
 
 
+def _parse_iso_date(value: str) -> date:
+  try:
+    return date.fromisoformat(value)
+  except ValueError:
+    raise HTTPException(status_code=400, detail="date must be an ISO date (YYYY-MM-DD)") from None
+
+
 def _get_user_calendar_service() -> LifeCalendarService:
   with get_db() as conn:
     row = conn.execute("SELECT birth_date, target_age FROM user WHERE id = 1").fetchone()
@@ -240,7 +247,7 @@ def journal_upsert(payload: dict) -> dict:
   if not target_date_str:
     target_date = date.today()
   else:
-    target_date = date.fromisoformat(target_date_str) if isinstance(target_date_str, str) else target_date_str
+    target_date = _parse_iso_date(target_date_str) if isinstance(target_date_str, str) else target_date_str
 
   update_data = {k: v for k, v in payload.items() if k != "date"}
   changes = DailyLogUpdate(**update_data)
@@ -460,7 +467,7 @@ def delete_milestone(milestone_id: int) -> dict:
 @api_router.post("/coach/future-self", dependencies=[Depends(require_api_token)])
 def coach_future_self(payload: dict) -> dict:
   target_date_str = payload.get("date")
-  target_date = date.fromisoformat(target_date_str) if target_date_str else date.today()
+  target_date = _parse_iso_date(target_date_str) if target_date_str else date.today()
   try:
     return CoachService().get_future_self_coaching(target_date)
   except Exception:
@@ -471,7 +478,7 @@ def coach_future_self(payload: dict) -> dict:
 @api_router.post("/coach/progress", dependencies=[Depends(require_api_token)])
 def coach_progress(payload: dict) -> dict:
   target_date_str = payload.get("date")
-  target_date = date.fromisoformat(target_date_str) if target_date_str else date.today()
+  target_date = _parse_iso_date(target_date_str) if target_date_str else date.today()
   try:
     return CoachService().get_progress_coaching(target_date)
   except Exception:

@@ -154,7 +154,7 @@ class CoordinatorPipeline:
         cal = self.calendar_service.get_summary()
         tools_used.append("get_lifespan_stats")
         context_blocks.append(
-          f"LIFE CALENDAR STATS:\n- Weeks Lived: {cal.weeks_lived} / {cal.total_weeks} ({cal.percentage_lived}% elapsed)\n- Weeks Remaining: {cal.weeks_remaining}"
+          f"LIFE CALENDAR STATS:\n- Weeks Lived: {cal['weeks_lived']} / {cal['total_weeks']} ({cal['percentage_lived']}% elapsed)\n- Weeks Remaining: {cal['weeks_remaining']}"
         )
       except Exception:
         pass

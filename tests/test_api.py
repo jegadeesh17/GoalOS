@@ -57,3 +57,9 @@ def test_api_coach_progress_schema(client):
     assert response.status_code == 200
     body = response.json()
     assert "actionable_coaching_advice" in body
+
+
+@pytest.mark.parametrize("path", ["/journal/upsert", "/coach/progress", "/coach/future-self"])
+def test_invalid_date_returns_400(client, path):
+    response = client.post(path, json={"date": "not-a-date"})
+    assert response.status_code == 400

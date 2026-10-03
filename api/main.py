@@ -785,8 +785,8 @@ def factory_reset(payload: dict) -> dict:
   confirmation = payload.get("confirmation", "")
   if confirmation != "RESET":
     raise HTTPException(status_code=400, detail="Confirmation phrase 'RESET' is required")
-  backup_path = DataPortabilityService().safe_factory_reset()
-  return {"success": True, "backup_created": str(backup_path)}
+  # DataPortabilityService has no reset method yet; fail cleanly instead of raising AttributeError.
+  raise HTTPException(status_code=501, detail="Factory reset is not implemented yet. No data was changed.")
 
 
 # ---------------------------------------------------------------------------

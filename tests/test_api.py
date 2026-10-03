@@ -63,3 +63,8 @@ def test_api_coach_progress_schema(client):
 def test_invalid_date_returns_400(client, path):
     response = client.post(path, json={"date": "not-a-date"})
     assert response.status_code == 400
+
+
+def test_factory_reset_not_implemented_returns_501(client):
+  assert client.post("/export/reset", json={"confirmation": "RESET"}).status_code == 501
+  assert client.post("/export/reset", json={"confirmation": "nope"}).status_code == 400

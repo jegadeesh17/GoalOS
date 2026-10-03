@@ -180,6 +180,7 @@ flowchart TD
 
 ## Known limitations
 
+- `POST /export/reset` (the Settings "factory reset" button) returns HTTP 501: `DataPortabilityService` has no reset method yet, and nothing is deleted or backed up.
 - Tool arguments are not validated against the declared schemas by the registry. Some handlers check by hand (`get_goal_pacing` rejects an unknown `horizon`; `get_monthly_snapshots` clamps `months`); others convert directly (`int(args.get("days", 7))`). The benchmark report's "Schema validated" label overstates what it checks.
 - The coach chat never lets the model choose tools; `OpenRouterClient.complete_with_tools` is used only by tests.
 - When no birth date is set, the calendar falls back to `2002-06-17` with target age 70 (`api/main.py:165-168`, `models/user.py:12`, migration default).

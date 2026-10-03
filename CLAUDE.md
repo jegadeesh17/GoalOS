@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-GoalOS is a single-user, local-first life OS: a FastAPI backend (SQLite + ChromaDB), a React/Vite/Tailwind SPA, and AI coaching via OpenRouter with a deterministic rule-engine fallback. `AGENTS.md` and `.agents/brain/` hold the project's own agent rules and accumulated lessons (`system_patterns.md` lists invariants, `project_learnings.md` the past bugs); read them before designing anything non-trivial. `AGENTS.md` also sets the git workflow (atomic Conventional Commits, stage files by name, never `git add -A`), which differs from a "commit only when asked" default.
+GoalOS is a single-user, local-first life OS: a FastAPI backend (SQLite + ChromaDB), a React/Vite/Tailwind SPA, and AI coaching via OpenRouter with a deterministic rule-engine fallback. `AGENTS.md` and `.agents/brain/` (local only, not tracked in the repo) hold the project's own agent rules and accumulated lessons (`system_patterns.md` lists invariants, `project_learnings.md` the past bugs); read them before designing anything non-trivial. `AGENTS.md` also sets the git workflow (atomic Conventional Commits, stage files by name, never `git add -A`), which differs from a "commit only when asked" default.
 
 ## Commands
 
@@ -27,7 +27,7 @@ CI (`.github/workflows/ci.yml`) runs pytest, ruff, mypy, the retrieval eval scri
 
 ## Architecture
 
-**Layering (enforced by convention, see `.agents/brain/system_patterns.md`):** `api/main.py` (one ~830-line file, a single `api_router`) → `services/` → `database/repositories/` → SQLite/Chroma. Routes must not run raw SQL. `models/` are pure Pydantic v2 schemas. Note the existing code in `api/main.py` is an exception: `_get_user_calendar_service` runs a query inline.
+**Layering (enforced by convention, see `.agents/brain/system_patterns.md`, local only):** `api/main.py` (one ~830-line file, a single `api_router`) → `services/` → `database/repositories/` → SQLite/Chroma. Routes must not run raw SQL. `models/` are pure Pydantic v2 schemas. Note the existing code in `api/main.py` is an exception: `_get_user_calendar_service` runs a query inline.
 
 - **SQLite:** always `with get_db() as conn:` (`database/connection.py`; commits on exit, rolls back on error, `sqlite3.Row`). Schema changes go only through the numbered `MIGRATIONS` list in `database/migrations.py`, run at startup. Don't nest `get_db()` blocks or call a service that opens its own write transaction from inside one; on Windows this hangs (pre-fetch reads, close, then call the service).
 - **Settings:** `configs/settings.py` is the real implementation; `config/settings.py` re-exports it and is the preferred import. `reload_settings()` mutates the singleton in place so `.env` edits are picked up without restart. Tests monkeypatch `settings.settings.DB_PATH`/`CHROMA_PATH`.

@@ -39,7 +39,7 @@
 > [!TIP]
 > **Interactive Architecture Diagram:** A complete multi-page editable Draw.io / diagrams.net diagram is available at [`docs/architecture.drawio`](architecture.drawio). It can be opened directly in [app.diagrams.net](https://app.diagrams.net), the VS Code Draw.io extension, or the Draw.io desktop application. It includes:
 > 1. **Page 1:** System Topology & Layered Architecture (Presentation, API Gateway, Orchestrator, Services, Dual Storage, External AI Gateway)
-> 2. **Page 2:** Cognitive Multi-Agent Supervisor & Scoped Tool Execution Loop
+> 2. **Page 2:** Cognitive Multi-Agent Supervisor & Scoped Tool Execution Loop (describes a tool loop that the chat coordinator does not use; it pre-fetches data instead)
 > 3. **Page 3:** Cognitive Memory Dual-Write & 5-Factor Hybrid RAG Pipeline
 
 GoalOS follows a clean, decoupled 4-tier local architecture:
@@ -68,7 +68,7 @@ flowchart TB
         FastAPI_App --> Middleware --> Routers
     end
 
-    subgraph Coordinator_Layer ["3. Multi-Agent Supervisor & Toolkits"]
+    subgraph Coordinator_Layer ["3. Coordinator & Domain Toolkits"]
         CoordAgent["CoordinatorPipeline (ai/pipelines/coordinator.py)"]
         subgraph Toolkits ["Domain-Partitioned Toolkits (ai/tools/*)"]
             T_Mem["MemoryToolkit (Hybrid RAG)"]
@@ -76,7 +76,7 @@ flowchart TB
             T_Jour["JournalToolkit (Daily Logs & Progress)"]
             T_Cal["CalendarToolkit (Lifespan Statistics)"]
         end
-        CoordAgent --> Toolkits
+        CoordAgent -. "pre-fetches data (model calls no tools)" .-> Toolkits
     end
 
     subgraph Service_Layer ["4. Core Business & Domain Services"]
@@ -96,7 +96,7 @@ flowchart TB
     end
 
     subgraph External_Gateway ["6. External AI Gateway (Optional)"]
-        OpenRouter["OpenRouter Gateway (Claude 3.5 / Llama 3.3 / Gemini 2.5)"]
+        OpenRouter["OpenRouter Gateway (free-tier model list with fallbacks)"]
         Fallback["Deterministic Rule-Based Fallback Engine"]
     end
 
@@ -185,7 +185,7 @@ sequenceDiagram
 GoalOS runs two guided pipelines plus the chat coordinator. Both guided pipelines are built for batch cadence (the user bulk-imports a week or more of notebook pages at a time), so neither assumes daily check-ins:
 1. **`progress_coach.py`** (Goal Alignment, `/coach/progress`): Monthly and yearly pacing of 1-month and 1-year goals against the month's logged days, with a historical baseline from the prior month.
 2. **`future_self_coach.py`** (Future Self, `/coach/future-self`): Checks whether current execution is on pace for the 5-year and 10-year goals, written from the user's real age (derived from `birth_date`).
-3. **`coordinator.py`** (`CoordinatorPipeline`, `/coach/chat`): Free-form chat with intent triage and domain-scoped tools.
+3. **`coordinator.py`** (`CoordinatorPipeline`, `/coach/chat`): Free-form chat with keyword intent triage; it pre-fetches domain data and puts it in the prompt, and the model does not choose or call tools.
 
 Morning Planning, Evening Review, Weekly Sync, and the single-goal Goal Alignment picker were removed on 2026-09-27 because they assumed daily interaction.
 

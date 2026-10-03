@@ -8,7 +8,7 @@ This chronological log captures all significant architectural updates, bug fixes
 
 - **User Directive:** the PLAN section tracks what was done each hour, not what was planned.
 - **Finding:** parsing and storage already matched this (hour-range activity lines, empty hours left empty). Only the wording treated PLAN as a schedule.
-- **Changes:** the journal editor and day drawer now call the section "Hour by hour" (empty state "Nothing logged yet"). The `plan_filled` lever is now "Hours logged in the day" with groups "N+ hours logged", and its focus line is a plain statement of the contrast instead of "fill the grid before the day starts". `system_patterns.md` §3.5 records the rule. Field names (`time_blocks`, `plan_filled`) are unchanged.
+- **Changes:** the journal editor and day drawer now call the section "Hour by hour" (empty state "Nothing logged yet"). The `plan_filled` lever is now "Hours logged in the day" with groups "N+ hours logged". It stays a reported finding but no longer produces a "try next month" focus line: logging more hours likely tracks productive days rather than causing them, so it is not advice. `system_patterns.md` §3.5 records the rule. Field names (`time_blocks`, `plan_filled`) are unchanged.
 - **Open:** hour-based analytics (actual work vs rest hours, hours per goal, TASKS vs what was done) are not built.
 
 ---

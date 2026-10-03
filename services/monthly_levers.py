@@ -267,8 +267,6 @@ def build_focus(findings: list[dict[str, Any]], stuck_tasks: list[dict[str, Any]
     numbers = f"{better['mean']:.0f}% of tasks done vs {worse['mean']:.0f}%"
     if f["lever"] == "wake":
       lines.append(f"Aim to wake by {clock_label(WAKE_EARLY)} more often: those days had {numbers} on later mornings.")
-    elif f["lever"] == "plan_filled":
-      lines.append(f"Days with {better['label']} had {numbers}.")
     elif f["lever"] == "bedtime_prev":
       lines.append(f"Get to bed by midnight more often: the next day had {numbers} after a late night.")
   if stuck_tasks:

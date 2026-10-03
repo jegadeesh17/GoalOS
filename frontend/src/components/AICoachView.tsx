@@ -24,6 +24,12 @@ interface AICoachViewProps {
 
 type SubView = 'pipelines' | 'chat';
 
+// "Saved months: 2026-08 ..." -> ["Saved months", "2026-08 ..."]; no lead when the first colon sits too far in.
+const splitLead = (point: string): [string | null, string] => {
+  const i = point.indexOf(': ');
+  return i > 0 && i <= 60 && !point.slice(0, i).includes('. ') ? [point.slice(0, i), point.slice(i + 2)] : [null, point];
+};
+
 const ChatBubble: React.FC<{ message: CoachMessage }> = ({ message }) => {
   if (message.role === 'user') {
     return (
@@ -242,8 +248,20 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ initialMode = 'goal-al
         </div>
       )}
 
-      {r.progress_narrative && (
-        <p className="mt-2 text-sm text-slate-700 leading-relaxed">{r.progress_narrative}</p>
+      {Array.isArray(r.progress_points) && r.progress_points.length > 1 ? (
+        <ul className="mt-2 divide-y divide-emerald-100/70">
+          {r.progress_points.map((point: string, i: number) => {
+            const [lead, rest] = splitLead(point);
+            return (
+              <li key={i} className="py-2 first:pt-0 last:pb-0 text-sm text-slate-700 leading-relaxed">
+                {lead && <span className="font-semibold text-slate-900">{lead}: </span>}
+                {rest}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        r.progress_narrative && <p className="mt-2 text-sm text-slate-700 leading-relaxed">{r.progress_narrative}</p>
       )}
 
       {r.monthly_goal_evaluated && (

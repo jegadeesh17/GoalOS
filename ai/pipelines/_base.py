@@ -221,10 +221,16 @@ def fallback_progress(context: dict) -> dict:
 
   saved = _saved_month_lines(context.get("monthly_history"))
   measured, waiting = _goal_pacing_lines(context.get("goal_pacing"))
-  history_note = " ".join(saved + ["Yearly pacing: " + " ".join(measured + waiting)] if (measured or waiting) else saved)
+  history_points = list(saved)
+  if measured or waiting:
+    history_points.append("Yearly pacing: " + " ".join(measured + waiting))
   attention = _attention_line(context.get("goal_attention"))
   if attention:
-    history_note = f"{history_note} {attention}".strip()
+    # "Quiet: ..." can run long, so it gets its own point instead of trailing the first.
+    head, separator, quiet = attention.partition(" Quiet: ")
+    history_points.append(head)
+    if separator:
+      history_points.append(f"Quiet: {quiet}")
   if days_logged > 0:
     narrative = f"You logged {days_logged}/{days_in_month} days in {month_name}. Execution trajectory is evaluating pacing toward '{primary_goal}'."
     wins = progress.get("wins") or "Journal logs recorded."
@@ -239,13 +245,15 @@ def fallback_progress(context: dict) -> dict:
       wins = f"No journal entries logged yet for {month_name}."
     pacing = "Day 1 Pacing — Start Daily Log"
 
-  if history_note:
-    narrative = f"{narrative} {history_note}"
+  # The same sentences as one paragraph (kept for the model path and older clients) and as one point per fact.
+  points = [narrative, *history_points]
+  narrative = " ".join(points)
 
   return {
     "pacing_status": pacing,
     "monthly_goal_evaluated": primary_goal,
     "progress_narrative": narrative,
+    "progress_points": points,
     "key_wins_aligned": wins,
     "critical_bottleneck": bottleneck,
     "recognized_pattern_analysis": pattern_analysis,

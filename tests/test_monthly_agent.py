@@ -157,3 +157,22 @@ def test_progress_fallback_does_not_call_unlinked_tasks_neglect():
              "goal_attention": [_row("Getting a job", 0, None, 0), _row("Getting fit", 0, None, 0)]}
   narrative = fallback_progress(context)["progress_narrative"]
   assert "cannot be measured" in narrative and "Quiet" not in narrative
+
+
+def test_progress_fallback_lists_each_fact_as_its_own_point_without_changing_the_text():
+  context = {"monthly_progress": {"days_logged": 30, "days_in_month": 30}, "month_name": "September 2026",
+             "active_goals": [], "recent_logs": [], "monthly_history": _HISTORY, "goal_pacing": [_BEHIND],
+             "goal_attention": [_row("Getting a job", 6, 0), _row("Getting fit", 0, 21, done_30d=2)]}
+  result = fallback_progress(context)
+  points = result["progress_points"]
+  assert " ".join(points) == result["progress_narrative"]  # reorganised, not rewritten or cut
+  assert [p.split(":")[0].split(" (")[0] for p in points] == [
+    "You logged 30/30 days in September 2026. Execution trajectory is evaluating pacing toward 'Establish daily deep work discipline'.",
+    "Saved months", "Strongest lever", "Yearly pacing", "Completed tasks per goal in the 14 days to 2026-09-30", "Quiet",
+  ]
+
+
+def test_progress_fallback_with_nothing_saved_is_a_single_point():
+  context = {"monthly_progress": {"days_logged": 3, "days_in_month": 30}, "active_goals": [], "recent_logs": []}
+  result = fallback_progress(context)
+  assert result["progress_points"] == [result["progress_narrative"]]

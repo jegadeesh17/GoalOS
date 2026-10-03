@@ -15,7 +15,7 @@ from database.connection import get_db
 from database.repositories.goal_repository import GoalRepository
 from database.repositories.monthly_repository import MonthlyRepository
 from models.goal import GoalCreate
-from models.monthly import GoalMeasurementCreate
+from models.monthly import GoalMeasurementCreate, GoalPacePointCreate
 from services.yearly_pacing_service import YearlyPacingService
 
 TODAY = date(2026, 10, 2)
@@ -140,3 +140,86 @@ def test_check_in_endpoints_and_pacing_listing(client):
   assert client.delete(f"/goals/{goal['id']}/measurements/2026-09").status_code == 404
   assert client.put("/goals/9999/measurements", json={"month": "2026-09", "value": 1}).status_code == 404
   assert client.put(f"/goals/{goal['id']}/measurements", json={"month": "2026-9", "value": 1}).status_code == 422
+
+
+# ---- user-written expected path (pace points)
+
+
+def _point(goal_id: int, due: str, value: float):
+  MonthlyRepository().upsert_pace_point(goal_id, GoalPacePointCreate(due=date.fromisoformat(due), value=value))
+
+
+def test_no_pace_points_is_the_straight_line(temp_db):
+  goal = _goal(start_value=0, target_value=120)
+  _check_in(goal.id, "2026-09", 25)
+  assert _pace(goal.id)["path"] == "linear"
+
+
+def test_pace_points_replace_the_straight_line_and_scale_the_band_to_the_segment(temp_db):
+  # Start 0 on 2026-08-01, expected 10 by 2026-09-30, target 120 on 2026-12-31.
+  goal = _goal(start_value=0, target_value=120)
+  _point(goal.id, "2026-09-30", 10)
+  _check_in(goal.id, "2026-09", 12)
+  r = _pace(goal.id)
+  assert r["path"] == "custom"
+  assert r["expected_now"] == 10.0 and r["gap"] == 2.0
+  assert r["status"] == "ahead"  # +2 against a band of 1 (10% of the 0-10 segment), not of the whole 120
+  assert r["projection"] is None  # a straight-line trend says nothing about a back-loaded path
+
+
+def test_custom_path_still_reports_behind_and_on_pace(temp_db):
+  behind = _goal(title="A", start_value=0, target_value=120)
+  steady = _goal(title="B", start_value=0, target_value=120)
+  for g in (behind, steady):
+    _point(g.id, "2026-09-30", 10)
+  _check_in(behind.id, "2026-09", 8)
+  _check_in(steady.id, "2026-09", 10.5)
+  assert _pace(behind.id)["status"] == "behind"
+  assert _pace(steady.id)["status"] == "on_pace"
+
+
+def test_expected_value_is_interpolated_between_the_users_points(temp_db):
+  goal = _goal(start_value=0, target_value=120)
+  _point(goal.id, "2026-09-30", 10)
+  _check_in(goal.id, "2026-08", 5)  # 2026-08-31 is 30 of the 60 days to the first point
+  assert _pace(goal.id)["expected_now"] == 5.0
+
+
+def test_pace_points_outside_the_goal_span_are_ignored(temp_db):
+  goal = _goal(start_value=0, target_value=120)
+  _point(goal.id, "2027-06-01", 5)  # after the deadline
+  _point(goal.id, "2026-01-01", 99)  # before the start
+  _check_in(goal.id, "2026-09", 25)
+  r = _pace(goal.id)
+  assert r["path"] == "linear" and r["expected_now"] == 47.37
+
+
+def test_pace_point_endpoints_and_migration(client):
+  goal = client.post("/goals", json={
+    "title": "Net worth", "category": "finance", "horizon": "10-year", "deadline": "2036-12-31",
+    "start_value": 0, "target_value": 100,
+  }).json()
+  base = f"/goals/{goal['id']}/pace-points"
+  assert client.put(base, json={"due": "2027-12-31", "value": 2}).status_code == 200
+  assert client.put(base, json={"due": "2027-12-31", "value": 3}).json()["value"] == 3.0
+  assert client.put(base, json={"due": "2031-12-31", "value": 30}).status_code == 200
+  assert [(p["due"], p["value"]) for p in client.get(base).json()] == [("2027-12-31", 3.0), ("2031-12-31", 30.0)]
+  assert client.delete(f"{base}/2027-12-31").status_code == 200
+  assert client.delete(f"{base}/2027-12-31").status_code == 404
+  assert client.delete(f"{base}/not-a-date").status_code == 422
+  assert client.put("/goals/9999/pace-points", json={"due": "2027-12-31", "value": 1}).status_code == 404
+  assert client.put(base, json={"due": "soon", "value": 1}).status_code == 422
+  with get_db() as conn:
+    conn.execute("DELETE FROM goals WHERE id = ?", (goal["id"],))
+    left = conn.execute("SELECT COUNT(*) FROM goal_pace_points WHERE goal_id = ?", (goal["id"],)).fetchone()[0]
+  assert left == 0  # points go with their goal
+
+
+def test_coach_line_says_when_pace_is_judged_on_the_users_own_path(temp_db):
+  from ai.pipelines._base import _measured_line
+
+  goal = _goal(start_value=0, target_value=120, title="Net worth")
+  _check_in(goal.id, "2026-09", 12)
+  assert "expected by then" in _measured_line(_pace(goal.id))
+  _point(goal.id, "2026-09-30", 10)
+  assert "on the path they wrote for it by then" in _measured_line(_pace(goal.id))

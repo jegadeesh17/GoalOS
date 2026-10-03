@@ -1,15 +1,23 @@
 """Monthly snapshot, frozen goal-result, and goal-measurement persistence."""
 
 import json
+from datetime import date
 from typing import Optional
 
 from database.connection import get_db
 from database.repositories._helpers import row_to_dict
-from models.monthly import GoalMeasurement, GoalMeasurementCreate, MonthlyGoalResult, MonthlySnapshot
+from models.monthly import (
+  GoalMeasurement,
+  GoalMeasurementCreate,
+  GoalPacePoint,
+  GoalPacePointCreate,
+  MonthlyGoalResult,
+  MonthlySnapshot,
+)
 
 
 class MonthlyRepository:
-  """CRUD for monthly_snapshots, monthly_goal_results and goal_measurements."""
+  """CRUD for monthly_snapshots, monthly_goal_results, goal_measurements and goal_pace_points."""
 
   # ---- snapshots
 
@@ -91,6 +99,29 @@ class MonthlyRepository:
   def delete_measurement(self, goal_id: int, month: str) -> bool:
     with get_db() as conn:
       cursor = conn.execute("DELETE FROM goal_measurements WHERE goal_id = ? AND month = ?", (goal_id, month))
+    return cursor.rowcount > 0
+
+  # ---- goal pace points
+
+  def upsert_pace_point(self, goal_id: int, data: GoalPacePointCreate) -> GoalPacePoint:
+    with get_db() as conn:
+      conn.execute(
+        "INSERT INTO goal_pace_points (goal_id, due, value) VALUES (?, ?, ?) "
+        "ON CONFLICT(goal_id, due) DO UPDATE SET value=excluded.value",
+        (goal_id, data.due.isoformat(), data.value),
+      )
+    return GoalPacePoint(goal_id=goal_id, **data.model_dump())
+
+  def get_pace_points(self, goal_id: int) -> list[GoalPacePoint]:
+    with get_db() as conn:
+      rows = conn.execute(
+        "SELECT goal_id, due, value FROM goal_pace_points WHERE goal_id = ? ORDER BY due ASC", (goal_id,)
+      ).fetchall()
+    return [GoalPacePoint(**row_to_dict(r)) for r in rows]
+
+  def delete_pace_point(self, goal_id: int, due: date) -> bool:
+    with get_db() as conn:
+      cursor = conn.execute("DELETE FROM goal_pace_points WHERE goal_id = ? AND due = ?", (goal_id, due.isoformat()))
     return cursor.rowcount > 0
 
   def _to_snapshot(self, row) -> MonthlySnapshot:

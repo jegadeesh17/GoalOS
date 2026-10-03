@@ -40,3 +40,14 @@ class GoalMeasurementCreate(BaseModel):
 
 class GoalMeasurement(GoalMeasurementCreate):
   goal_id: int
+
+
+class GoalPacePointCreate(BaseModel):
+  """A point on the user's own expected path: "by this date I expect to be at this value"."""
+
+  due: date
+  value: float
+
+
+class GoalPacePoint(GoalPacePointCreate):
+  goal_id: int

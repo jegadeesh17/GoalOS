@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Goal, GoalPacing, goalOSApi } from '../api/client';
+import React, { useEffect, useState } from 'react';
+import { Goal, GoalPacePoint, GoalPacing, goalOSApi } from '../api/client';
 import { formatDate, localDateStr } from '../lib/date';
 
 const number = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 });
@@ -31,6 +31,24 @@ export const GoalPace: React.FC<GoalPaceProps> = ({ goal, pacing, onChanged }) =
   const [value, setValue] = useState('');
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [editingPath, setEditingPath] = useState(false);
+  const [points, setPoints] = useState<GoalPacePoint[]>([]);
+  const [pointDue, setPointDue] = useState('');
+  const [pointValue, setPointValue] = useState('');
+  const [pointFailed, setPointFailed] = useState(false);
+
+  const loadPoints = async () => {
+    try {
+      setPoints(await goalOSApi.getGoalPacePoints(goal.id));
+    } catch (err) {
+      console.error('Failed to load the expected path:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (editingPath) void loadPoints();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingPath, goal.id]);
 
   if (goal.target_value == null) return null;
 
@@ -58,12 +76,45 @@ export const GoalPace: React.FC<GoalPaceProps> = ({ goal, pacing, onChanged }) =
     }
   };
 
+  const addPoint = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = Number(pointValue);
+    if (!pointDue || pointValue.trim() === '' || Number.isNaN(parsed)) return;
+    setPointFailed(false);
+    try {
+      await goalOSApi.putGoalPacePoint(goal.id, { due: pointDue, value: parsed });
+      setPointDue('');
+      setPointValue('');
+      await loadPoints();
+      onChanged();
+    } catch (err) {
+      console.error('Failed to save the path point:', err);
+      setPointFailed(true);
+    }
+  };
+
+  const removePoint = async (due: string) => {
+    setPointFailed(false);
+    try {
+      await goalOSApi.deleteGoalPacePoint(goal.id, due);
+      await loadPoints();
+      onChanged();
+    } catch (err) {
+      console.error('Failed to remove the path point:', err);
+      setPointFailed(true);
+    }
+  };
+
+  // A point the pace calculation skips: before the starting date or on/after the deadline.
+  const isIgnored = (due: string): boolean =>
+    (pacing?.baseline != null && due <= pacing.baseline.date) || (goal.deadline != null && due >= goal.deadline);
+
   let reading: React.ReactNode = null;
   if (pacing && label && pacing.latest && pacing.expected_now !== null) {
     reading = (
       <>
         <span className="font-semibold text-slate-900">{withUnit(pacing.latest.value, unit)}</span> in{' '}
-        {monthName(pacing.latest.month)}, against about {withUnit(pacing.expected_now, unit)} needed by then.
+        {monthName(pacing.latest.month)}, against about {withUnit(pacing.expected_now, unit)} {pacing.path === 'custom' ? 'on your expected path' : 'needed'} by then.
         {pacing.projection && (
           <>
             {' '}
@@ -145,6 +196,80 @@ export const GoalPace: React.FC<GoalPaceProps> = ({ goal, pacing, onChanged }) =
           Check in for a month
         </button>
       )}
+
+      <div className="pt-1">
+        <button
+          type="button"
+          onClick={() => setEditingPath((open) => !open)}
+          aria-expanded={editingPath}
+          className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 cursor-pointer"
+        >
+          {editingPath ? 'Hide your expected path' : pacing?.path === 'custom' ? 'Edit your expected path' : 'Set your expected path'}
+        </button>
+
+        {editingPath && (
+          <div className="mt-2 space-y-2">
+            <p className="text-xs text-slate-600 leading-relaxed">
+              {goal.deadline
+                ? 'Add the values you expect along the way, such as where you expect to be each year. Pace is judged along these points, joined by straight lines, instead of one line to the target.'
+                : 'Add a deadline in Edit first, then set the values you expect along the way.'}
+            </p>
+
+            {points.length > 0 && (
+              <ul className="space-y-1">
+                {points.map((point) => (
+                  <li key={point.due} className="flex items-center justify-between gap-2 text-sm text-slate-800">
+                    <span>
+                      By {formatDate(point.due, { day: 'numeric', month: 'short', year: 'numeric' })} ·{' '}
+                      <span className="font-semibold tabular-nums">{withUnit(point.value, unit)}</span>
+                      {isIgnored(point.due) && <span className="text-xs text-amber-800"> · outside the goal’s dates, so not used</span>}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void removePoint(point.due)}
+                      aria-label={`Remove the point for ${point.due}`}
+                      className="text-xs font-semibold text-slate-500 hover:text-rose-700 cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {goal.deadline && (
+              <form onSubmit={addPoint} className="flex flex-wrap items-center gap-1.5">
+                <input
+                  type="date"
+                  aria-label={`Date for the expected value of ${goal.title}`}
+                  value={pointDue}
+                  max={goal.deadline}
+                  onChange={(e) => setPointDue(e.target.value)}
+                  className="text-sm px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-white text-slate-900"
+                  required
+                />
+                <input
+                  type="number"
+                  step="any"
+                  aria-label={`Expected value${unit ? ` in ${unit}` : ''} for ${goal.title}`}
+                  placeholder={unit ? `Expected (${unit})` : 'Expected value'}
+                  value={pointValue}
+                  onChange={(e) => setPointValue(e.target.value)}
+                  className="w-36 text-sm px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-white text-slate-900 placeholder:text-slate-500"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold cursor-pointer"
+                >
+                  Add point
+                </button>
+              </form>
+            )}
+            {pointFailed && <p className="text-xs text-amber-800">Couldn’t save that. Try again.</p>}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

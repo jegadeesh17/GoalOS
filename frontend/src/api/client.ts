@@ -196,6 +196,12 @@ export interface GoalMeasurement {
   note?: string | null;
 }
 
+export interface GoalPacePoint {
+  goal_id: number;
+  due: string;
+  value: number;
+}
+
 export interface GoalPacing {
   goal_id: number;
   title: string;
@@ -207,6 +213,7 @@ export interface GoalPacing {
   target_value: number | null;
   check_ins: number;
   status: 'ahead' | 'on_pace' | 'behind' | 'no_check_ins' | 'baseline_only' | 'qualitative' | 'no_deadline';
+  path: 'linear' | 'custom';
   baseline: { value: number; source: 'start_value' | 'first_check_in'; date: string } | null;
   latest: { month: string; value: number } | null;
   expected_now: number | null;
@@ -475,6 +482,18 @@ export const goalOSApi = {
     measurement: { month: string; value: number; note?: string },
   ): Promise<GoalMeasurement> => {
     const res = await api.put<GoalMeasurement>(`/goals/${goalId}/measurements`, measurement);
+    return res.data;
+  },
+  getGoalPacePoints: async (goalId: number): Promise<GoalPacePoint[]> => {
+    const res = await api.get<GoalPacePoint[]>(`/goals/${goalId}/pace-points`);
+    return res.data;
+  },
+  putGoalPacePoint: async (goalId: number, point: { due: string; value: number }): Promise<GoalPacePoint> => {
+    const res = await api.put<GoalPacePoint>(`/goals/${goalId}/pace-points`, point);
+    return res.data;
+  },
+  deleteGoalPacePoint: async (goalId: number, due: string): Promise<{ success: boolean }> => {
+    const res = await api.delete<{ success: boolean }>(`/goals/${goalId}/pace-points/${due}`);
     return res.data;
   },
   createMilestone: async (goalId: number, milestone: Partial<Milestone>): Promise<Milestone> => {

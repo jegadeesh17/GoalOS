@@ -342,6 +342,16 @@ def _migration_9_task_links_and_goal_cues(conn: sqlite3.Connection) -> None:
   )""")
 
 
+def _migration_10_goal_pace_points(conn: sqlite3.Connection) -> None:
+  """The user's own expected path for a measured goal: dated values pacing is judged against."""
+  conn.execute("""CREATE TABLE IF NOT EXISTS goal_pace_points (
+      goal_id INTEGER NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+      due DATE NOT NULL,
+      value REAL NOT NULL,
+      PRIMARY KEY (goal_id, due)
+  )""")
+
+
 MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
   (1, _migration_1_integrity),
   (2, _migration_2_memory_search),
@@ -352,6 +362,7 @@ MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
   (7, _migration_7_goals_are_the_vision_source_of_truth),
   (8, _migration_8_monthly_snapshots_and_goal_targets),
   (9, _migration_9_task_links_and_goal_cues),
+  (10, _migration_10_goal_pace_points),
 ]
 
 

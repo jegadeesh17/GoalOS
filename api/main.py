@@ -41,7 +41,7 @@ from models.coach_session import (
 from models.daily_log import DailyLog, DailyLogUpdate
 from models.goal import GoalCreate, GoalUpdate
 from models.milestone import MilestoneCreate, MilestoneUpdate
-from models.monthly import GoalMeasurementCreate
+from models.monthly import GoalMeasurementCreate, GoalPacePointCreate
 from models.task_link import TaskLinkWrite
 from services.coach_service import CoachService
 from services.data_portability_service import DataPortabilityService
@@ -401,6 +401,26 @@ def delete_goal_measurement(goal_id: int, month: str = PathParam(pattern=MONTH_P
   _require_goal(goal_id)
   if not MonthlyRepository().delete_measurement(goal_id, month):
     raise HTTPException(status_code=404, detail="Check-in not found")
+  return {"success": True}
+
+
+@api_router.get("/goals/{goal_id}/pace-points", dependencies=[Depends(require_api_token)])
+def list_goal_pace_points(goal_id: int) -> list[dict]:
+  _require_goal(goal_id)
+  return [p.model_dump(mode="json") for p in MonthlyRepository().get_pace_points(goal_id)]
+
+
+@api_router.put("/goals/{goal_id}/pace-points", dependencies=[Depends(require_api_token)])
+def put_goal_pace_point(goal_id: int, point: GoalPacePointCreate) -> dict:
+  _require_goal(goal_id)
+  return MonthlyRepository().upsert_pace_point(goal_id, point).model_dump(mode="json")
+
+
+@api_router.delete("/goals/{goal_id}/pace-points/{due}", dependencies=[Depends(require_api_token)])
+def delete_goal_pace_point(goal_id: int, due: date) -> dict:
+  _require_goal(goal_id)
+  if not MonthlyRepository().delete_pace_point(goal_id, due):
+    raise HTTPException(status_code=404, detail="Pace point not found")
   return {"success": True}
 
 

@@ -30,9 +30,10 @@ def _measured_line(p: dict) -> str | None:
   title, unit, status = p.get("title", "Goal"), p.get("metric_unit"), p.get("status")
   if status in _STATUS_LABEL:
     latest = p["latest"]
+    expected = "on the path they wrote for it" if p.get("path") == "custom" else "expected"
     line = (
       f"{title}: {_STATUS_LABEL[status]}. Latest check-in {_value(latest['value'], unit)} ({latest['month']}) vs "
-      f"{_value(p['expected_now'], unit)} expected by then, {p['pct_of_target']:g}% of the way to "
+      f"{_value(p['expected_now'], unit)} {expected} by then, {p['pct_of_target']:g}% of the way to "
       f"{_value(p['target_value'], unit)}."
     )
     projection = p.get("projection")

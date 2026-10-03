@@ -4,6 +4,14 @@ This chronological log captures all significant architectural updates, bug fixes
 
 ---
 
+## 2026-10-03 — User-Written Expected Path for Goal Pacing
+
+- **Why:** pacing assumed progress rises in a straight line from start to deadline, so a back-loaded goal (the 10-year net worth target) would read "behind" for years. The audit chose user-written points over an assumed curve, because a compounding or power curve bakes in a guess and exact compounding breaks near a zero start value.
+- **What:** migration 10 adds `goal_pace_points (goal_id, due, value)`. `YearlyPacingService` builds anchors (start, the user's points strictly between start and deadline, target) and reads the expected value along them; the on-pace band is 10% of the segment the date falls in, which equals the old 10% of the span for a goal with no points. Results carry `path` (`linear` or `custom`); the straight-line projection is omitted on a custom path. API: `GET/PUT /goals/{id}/pace-points`, `DELETE .../{due}`. UI: "Set your expected path" in `GoalPace.tsx`. The coach line says when pace is judged on the user's own path. Named "pace points" to avoid the existing goal milestones.
+- **Verification:** `pytest` 274 passed, `ruff` clean, `npm run build` passes. The editor was not exercised in a browser.
+
+---
+
 ## 2026-10-03 — Analytics Audit: Learning Score Removed, Momentum Left Unknown Without History
 
 - **Audit finding:** `learning_score` matched keywords as substrings ("ds", "rag", "ml", "read" fire inside "friends", "storage", "html", "already"), scored 0.0 instead of unknown on empty text, and fed the overall at 10%. `momentum_score` returned a made-up 50 with no history. Both broke the no-guessing rule.

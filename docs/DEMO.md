@@ -20,7 +20,7 @@ cd frontend && npm install && cd ..
 pytest -q
 ```
 
-**Expected Result:** **155/155 tests passing (100%)** across repositories, 5-factor hybrid RAG, Life Calendar, multi-agent Coordinator, Coach Chat, sessions blackboard, telemetry, and rate limiters.
+**Expected Result:** the suite collects 276 tests across repositories, 5-factor hybrid RAG, Life Calendar, the Coordinator, Coach Chat, session blackboard, telemetry, monthly analytics, task links and yearly pacing. The README's "Running tests" section holds the latest measured result; this guide does not repeat a count.
 
 ---
 
@@ -28,7 +28,7 @@ pytest -q
 
 ```bash
 python scripts/generate_retrieval_eval.py
-type reports\evaluation.md
+type reports\evaluation.md   # Windows; the script writes this git-ignored file
 ```
 
 **Talking Points:**
@@ -47,7 +47,9 @@ python -m uvicorn api.main:app --reload --port 8000
 ### A. Health & Diagnostics:
 ```bash
 curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/health/details
 ```
+`/health` returns only `{"status":"ok"}`. `/health/details` adds `openrouter_configured`, `remote_ai_consent`, and the `log_count`, `memory_count` and `goal_count` row counts.
 
 ### B. Goal Alignment (Monthly Pacing):
 ```bash
@@ -59,7 +61,7 @@ Point out that it paces the month's logged days against active 1-month and 1-yea
 ```bash
 curl -X POST http://127.0.0.1:8000/coach/chat -H "Content-Type: application/json" -d "{\"message\":\"What are my active goals and how is my pacing?\"}"
 ```
-Point out intent classification (`goals_pacing`), scoped tool calls (`get_active_goals`), blackboard state, latency, and telemetry trace generation.
+Point out the keyword-based intent classification (`goals_pacing`), the blackboard state, the latency, and the trace id. Without remote AI consent and an API key the reply comes from the local rule engine (`source: deterministic_rules`, `tools_used: []`, with a `fallback_reason`). With consent and a key, the server first reads the matching data itself (active goals, recent logs, memories) and the response's `tools_used` lists those reads; the model does not choose tools, and telemetry spans are written for the LLM call.
 
 ---
 
@@ -77,7 +79,7 @@ run_app.bat
 3. **Multi-Horizon Goals:** 1-Month, 1-Year, 5-Year, and 10-Year horizons with interactive milestone progress.
 4. **AI Coach Studio:**
    - **Guided Pipelines:** Goal Alignment (monthly/yearly pacing) and Future Self (5/10-year pacing).
-   - **Coach Chat:** Conversational multi-agent thread backed by session history and scoped tool execution.
+   - **Coach Chat:** Conversational thread backed by session history and a shared blackboard; context is fetched by the server according to keyword-detected intent.
 5. **Analytics & Patterns:** Vital averages, daily deterministic growth scores, and multi-day behavioral pattern detection.
 6. **Cognitive Memories:** Hybrid search explorer with real-time composite ranking.
 7. **Settings & Sovereign Privacy:** User profile (birth date, target age), one-switch remote AI consent, and safe factory reset with automated SQLite backup.
@@ -86,9 +88,9 @@ run_app.bat
 
 ## Verification Checklist
 
-- [ ] `pytest -q` is 100% green (155 tests passing)
+- [ ] `pytest -q` result matches the README's "Running tests" section
 - [ ] Backend starts cleanly on `http://localhost:8000`
 - [ ] Frontend starts cleanly on `http://localhost:5173`
-- [ ] `/health` returns status and row counts
+- [ ] `/health` returns `{"status":"ok"}` and `/health/details` returns the row counts
 - [ ] Goal Alignment, Future Self, and Coach Chat execute and return structured output
 - [ ] Life Calendar renders 3,640 interactive week blocks smoothly in Forest Mist Paper Glass theme

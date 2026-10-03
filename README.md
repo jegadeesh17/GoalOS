@@ -1,294 +1,207 @@
-# 🎯 GoalOS
+# GoalOS
 
-> **A privacy-first, local-first executive life operating system for personal coaching, multi-horizon goal alignment, and cognitive memory retrieval.**
+A privacy-first, local-first life operating system for goal pacing, journal analytics and AI coaching, built on FastAPI, SQLite, ChromaDB and a React frontend.
 
-[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
-[![Frontend](https://img.shields.io/badge/UI-React%2018%20%2B%20TypeScript%20%2B%20Vite-61DAFB.svg)](https://react.dev/)
-[![API](https://img.shields.io/badge/API-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
-[![Vector DB](https://img.shields.io/badge/Vector%20Store-ChromaDB-purple.svg)](https://www.trychroma.com/)
-[![Database](https://img.shields.io/badge/Database-SQLite%203%20%2B%20FTS5-003B57.svg)](https://www.sqlite.org/)
-[![Validation](https://img.shields.io/badge/Schema-Pydantic%20v2-E92063.svg)](https://docs.pydantic.dev/)
-[![Tests](https://img.shields.io/badge/Tests-pytest%20(267%20passing)-green.svg)](https://docs.pytest.org/)
-[![License](https://img.shields.io/badge/License-MIT-gray.svg)](LICENSE)
+Live demo (fictional data, no login): https://goalos-api-242711953247.asia-south1.run.app/app
 
----
+The demo runs the `main` branch, so features that exist only on `dev` (pace points, for example) are not live there yet.
 
-## 📖 Table of Contents
+## Features
 
-- [Executive Overview](#-executive-overview)
-- [Complete Architecture & Specifications](docs/ARCHITECTURE_AND_SPECIFICATIONS.md)
-- [Project Brain & Agent Memory](.agents/brain/README.md)
-- [Key Features](#-key-features)
-- [System Architecture](#-system-architecture)
-- [Frontend Design System](#-frontend-design-system)
-- [Agentic AI Coaching & Tool Calling](#-agentic-ai-coaching--tool-calling)
-- [Installation & Quickstart](#-installation--quickstart)
-- [Running the Application](#-running-the-application)
-- [REST API Reference](#-rest-api-reference)
-- [Testing & Quality Assurance](#-testing--quality-assurance)
-- [Privacy & Security Guarantees](#-privacy--security-guarantees)
+### 70-year life calendar
+- **3,640-week grid:** 52 weeks per row across a 70-year lifespan, with weeks lived, weeks remaining, percentage elapsed and decade markers (`/calendar/summary`, `/calendar/grid`).
+- **Year productivity calendar:** a per-day grid for a calendar year; clicking a day opens the full six-section journal entry for that date (`/calendar/year`).
 
----
+### Notebook journal
+- **Six sections:** each day has Gratitude, Awake (wake-to-sleep range), Plan (an hour-by-hour log of what you actually did), Tasks (what you intended to do, numbered and ticked when done), Review and Takeaway.
+- **Bulk import:** handwritten pages are transcribed and bulk-imported with `scripts/import_journal_csv.py` (through `JournalImportService`), which normalizes Plan entries into an hourly grid and computes sleep only from real Awake times. The app also has an editor with debounced autosave and an offline queue.
 
-## 🌟 Executive Overview
+### Multi-horizon goals
+- **Four horizons:** 1-month sprints, 1-year, 5-year and 10-year goals. Goal records are the single source of truth for vision.
+- **Milestones:** granular checklists with auto-calculated completion percentages.
+- **Numeric targets and pacing:** a goal can carry a number to track (metric, unit, optional start, target) and a monthly check-in. Pace is judged against a straight line from start to target by the deadline (ahead, on pace or behind, plus a projection once there are three check-ins). Goals without a number are reported as unmeasured, never given a made-up percentage.
+- **Pace points:** for a goal that is back-loaded, you can write your own dated expected values (`/goals/{id}/pace-points`). Expected pace then follows your path, joined point to point, the on-pace band scales to the segment, and the straight-line projection is dropped.
 
-**GoalOS** bridges the gap between high-level multi-year life visions and daily intentional execution. It provides a structured personal operating system combining:
+### AI coach
+- **Goal Alignment** (`/coach/progress`): monthly and yearly pacing of 1-month and 1-year goals against the logged days. The fallback summary is returned both as one paragraph and as one point per fact (`progress_points`).
+- **Future Self** (`/coach/future-self`): checks whether current execution is on pace for the 5-year and 10-year goals, using your real age from the birth date.
+- **Coach chat** (`/coach/chat`): a coordinator classifies each message by keyword rules into an intent, reads the matching data itself (active goals, recent logs, memories; the life-calendar read is currently skipped, see Known limitations) and puts it in the prompt for one model call. The model does not choose tools. Sessions and a shared blackboard are stored in SQLite.
+- **Offline fallback:** with remote AI consent off, no `OPENROUTER_API_KEY`, or a failed call, the same endpoints return local rule-engine output with a `fallback_reason`.
+- **Telemetry:** every LLM call records model, tokens, latency and estimated USD cost (`/coach/telemetry/summary`, `/coach/telemetry/traces`, shown in Settings under diagnostics).
 
-1. **Deterministic Local Grounding:** All journal logs, active multi-horizon goals, milestones, and daily tasks live locally in SQLite and a local ChromaDB vector store.
-2. **Harmonious Light Mode Design System:** A light aesthetic featuring soft celestial mesh gradients, frosted glass capsules, non-redundant metrics, and unified font-size typography scale.
-3. **Hybrid RAG Memory:** A 5-factor composite retrieval algorithm (semantic cosine + lexical FTS5 + importance + half-life recency decay + access frequency) ensures relevant insights and lessons resurface at the right moment.
-4. **Agentic Function Calling:** When connected to OpenRouter (Claude 3.5 Sonnet, Llama 3.3 70B, Gemini 2.5 Flash, etc.), the AI coach acts as an autonomous agent querying memory vectors and active goals before synthesizing mentor guidance.
-5. **Zero-Surprise Privacy & Fallbacks:** No journal data is ever transmitted externally without explicit user opt-in in settings. When offline or without an API key, GoalOS operates seamlessly using deterministic local rule engines.
+### Analytics and patterns
+- **Daily scores:** Goal Alignment, Consistency, Health, Productivity, Momentum and an overall growth score. A score with no usable input is left out and the weights are renormalised; it is never counted as zero.
+- **Goal alignment from real links:** alignment is the share of completed tasks (14-day window) that serve a goal. You say once which goal a task served (`/tasks/links`), or add cues to a goal so matching tasks link themselves. A task with no known goal is left out, never counted as misaligned. The Goals page lists tasks still to link, and `/goals/attention` shows per goal how many completed tasks it got and how long it has been quiet.
+- **Consistency from execution rhythm:** the share of logged days where at least half the tasks were ticked, blended 70/30 with how steady the wake-up time was.
+- **Monthly snapshots:** each month's facts (tasks done, solid days, sleep and schedule, score means, stuck tasks, goal state) are stored in `monthly_snapshots`, recomputed from the daily logs after every import or save, and marked provisional until the month is fully imported (`/analytics/monthly`).
+- **Levers:** a rank-correlation analysis with a seeded permutation test over the trailing 90 days reports which habits go with more tasks done, with the sample size, a correction for the number of levers tested, and an "association, not proof of cause" caveat.
+- **Weekly report:** a 7-day retrospective digest as Markdown, HTML or JSON (`/export/weekly-report`).
 
----
+### Memory (hybrid retrieval)
+- **Dual write:** each memory is stored in SQLite (with an FTS5 index) and embedded into ChromaDB.
+- **Five-factor ranking:** semantic 0.35, lexical 0.15, importance 0.25, recency 0.15 (30-day half-life) and frequency 0.10, with near-duplicates (similarity above 0.94) skipped. This ranking is used by `/memories/search`; chat memory context uses SQLite full-text search only.
+- **Embeddings:** `all-MiniLM-L6-v2` locally. The demo (`ENVIRONMENT=demo`) uses a hash-based vector instead, as does any install where `sentence-transformers` cannot load.
 
-## ⚡ Key Features
+### Profile, privacy and data portability
+- **Consent switch:** remote LLM coaching is off until you turn it on in Settings.
+- **JSON export:** a full portable backup of tables, goals, memories and logs (`/export`).
+- **Safe factory reset:** writes a timestamped zip backup (`backups/goalos-backup-YYYYMMDD-HHMMSS.zip`, JSON export plus the raw `.db`) before clearing data (`/export/reset`).
+- **Local data:** personal data lives in local `goalos.db` and `chroma_db/`. All API inputs that use Pydantic models are validated; a few routes take raw JSON (see Known limitations).
 
-### ⏳ 1. 70-Year Life Calendar (Memento Mori)
-- **3,640 Discrete Week Grid:** Interactive 52-weeks-per-row grid mapping an entire 70-year lifespan.
-- **Visual Milestones:** Real-time calculation of weeks lived, weeks remaining, percentage of life elapsed, and decade markers.
-- **Non-Redundant Information:** Single source of truth for metrics with clean visual legend and hover inspector.
+## Quick start
 
-### 📓 2. Notebook Journal Import
-- **Six-Section Journal:** Each day follows a fixed structure — Gratitude, Awake (wake–sleep range), Plan (an hour-by-hour log of what you actually did, as hour-range blocks), Tasks (what you intended to do; numbered, ticked when done), Review, and Takeaway.
-- **Bulk Import, Not Live Entry:** Handwritten notebook pages are transcribed and bulk-imported (`scripts/import_journal_csv.py` → `JournalImportService`), which normalizes Plan entries (the hourly log) into an hourly grid and computes sleep hours only from real Awake times.
-- **Day Drawer:** Clicking any day on the calendar opens the full six-section entry for that date.
+Prerequisites: Python 3.11 and Node 20 (the versions the `Dockerfile` uses), plus npm.
 
-### 🎯 3. Multi-Horizon Goals Architecture
-- **4 Dynamic Horizons** (Goal records are the single source of truth for vision):
-  - **1-Month Sprints:** Immediate tactical habit execution.
-  - **1-Year Horizons:** Strategic compounding milestones and skill expansion.
-  - **5-Year Vision:** Long-term trajectory.
-  - **10-Year Identity:** Who the user is becoming.
-- **Interactive Checklists & Pacing:** Granular milestone progress tracking and auto-calculated completion percentages.
-- **Numeric Targets & Yearly Pacing:** Any goal can carry a number to track (metric, unit, optional start, target) and a monthly check-in. Pace is judged against a straight line from start to target by the deadline (ahead / on pace / behind, plus a projection once there are three check-ins). Goals without a number are reported as unmeasured, never given a made-up percentage.
+```bash
+git clone https://github.com/jegadeesh17/GoalOS.git
+cd GoalOS
 
-### 🤖 4. AI Coach Studio
-- **Batch-Cadence Coaching Pipelines** (built for weekly/biweekly journal imports, not daily check-ins):
-  - **Goal Alignment:** Monthly and yearly pacing of 1-month and 1-year goals against logged days.
-  - **Future Self:** Checks whether current execution is on pace for the 5-year and 10-year goals.
-- **Coach Chat (Multi-Agent Coordinator):** Free-form conversational coaching backed by `CoordinatorPipeline` — classifies intent, routes to scoped domain toolkits (goals/journal/memory/calendar), persists a session blackboard across turns, and falls back to a deterministic rule engine when remote AI consent is off or no API key is configured.
-- **Grounded Verification:** Transparent evidence reporting with retrieved memory sources and confidence scores.
+python -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 
-### 📊 5. Longitudinal Analytics & Pattern Engine
-- **Multi-Day Behavioral Detection:** Automatically flags consistency warnings, recovery deficits, or compounding streaks.
-- **Deterministic Growth Scores:** Daily scores for Goal Alignment, Consistency, Health, Productivity, and Overall Growth. Unrecorded inputs are left out of a score (and its weights renormalised), never counted as zero.
-- **Goal Alignment From Real Links:** Alignment is the share of completed tasks (14-day window) that serve a goal. You say which goal a task served once (or add cues to a goal so matching tasks link themselves); a task with no known goal is left out, never counted as misaligned. The Goals page shows the tasks still to link and, per goal, how many completed tasks it got.
-- **Consistency From Execution Rhythm:** Share of logged days where at least half the tasks were ticked, blended 70/30 with how steady the wake-up time was. The importer's morning/evening flags and "a row exists" are not inputs.
-- **Month-by-Month Snapshots:** Each month's facts (tasks done, solid days, sleep and schedule, score means, stuck tasks, goal state) are stored in `monthly_snapshots`, recomputed from the daily logs after every import or save, and marked provisional until the month is fully imported.
-- **Levers, Not Just Averages:** A rank-correlation analysis with a seeded permutation test over the trailing 90 days reports which habits go with more tasks done (for example wake-up time), with the sample size, a correction for the number of levers tested, and an "association, not proof of cause" caveat.
+cd frontend && npm install && cd ..
 
-### 🧠 6. Cognitive Memory Base (Hybrid RAG)
-- **Dual-Write Storage:** Stored in SQLite with local vector embeddings in ChromaDB.
-- **Hybrid Search:** Combines keyword search with vector semantic similarity.
+cp .env.example .env                 # optional: add OPENROUTER_API_KEY for remote LLM coaching
+```
 
-### ⚙️ 7. Profile, Privacy & Data Portability
-- **AI Privacy Toggle:** Single-switch opt-in for remote LLM coaching.
-- **One-Click JSON Export:** Full portable backup of all tables, goals, memories, and logs.
-- **Safe Factory Reset:** Automatically creates a timestamped SQLite backup prior to resetting.
+Start the backend and the frontend in two terminals:
 
----
+```bash
+python -m uvicorn api.main:app --port 8000 --reload     # API, docs at http://localhost:8000/docs
+cd frontend && npm run dev                              # UI at http://localhost:5173
+```
 
-## 🏗️ System Architecture
+On Windows, `run_app.bat` starts both. To serve the built UI from FastAPI instead, run `npm run build` in `frontend/`; the API then serves it at `/app`.
+
+## Usage
+
+With the API running locally and no API key, one chat turn (the reply is the local rule-engine answer; ids and latency vary):
+
+```bash
+curl -X POST http://127.0.0.1:8000/coach/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"What are my active goals and how is my pacing?"}'
+```
+
+Output from a local run with an empty database:
+
+```json
+{"session_id":"sess_d24fa6abebba","reply":"**[GoalOS Local Executive Rule Engine]**\n• **Intent:** Goals Pacing\n• **Lifespan Awareness:** 1267/3640 weeks lived (34.8%). 2373 weeks remaining.\n• **7-Day Task Completion:** 0.0%\n• **Current Trajectory:** Active Goals (0): None set yet.\n\n**Recommended Executive Action:**\n1. Lock in your core 90-minute deep work block for your #1 priority task before noon.\n2. Protect focus windows from micro-distractions and context switching.\n3. Align today's tasks directly with your active monthly milestone.","agent_name":"DeterministicRuleEngine","intent":"goals_pacing","confidence":0.75,"source":"deterministic_rules","tools_used":[],"citations":[],"blackboard":{"last_fallback_reason":"no_api_key"},"trace_id":"tr_0d5b87fdee86","latency_ms":34.15,"fallback_reason":"no_api_key"}
+```
+
+`curl http://127.0.0.1:8000/health` returns `{"status":"ok"}`; `/health/details` adds the row counts. All 53 routes are listed in [docs/ARCHITECTURE_AND_SPECIFICATIONS.md](docs/ARCHITECTURE_AND_SPECIFICATIONS.md) and at `/docs`. Routes are served under `/api` and at the root.
+
+## Running tests
+
+```bash
+.venv/Scripts/python -m pytest -q                       # full suite (Linux/macOS: .venv/bin/python)
+.venv/Scripts/python -m pytest tests/test_memory.py -q  # one file
+```
+
+`pytest --collect-only -q` collects **276** tests. On 2026-10-03 on Windows with Python 3.11.9, a full run gave **274 passed, 2 failed**; the two failures are exact floating-point equality assertions in `tests/test_analytics.py` (`TestOverallGrowth::test_weighted_average` got 79.99999999999999 instead of 80.0, and `test_bounds` got 99.99999999999999 instead of 100.0). CI (`.github/workflows/ci.yml`) also runs `ruff check .`, `mypy api ai config database models services`, `python scripts/generate_retrieval_eval.py` and `docker build .` on Python 3.11. The frontend has no test runner; `cd frontend && npm run build` runs the TypeScript check and the Vite build. Tests use a temporary database (`temp_db` fixture) rather than `goalos.db`.
+
+## Configuration
+
+Copy `.env.example` to `.env`. All variables are read by `configs/settings.py`.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `OPENROUTER_API_KEY` | empty | OpenRouter key for remote coaching. Without it the local rule engine answers. |
+| `OPENROUTER_MODEL` | `anthropic/claude-sonnet-4` | Model slug. On a timeout, rate limit or model error the client rotates through a built-in list of free models. |
+| `DB_PATH` | `<repo>/goalos.db` | SQLite database path. |
+| `CHROMA_PATH` | `<repo>/chroma_db` | ChromaDB directory. |
+| `GOALOS_API_TOKEN` | empty | Bearer token for protected routes; empty means the API is open. Required when `ENVIRONMENT=production`. |
+| `ENVIRONMENT` | `development` | `development`, `demo` (loads the fictional dataset, hash embeddings) or `production` (requires the token). |
+| `LOG_LEVEL` | `INFO` | Defined in settings but not read by the current code. |
+| `LOG_FILE` | `<repo>/goalos.log` | Defined in settings but not read by the current code. |
+
+Remote AI also needs consent in Settings (stored in the database, off by default).
+
+## Project structure
+
+```
+api/          FastAPI app (api/main.py, all routes on one router)
+ai/           OpenRouter client, coach pipelines (coordinator, progress, future self), tool registry, prompts
+services/     Domain services: coach, memory, analytics, monthly snapshots, pacing, task links, import, reports
+database/     SQLite connection, numbered migrations, repositories
+models/       Pydantic schemas
+configs/      Settings implementation (config/ re-exports it)
+frontend/     React 18 + TypeScript + Vite + Tailwind SPA
+scripts/      Journal import, demo data builders, retrieval eval, tool-calling benchmark
+tests/        pytest suite
+data/         Fictional demo database, demo Chroma store, demo seed CSV, retrieval eval fixture (all synthetic)
+reports/      Tool-calling benchmark output
+docs/         Architecture spec, demo guide, decisions, plans, draw.io diagram
+.github/      CI and Cloud Run deploy workflows
+.claude/      Claude Code hooks and settings used while developing
+.impeccable/   Frontend design-tool configuration
+```
+
+## Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Frontend_Layer ["React 18 + TypeScript (Forest Mist Paper Glass)"]
-        Vite["Vite Dev Server (Port 5173)"]
-        App["App.tsx"]
-        Views["Views: Calendar | Journal | Goals | AI Coach (Goal Alignment + Future Self + Chat) | Analytics | Memories | Settings"]
-        Vite --> App --> Views
+    subgraph Frontend ["React 18 + TypeScript (Vite)"]
+        UI["Calendar | Journal | Goals | AI Coach | Analytics | Memories | Settings"]
     end
-
-    subgraph API_Layer ["FastAPI REST Backend (Port 8000)"]
-        FastAPI["FastAPI App (api/main.py)"]
-        Routes["Endpoints (/calendar, /journal, /goals, /coach, /analytics, /memories, /settings, /export)"]
-        FastAPI --> Routes
+    subgraph API ["FastAPI (api/main.py)"]
+        Routes["/calendar /journal /goals /tasks /coach /analytics /memories /settings /export"]
     end
-
-    subgraph Service_Layer ["Core Python Services"]
-        CoachService["CoachService (services/coach_service.py)"]
-        Coordinator["CoordinatorPipeline (ai/pipelines/coordinator.py)"]
-        MemoryService["MemoryService (services/memory_service.py)"]
-        PatternService["PatternService (services/pattern_service.py)"]
-        AnalyticsService["AnalyticsService (services/analytics_service.py)"]
-        SettingsService["SettingsService (services/settings_service.py)"]
-        Observability["ObservabilityService (services/observability_service.py)"]
+    subgraph Services ["Services and pipelines"]
+        Coach["CoachService, CoordinatorPipeline"]
+        Memory["MemoryService"]
+        Analytics["Analytics, monthly snapshots, yearly pacing, task links"]
     end
-
-    subgraph Data_Layer ["Local Persistence"]
-        SQLite[("SQLite 3 (goalos.db)")]
-        ChromaDB[("ChromaDB Vector Store (chroma_db/)")]
+    subgraph Data ["Local persistence"]
+        SQLite[("SQLite: goalos.db")]
+        Chroma[("ChromaDB: chroma_db/")]
     end
-
-    Frontend_Layer -->|Axios REST /api| API_Layer
-    API_Layer --> Service_Layer
-    Service_Layer --> SQLite
-    Service_Layer --> ChromaDB
+    UI -->|"REST /api"| Routes
+    Routes --> Coach
+    Routes --> Memory
+    Routes --> Analytics
+    Coach --> SQLite
+    Memory --> SQLite
+    Memory --> Chroma
+    Analytics --> SQLite
+    Coach -.->|"consent + API key"| OpenRouter["OpenRouter"]
 ```
 
----
+- **Layering:** `api/main.py` calls `services/`, which call `database/repositories/`, which talk to SQLite and Chroma. Schema changes go through the numbered `MIGRATIONS` list in `database/migrations.py` (10 migrations), applied at startup.
+- **Tools:** `ai/tools/` registers 8 tools in 4 namespaces (`memory`: `search_memories`; `goals`: `get_active_goals`, `get_horizon_pacing`, `get_goal_pacing`; `journal`: `get_recent_logs`, `get_monthly_progress`, `get_monthly_snapshots`; `calendar`: `get_lifespan_stats`) with declared parameter schemas. The coach does not call them (it pre-fetches data); they are called directly by the benchmark and tests.
+- **Frontend design:** the "Forest Mist Paper Glass" theme, with Plus Jakarta Sans for UI text and Newsreader for the user's own words.
+- **Deployment:** the multi-stage `Dockerfile` bundles the built frontend into the API image; see [DEPLOY.md](DEPLOY.md). Details are in [docs/ARCHITECTURE_AND_SPECIFICATIONS.md](docs/ARCHITECTURE_AND_SPECIFICATIONS.md) and [docs/DECISIONS.md](docs/DECISIONS.md).
 
-## 🎨 Frontend Design System
+## Evaluation
 
-- **Color Palette:** Forest Mist Paper Glass theme — opaque emerald/sage paper surfaces (`glass-panel`: `bg-white/86 backdrop-blur-2xl border border-emerald-100/70 shadow-forest`) over pre-computed static gradient washes (no real-time blur compositing).
-- **Typography:** Plus Jakarta Sans for UI text paired with Newsreader serif for editorial/reflective accents (journal quotes, coach directives).
-- **Layout Balance:** Symmetrically centered navigation capsules with responsive flex containers.
-- **Non-Redundancy:** Strict single-instance metric placement across all views.
+- **Tool-calling benchmark** (`scripts/benchmark_tool_calling.py`, results in [`reports/TOOL_CALLING_BENCHMARK.md`](reports/TOOL_CALLING_BENCHMARK.md)): 9 scenarios, one execution case per registered tool (8) plus one negative case that checks a call to an unregistered tool (`UNKNOWN_TOOL`) is rejected. Result: **9/9** passing, average execution latency 2565.25 ms (P95 22471.54 ms, dominated by the memory-search case; `get_monthly_snapshots` took 598.75 ms because that run built the stored snapshots on first read). The benchmark calls each tool directly with representative arguments: the target tool is pre-specified, not chosen by a model, and each case is a single call. It does not measure an LLM's tool-selection accuracy. The report's "Schema validated" wording is not literal; see Known limitations.
+- **Retrieval eval** (`python scripts/generate_retrieval_eval.py`): scores three fixed queries from `data/retrieval_eval.json` against three seeded memories by expected-term matches in the top three results, and writes `reports/evaluation.md` (git-ignored). It is a synthetic smoke check, not a benchmark.
 
----
+## Known limitations
 
-## 🛠️ Agentic AI Coaching & Tool Calling
+- An invalid `date` on `POST /journal/upsert`, `POST /coach/progress` or `POST /coach/future-self` raises an unhandled `ValueError` and returns HTTP 500 (`api/main.py:243,463,474`). The weekly-report route validates its date and returns 400.
+- Tool arguments are not validated against the declared schemas by the registry. Some handlers check by hand (`get_goal_pacing` rejects an unknown `horizon`; `get_monthly_snapshots` clamps `months`); others convert directly (`int(args.get("days", 7))`). The benchmark report's "Schema validated" label overstates what it checks.
+- The coach chat never lets the model choose tools; `OpenRouterClient.complete_with_tools` is used only by tests.
+- On the remote chat path the life-calendar read fails silently (`coordinator.py:157` reads dict fields as attributes), so no calendar context is sent although `get_lifespan_stats` appears in `tools_used`.
+- When no birth date is set, the calendar falls back to `2002-06-17` with target age 70 (`api/main.py:165-168`, `models/user.py:12`, migration default).
+- `DELETE /memories/{id}` removes only the SQLite row (`api/main.py:587-593`). The Chroma vector and FTS row stay; retrieval skips ids with no row, and `MemoryService.reconcile_index()`, which removes stale vectors, is not exposed by any route or UI.
+- `LOG_LEVEL` and `LOG_FILE` are defined in settings but nothing reads them.
+- The public demo runs the `main` branch, so pace points are not live there yet. It has no API token set, so its API is unauthenticated (it holds only fictional data).
+- The generated `reports/TOOL_CALLING_BENCHMARK.md` is not hand-edited; its P95 figure is dominated by the first memory-search call (model load).
+- Test status in this environment: 2 of 276 tests fail on exact floating-point equality (see Running tests).
+- The deploy workflow redeploys on any push to `main` or `feat/coach-chat-ui`, documentation-only pushes included, and runs no tests.
+- `docs/architecture.drawio` is generated by `scripts/generate_drawio.py`; its page 2 still draws a scoped tool loop that the coordinator does not use.
+- Tracked docs under `docs/plans/` are dated implementation plans and are not kept in sync with later changes.
 
-`CoordinatorPipeline` exposes 8 tools across 4 isolated domain namespaces, each behind a strict Pydantic/OpenAPI-compatible function schema:
+## Documentation
 
-| Domain | Registered Tools |
-| :--- | :--- |
-| `memory` | `search_memories` |
-| `goals` | `get_active_goals`, `get_horizon_pacing`, `get_goal_pacing` |
-| `journal` | `get_recent_logs`, `get_monthly_progress`, `get_monthly_snapshots` |
-| `calendar` | `get_lifespan_stats` |
+- [docs/README.md](docs/README.md): index of all tracked docs.
+- [docs/DECISIONS.md](docs/DECISIONS.md): architecture decision records, each with evidence.
+- [CHANGELOG.md](CHANGELOG.md): changes by type, from the commit history.
+- [docs/ARCHITECTURE_AND_SPECIFICATIONS.md](docs/ARCHITECTURE_AND_SPECIFICATIONS.md): architecture, schema, the 53-route API table and non-functional notes.
+- [DEPLOY.md](DEPLOY.md), [SECURITY.md](SECURITY.md), [docs/DEMO.md](docs/DEMO.md), [CLAUDE.md](CLAUDE.md).
 
-**Tool-calling reliability benchmark** (`scripts/benchmark_tool_calling.py`, results in [`reports/TOOL_CALLING_BENCHMARK.md`](reports/TOOL_CALLING_BENCHMARK.md)):
-- 9 test scenarios: one execution case per registered tool (8 across the 4 domains), plus 1 negative security case verifying that a call to an unregistered tool (`UNKNOWN_TOOL`) is correctly rejected.
-- Each positive case asserts the target tool is registered in its domain (`registry.can_handle`) and executes against representative arguments without a schema or runtime error. The negative case asserts the registry returns an `unknown_tool` error instead of executing.
-- **Result:** 9/9 (100%) scenarios passing; average execution latency 2565.25 ms (P95 22471.54 ms, dominated by the memory-search case). `get_monthly_snapshots` took 598.75 ms because that run built the stored snapshots on first read; the other calls resolved in under 10 ms.
-- **Scope:** this benchmark validates tool registration, parameter-schema compliance, execution reliability, and rejection of unauthorized tools. Each test case's target tool is pre-specified and directly invoked rather than chosen by a model, and each case is a single tool call rather than a multi-step task chain — it does not, by itself, measure an LLM's tool-*selection* accuracy from a natural-language query. Live LLM-driven intent classification and routing happens in `CoordinatorPipeline` during real coaching sessions but is a separate concern from what this benchmark scores.
+## License
 
----
-
-## 🚀 Installation & Quickstart
-
-### Prerequisites
-- **Python 3.11+** installed
-- **Node.js 18+** & npm installed
-
-### Setup
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/jegadeesh17/GoalOS.git
-   cd GoalOS
-   ```
-
-2. **Set up Python virtual environment:**
-   ```bash
-   python -m venv .venv
-   # Windows:
-   .venv\Scripts\activate
-   # Linux/macOS:
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-3. **Install Frontend Dependencies:**
-   ```bash
-   cd frontend
-   npm install
-   cd ..
-   ```
-
-4. **Configure Environment:**
-   ```bash
-   cp .env.example .env
-   ```
-   *(Optional: Add `OPENROUTER_API_KEY` to `.env` for remote LLM coaching)*
-
----
-
-## 💻 Running the Application
-
-### Option A: One-Click Windows Launcher (Recommended)
-Double-click `run_app.bat` or run:
-```cmd
-run_app.bat
-```
-This automatically boots:
-- **Backend API:** `http://localhost:8000/docs`
-- **Frontend App:** `http://localhost:5173`
-
-### Option B: Manual Startup
-
-**Terminal 1 (Backend):**
-```bash
-python -m uvicorn api.main:app --port 8000 --reload
-```
-
-**Terminal 2 (Frontend):**
-```bash
-cd frontend
-npm run dev
-```
-
-Open `http://localhost:5173` in your browser.
-
----
-
-## 📡 REST API Reference
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/calendar/summary` | `GET` | Lifespan summary (weeks lived, remaining, percentage) |
-| `/calendar/grid` | `GET` | 3,640 week grid rows (52 weeks &times; 70 years) |
-| `/calendar/year` | `GET` | Per-day productivity grid for a calendar year |
-| `/journal/today` | `GET` | Current day's journal entry & planned tasks |
-| `/journal/date/{target_date}` | `GET` | Specific date journal record |
-| `/journal/history` | `GET` | Most recent journal entries (`limit`, default 30) |
-| `/journal/upsert` | `POST` | Upsert daily log fields |
-| `/goals/horizons` | `GET` | Active goals grouped by 1-month, 1-year, 5-year, 10-year horizons |
-| `/goals` | `GET`, `POST` | List and create goals |
-| `/goals/pacing` | `GET` | Measured pace of 1-year, 5-year and 10-year goals against numeric targets |
-| `/goals/attention` | `GET` | Completed tasks per active goal over the last `days` (default 14) and how long each has been quiet |
-| `/tasks/review` | `GET` | Completed tasks whose goal is still unknown, most-repeated first (`limit`) |
-| `/tasks/links` | `PUT` | Link a task to a goal, or mark it as serving none; re-scores every day |
-| `/tasks/links/{key}` | `DELETE` | Remove a saved link |
-| `/goals/{id}` | `GET`, `PUT`, `DELETE` | Goal management |
-| `/goals/{id}/measurements` | `GET`, `PUT` | List or save a monthly check-in against the goal's target |
-| `/goals/{id}/measurements/{YYYY-MM}` | `DELETE` | Remove a check-in |
-| `/goals/{id}/milestones` | `POST` | Add milestone to goal |
-| `/milestones/{id}` | `PUT`, `PATCH`, `DELETE` | Update or remove milestone |
-| `/coach/progress` | `POST` | Goal Alignment: monthly/yearly goal pacing for the month of `date` |
-| `/coach/future-self` | `POST` | Future Self: 5-year/10-year goal pacing |
-| `/coach/chat` | `POST` | Multi-agent coordinator chat turn (intent routing, scoped tools, session blackboard) |
-| `/coach/sessions` | `GET`, `POST` | List or create coach chat sessions |
-| `/coach/sessions/{id}` | `GET`, `DELETE` | Fetch or delete a chat session and its messages |
-| `/coach/telemetry/summary` | `GET` | Aggregated coordinator latency/tool-use telemetry |
-| `/coach/telemetry/traces` | `GET` | Individual coordinator trace spans |
-| `/analytics/dashboard` | `GET` | Aggregated metrics, scores, and behavioral patterns |
-| `/analytics/scores` | `GET` | Daily score history |
-| `/analytics/monthly` | `GET` | Stored month-by-month analytics (built on first read if none exist) |
-| `/analytics/monthly/{YYYY-MM}` | `GET` | One stored month with its levers and goal state |
-| `/analytics/monthly/recompute` | `POST` | Rebuild one month (`?month=`) or all of them |
-| `/memories` | `GET`, `POST` | List and record cognitive memories |
-| `/memories/search` | `GET` | Hybrid lexical & vector semantic search |
-| `/settings` | `GET`, `POST` | Profile and AI privacy configuration |
-| `/export` | `GET` | Full JSON export of user database |
-| `/export/weekly-report` | `GET` | 7-day retrospective digest (Markdown, HTML, or JSON) |
-| `/export/reset` | `POST` | Auto-backup, then clear data (requires `{"confirmation": "RESET"}`) |
-| `/health`, `/health/details` | `GET` | Liveness and dependency health |
-
----
-
-## 🧪 Testing & Quality Assurance
-
-Run the comprehensive pytest test suite:
-```bash
-pytest
-```
-**Results:** **267/267 tests passing (100%)**.
-
-Run frontend typecheck and build validation:
-```bash
-cd frontend
-npm run build
-```
-**Results:** **0 errors**.
-
----
-
-## 🔒 Privacy & Security Guarantees
-
-1. **Local-First Storage:** All personal data is saved in local SQLite (`goalos.db`) and local ChromaDB (`chroma_db/`).
-2. **Explicit AI Consent:** External LLM calls are disabled by default until explicitly enabled by the user in Settings.
-3. **Automated Backups:** Factory reset operations automatically create timestamped backups (`backups/goalos-backup-YYYYMMDD-HHMMSS.zip`, JSON export + raw `.db`).
-4. **Input Sanitation & Validation:** All API inputs are validated via strict Pydantic v2 schemas.
+MIT. See [LICENSE](LICENSE).

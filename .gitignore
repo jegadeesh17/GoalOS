@@ -57,3 +57,25 @@ web/
 .dvc/
 *.pth
 *.joblib
+
+# Python virtual environment
+.venv/
+
+# Secrets and keys (.env.example stays tracked)
+.env.*
+!.env.example
+*.pem
+*.key
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Superseded docs and local orchestration notes (kept on disk, not tracked)
+docs/archive/
+docs/orchestrate/
+
+# Private agent notes and instructions (kept on disk, not tracked)
+.agents/
+AGENTS.md
+GEMINI.md

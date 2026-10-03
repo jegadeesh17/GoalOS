@@ -25,7 +25,7 @@ The demo runs the `main` branch, so features that exist only on `dev` (pace poin
 ### AI coach
 - **Goal Alignment** (`/coach/progress`): monthly and yearly pacing of 1-month and 1-year goals against the logged days. The fallback summary is returned both as one paragraph and as one point per fact (`progress_points`).
 - **Future Self** (`/coach/future-self`): checks whether current execution is on pace for the 5-year and 10-year goals, using your real age from the birth date.
-- **Coach chat** (`/coach/chat`): a coordinator classifies each message by keyword rules into an intent, reads the matching data itself (active goals, recent logs, memories; the life-calendar read is currently skipped, see Known limitations) and puts it in the prompt for one model call. The model does not choose tools. Sessions and a shared blackboard are stored in SQLite.
+- **Coach chat** (`/coach/chat`): a coordinator classifies each message by keyword rules into an intent, reads the matching data itself (active goals, recent logs, memories, life-calendar summary) and puts it in the prompt for one model call. The model does not choose tools. Sessions and a shared blackboard are stored in SQLite.
 - **Offline fallback:** with remote AI consent off, no `OPENROUTER_API_KEY`, or a failed call, the same endpoints return local rule-engine output with a `fallback_reason`.
 - **Telemetry:** every LLM call records model, tokens, latency and estimated USD cost (`/coach/telemetry/summary`, `/coach/telemetry/traces`, shown in Settings under diagnostics).
 
@@ -99,7 +99,7 @@ Output from a local run with an empty database:
 .venv/Scripts/python -m pytest tests/test_memory.py -q  # one file
 ```
 
-`pytest --collect-only -q` collects **276** tests. On 2026-10-03 on Windows with Python 3.11.9, a full run gave **274 passed, 2 failed**; the two failures are exact floating-point equality assertions in `tests/test_analytics.py` (`TestOverallGrowth::test_weighted_average` got 79.99999999999999 instead of 80.0, and `test_bounds` got 99.99999999999999 instead of 100.0). CI (`.github/workflows/ci.yml`) also runs `ruff check .`, `mypy api ai config database models services`, `python scripts/generate_retrieval_eval.py` and `docker build .` on Python 3.11. The frontend has no test runner; `cd frontend && npm run build` runs the TypeScript check and the Vite build. Tests use a temporary database (`temp_db` fixture) rather than `goalos.db`.
+`pytest --collect-only -q` collects **279** tests. On 2026-10-04 on Windows with Python 3.11.9, a full run gave **279 passed, 0 failed**. CI (`.github/workflows/ci.yml`) also runs `ruff check .`, `mypy api ai config database models services`, `python scripts/generate_retrieval_eval.py` and `docker build .` on Python 3.11. The frontend has no test runner; `cd frontend && npm run build` runs the TypeScript check and the Vite build. Tests use a temporary database (`temp_db` fixture) rather than `goalos.db`.
 
 ## Configuration
 
@@ -180,16 +180,13 @@ flowchart TD
 
 ## Known limitations
 
-- An invalid `date` on `POST /journal/upsert`, `POST /coach/progress` or `POST /coach/future-self` raises an unhandled `ValueError` and returns HTTP 500 (`api/main.py:243,463,474`). The weekly-report route validates its date and returns 400.
 - Tool arguments are not validated against the declared schemas by the registry. Some handlers check by hand (`get_goal_pacing` rejects an unknown `horizon`; `get_monthly_snapshots` clamps `months`); others convert directly (`int(args.get("days", 7))`). The benchmark report's "Schema validated" label overstates what it checks.
 - The coach chat never lets the model choose tools; `OpenRouterClient.complete_with_tools` is used only by tests.
-- On the remote chat path the life-calendar read fails silently (`coordinator.py:157` reads dict fields as attributes), so no calendar context is sent although `get_lifespan_stats` appears in `tools_used`.
 - When no birth date is set, the calendar falls back to `2002-06-17` with target age 70 (`api/main.py:165-168`, `models/user.py:12`, migration default).
 - `DELETE /memories/{id}` removes only the SQLite row (`api/main.py:587-593`). The Chroma vector and FTS row stay; retrieval skips ids with no row, and `MemoryService.reconcile_index()`, which removes stale vectors, is not exposed by any route or UI.
 - `LOG_LEVEL` and `LOG_FILE` are defined in settings but nothing reads them.
 - The public demo runs the `main` branch, so pace points are not live there yet. It has no API token set, so its API is unauthenticated (it holds only fictional data).
 - The generated `reports/TOOL_CALLING_BENCHMARK.md` is not hand-edited; its P95 figure is dominated by the first memory-search call (model load).
-- Test status in this environment: 2 of 276 tests fail on exact floating-point equality (see Running tests).
 - The deploy workflow redeploys on any push to `main` or `feat/coach-chat-ui`, documentation-only pushes included, and runs no tests.
 - `docs/architecture.drawio` is generated by `scripts/generate_drawio.py`; its page 2 still draws a scoped tool loop that the coordinator does not use.
 - Tracked docs under `docs/plans/` are dated implementation plans and are not kept in sync with later changes.

@@ -8,6 +8,12 @@ Entries are built from this repository's `feat`, `fix` and `refactor` commit sub
 
 ## [Unreleased]
 
+### Fixed
+
+- An invalid `date` on `POST /journal/upsert`, `POST /coach/progress` or `POST /coach/future-self` now returns HTTP 400 instead of 500 (`api/main.py`, 3 new tests).
+- The coach chat's life-calendar read used attribute access on a dict, so no calendar context was sent on the remote path; it now reads the dict keys (`ai/pipelines/coordinator.py`).
+- Two exact floating-point assertions in `tests/test_analytics.py` now use `pytest.approx`.
+
 ### Added
 
 - 70-year life calendar and weekly journal sync (`a00742a`).

@@ -6,7 +6,15 @@ sid=$(printf '%s' "$input" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\
 [ -z "$sid" ] && sid="default"
 mkdir -p .claude/.hookstate 2>/dev/null
 base=".claude/.hookstate/baseline-${sid}.txt"
-[ -f "$base" ] || : > "$base"
+if [ ! -f "$base" ]; then
+  # SessionStart hook never ran for this session (e.g. settings.json didn't
+  # exist yet when the session began). Seed the baseline from current state
+  # instead of assuming it's empty -- otherwise every pre-existing modified
+  # file looks "new" and the hook false-positives on its first run.
+  git status --short > "$base" 2>/dev/null
+  echo '{}'
+  exit 0
+fi
 cur=$(git status --short 2>/dev/null)
 new=$(comm -13 <(sort "$base") <(printf '%s\n' "$cur" | sort) 2>/dev/null | sed '/^$/d')
 if [ -n "$new" ]; then

@@ -40,7 +40,7 @@ def build_sort_labels(tasks: list[dict]) -> tuple[list[str], dict[str, str]]:
 
 def parse_tasks(text: str) -> list[dict]:
   """Parse numbered task lines; X / [done] marks completion."""
-  tasks = []
+  tasks: list[dict] = []
   if not text or not text.strip():
     return tasks
   for i, line in enumerate(text.strip().split("\n"), 1):

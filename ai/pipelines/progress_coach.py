@@ -6,7 +6,7 @@ from ai.openrouter_client import OpenRouterClient
 from ai.pipelines._base import fallback_progress, format_context
 
 
-def run_progress_coach(context: dict, client: OpenRouterClient = None) -> dict:
+def run_progress_coach(context: dict, client: OpenRouterClient | None = None) -> dict:
   client = client or OpenRouterClient()
   system_prompt = (
     "You are GoalOS Lead Coach. Evaluate the user's current month progress, multi-day journal logs, "

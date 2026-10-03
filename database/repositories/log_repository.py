@@ -101,7 +101,8 @@ class LogRepository:
         if data.get(field) is False:
           data.pop(field)
       data.pop("date", None)
-      return self.update(existing.id, DailyLogUpdate(**data))  # type: ignore[arg-type]
+      updated = self.update(existing.id, DailyLogUpdate(**data))
+      return updated if updated is not None else existing
     return self.create(log)
 
   def upsert_fields(self, log_date: date, changes: DailyLogUpdate) -> DailyLog:

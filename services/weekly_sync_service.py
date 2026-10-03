@@ -106,9 +106,9 @@ class WeeklySyncService:
   def calculate_monthly_progress(
     self,
     entries: list[dict[str, Any]],
-    month_start: date = None,
+    month_start: date | None = None,
     month_name: str = "",
-    active_goals: list[Any] = None,
+    active_goals: list[Any] | None = None,
   ) -> dict[str, Any]:
     """Calculate progress continuously based on logged entries in the month vs total days in month."""
     if not month_start:
@@ -252,8 +252,8 @@ class WeeklySyncService:
     self,
     entries_or_reports: list[dict[str, Any]],
     month_name: str = "July 2026",
-    active_goals: list[Any] = None,
-    month_start: date = None,
+    active_goals: list[Any] | None = None,
+    month_start: date | None = None,
   ) -> dict[str, Any]:
     """Aggregate month's data and evaluate Cascading Goal Impact (Monthly -> Yearly -> 5-Year)."""
     if not month_start:
@@ -316,7 +316,7 @@ class WeeklySyncService:
     self,
     monthly_reports: list[dict[str, Any]],
     year_name: str = "2026",
-    active_goals: list[Any] = None,
+    active_goals: list[Any] | None = None,
   ) -> dict[str, Any]:
     """Aggregate monthly reports into an annual 1-Year Goal impact report."""
     total_months = len(monthly_reports)

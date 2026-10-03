@@ -4,7 +4,7 @@ from ai.openrouter_client import OpenRouterClient
 from ai.pipelines._base import fallback_future_self, format_context, load_prompt
 
 
-def run_future_self_coach(context: dict, client: OpenRouterClient = None) -> dict:
+def run_future_self_coach(context: dict, client: OpenRouterClient | None = None) -> dict:
   client = client or OpenRouterClient()
   system = load_prompt("future_self")
   user_msg = f"Context:\n{format_context(context)}\n\nWrite as the user's future self."

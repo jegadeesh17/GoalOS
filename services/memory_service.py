@@ -124,12 +124,12 @@ class MemoryService:
       try:
         results = self._collection.query(query_embeddings=[self.embedder.embed(query)], n_results=min(top_k * 5, 30))
         for index, mem_id in enumerate((results.get("ids") or [[]])[0]):
-          memory = self.repo.get_by_id(int(mem_id))
-          if memory and memory.status == "active":
+          found = self.repo.get_by_id(int(mem_id))
+          if found and found.status == "active":
             distance = (results.get("distances") or [[0.5]])[0][index]
             semantic = max(0.0, 1.0 - float(distance))
-            old = candidates.get(memory.id)
-            candidates[memory.id] = (memory, max(semantic, old[1] if old else 0.0), old[2] if old else 0.0)
+            old = candidates.get(found.id)
+            candidates[found.id] = (found, max(semantic, old[1] if old else 0.0), old[2] if old else 0.0)
       except Exception as exc:
         logger.error("Chroma query failed: %s", exc)
     if not candidates:

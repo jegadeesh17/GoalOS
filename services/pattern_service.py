@@ -97,7 +97,7 @@ class PatternService:
       tasks = self._parse_tasks(l)
       completed_count = sum(1 for t in tasks if t.get("completed"))
       total_count = len(tasks)
-      completion_rate = float(l.get("task_completion_rate")) if l.get("task_completion_rate") is not None else (
+      completion_rate = float(l["task_completion_rate"]) if l.get("task_completion_rate") is not None else (
         (completed_count / total_count * 100) if total_count > 0 else None
       )
 
@@ -206,7 +206,7 @@ class PatternService:
     # C. Planning Fallacy (Overplanning with low execution)
     overplanned_days = [
       d for d in daily_stats
-      if d.get("tasks_planned", 0) >= 5 and (d.get("completion_rate") is not None and d.get("completion_rate") < 50)
+      if (d.get("tasks_planned") or 0) >= 5 and (d.get("completion_rate") is not None and d["completion_rate"] < 50)
     ]
     if len(overplanned_days) >= 2:
       op_dates = [d["date"] for d in overplanned_days]
@@ -225,7 +225,7 @@ class PatternService:
     # D. Sleep-Execution Correlation
     sleep_deprived_days = [
       d for d in daily_stats
-      if d.get("sleep_hours") is not None and d.get("sleep_hours") < 6.0
+      if d.get("sleep_hours") is not None and d["sleep_hours"] < 6.0
     ]
     if len(sleep_deprived_days) >= 2:
       sd_dates = [d["date"] for d in sleep_deprived_days]
@@ -244,7 +244,7 @@ class PatternService:
     # E. Compounding Winning Patterns
     high_perf_days = [
       d for d in daily_stats
-      if d.get("completion_rate") is not None and d.get("completion_rate") >= 75.0
+      if d.get("completion_rate") is not None and d["completion_rate"] >= 75.0
     ]
     compounding_healthy_patterns: list[dict[str, Any]] = []
     if len(high_perf_days) >= 2:

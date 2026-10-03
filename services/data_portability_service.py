@@ -6,6 +6,7 @@ import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from config.settings import settings
@@ -20,7 +21,7 @@ EXPORT_TABLES = (
 class DataPortabilityService:
   def export_payload(self) -> dict:
     """Return a serializable complete user-data snapshot."""
-    payload = {
+    payload: dict[str, Any] = {
       "format": "goalos-export",
       "version": 1,
       "exported_at": datetime.now(timezone.utc).isoformat(),

@@ -3,6 +3,7 @@
 import json
 import re
 from collections import Counter
+from collections.abc import Sequence
 from datetime import date
 
 from models.daily_log import DailyLog
@@ -43,7 +44,7 @@ def _today_tasks(today_log: dict | None) -> list[dict]:
 def build_mentor_briefing(
   target_date: date,
   today_log: DailyLog | dict | None,
-  recent_logs: list[DailyLog | dict],
+  recent_logs: Sequence[DailyLog | dict],
   user_vision: dict | None = None,
   recent_coach_advice: list | None = None,
 ) -> dict:

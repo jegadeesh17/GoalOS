@@ -2,7 +2,7 @@
 
 import json
 from datetime import date
-from typing import Optional
+from typing import Any, Optional
 
 from ai.openrouter_client import OpenRouterClient
 from ai.pipelines.future_self_coach import run_future_self_coach
@@ -120,7 +120,7 @@ class CoachService:
     # None when birth_date is unset - never guess an age.
     age_in_10_years = round(current_age) + 10 if current_age is not None else None
 
-    ctx = {
+    ctx: dict[str, Any] = {
       "date": target_date.isoformat(),
       "user_vision": self._get_user_vision(),
       "current_age_in_10_years": age_in_10_years,
@@ -151,7 +151,7 @@ class CoachService:
     )
     return ctx
 
-  def get_progress_coaching(self, target_date: date = None) -> dict:
+  def get_progress_coaching(self, target_date: date | None = None) -> dict:
     import calendar
 
     from services.weekly_sync_service import WeeklySyncService

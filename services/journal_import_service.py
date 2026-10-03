@@ -6,7 +6,7 @@ import re
 from collections import Counter
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 
 import pandas as pd
 
@@ -265,7 +265,7 @@ class JournalImportService:
     avg_rate = sum(rates) / len(rates) * 100 if rates else 0
 
     gratitudes = [l.gratitude for l in logs if l.gratitude]
-    takeaways = [l.takeaway or l.one_lesson for l in logs if l.takeaway or l.one_lesson]
+    takeaways = [str(l.takeaway or l.one_lesson) for l in logs if l.takeaway or l.one_lesson]
     tasks_all: list[str] = []
     for log in logs:
       if log.planned_tasks:
@@ -418,7 +418,7 @@ class JournalImportService:
     match = AWAKE_TIME.search(text)
     if not match:
       return None
-    return self._awake_match_to_hours(match.groups())
+    return self._awake_match_to_hours(cast(tuple[str, str, str], match.groups()))
 
   def _parse_bare_hour(self, token: str) -> Optional[float]:
     """Parse a bare PLAN time token (no AM/PM) into a float hour.

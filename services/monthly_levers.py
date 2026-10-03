@@ -99,8 +99,8 @@ def _plan_groups(values: list[float]) -> Optional[tuple[Group, Group]]:
   if low >= high:
     return None
   return (
-    (f"{high:g}+ plan hours filled", lambda v: v >= high),
-    (f"{low:g} or fewer plan hours filled", lambda v: v <= low),
+    (f"{high:g}+ hours logged", lambda v: v >= high),
+    (f"{low:g} or fewer hours logged", lambda v: v <= low),
   )
 
 
@@ -126,7 +126,7 @@ def _lever_specs(rows: list[dict[str, Any]]) -> list[tuple[str, str, Callable[[d
       CAVEAT,
     ),
     (
-      "plan_filled", "Hours of the plan grid filled", lambda r: r["plan_filled"],
+      "plan_filled", "Hours logged in the day", lambda r: r["plan_filled"],
       _plan_groups(plan_values) if len(plan_values) >= MIN_DAYS else None,
       CAVEAT,
     ),
@@ -268,7 +268,7 @@ def build_focus(findings: list[dict[str, Any]], stuck_tasks: list[dict[str, Any]
     if f["lever"] == "wake":
       lines.append(f"Aim to wake by {clock_label(WAKE_EARLY)} more often: those days had {numbers} on later mornings.")
     elif f["lever"] == "plan_filled":
-      lines.append(f"Fill more of the hourly plan grid before the day starts: {better['label']} days had {numbers}.")
+      lines.append(f"Days with {better['label']} had {numbers}.")
     elif f["lever"] == "bedtime_prev":
       lines.append(f"Get to bed by midnight more often: the next day had {numbers} after a late night.")
   if stuck_tasks:

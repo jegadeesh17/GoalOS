@@ -310,7 +310,7 @@ export const DayDetailDrawer: React.FC<DayDetailDrawerProps> = ({
 
               {planBlocks.length > 0 && (
                 <section>
-                  <SectionTitle icon={<Clock className="w-4 h-4 text-emerald-700" />}>Plan</SectionTitle>
+                  <SectionTitle icon={<Clock className="w-4 h-4 text-emerald-700" />}>Hour by hour</SectionTitle>
                   <ul className="space-y-1.5">
                     {planBlocks.map((block) => (
                       <li key={block.key} className="flex items-start gap-2.5 text-sm">

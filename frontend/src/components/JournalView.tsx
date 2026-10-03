@@ -544,13 +544,13 @@ export const JournalView: React.FC<JournalViewProps> = ({ initialDate }) => {
             </div>
           </div>
 
-          {/* Plan: time blocks and tasks side by side */}
+          {/* Hour by hour (what was done) and tasks (what was intended) side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-6 border-t border-emerald-100/70">
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                   <Clock className="w-4 h-4 text-emerald-700" />
-                  Time blocks
+                  Hour by hour
                 </h2>
                 <div className="flex items-center gap-2 text-xs font-semibold">
                   {totalWorkHours > 0 && (
@@ -564,7 +564,7 @@ export const JournalView: React.FC<JournalViewProps> = ({ initialDate }) => {
 
               {timeBlocks.length === 0 ? (
                 <p className="text-sm text-slate-500 py-1">
-                  Nothing planned yet. Add a block like <span className="font-medium text-slate-700">10–12 · Applications</span>.
+                  Nothing logged yet. Add what you did, like <span className="font-medium text-slate-700">10–12 · Applications</span>.
                 </p>
               ) : (
                 <ul className="space-y-1.5 max-h-80 overflow-y-auto pr-1">

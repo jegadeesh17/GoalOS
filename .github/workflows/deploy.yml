@@ -3,6 +3,9 @@ name: Deploy GoalOS to Cloud Run
 on:
   push:
     branches: [ "main", "feat/coach-chat-ui" ]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
   workflow_dispatch:
 
 env:

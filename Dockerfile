@@ -15,8 +15,10 @@ FROM python:3.11-slim AS python-builder
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential curl && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt ./
+# CPU-only torch first: Cloud Run has no GPU, and the PyPI wheel pulls in CUDA packages.
 RUN python -m venv /opt/venv && \
     /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/venv/bin/pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
     /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # --- Stage 3: Minimal Production Runner ---
@@ -50,7 +52,9 @@ COPY --chown=appuser:appgroup data/demo_goalos.db /app/data/demo_goalos.db
 COPY --chown=appuser:appgroup data/demo_chroma_db/ /app/chroma_db/
 COPY --chown=appuser:appgroup data/demo_chroma_db/ /app/data/demo_chroma_db/
 
-RUN chown -R appuser:appgroup /app
+# Non-recursive: only the dirs the app writes to (SQLite journal files sit beside /app/goalos.db,
+# backups/ is created in /app, ChromaDB writes to /app/chroma_db). Copied files keep their --chown.
+RUN chown appuser:appgroup /app /app/chroma_db
 
 
 USER appuser

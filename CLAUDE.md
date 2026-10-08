@@ -6,7 +6,7 @@ GoalOS is a single-user, local-first life OS: a FastAPI backend (SQLite + Chroma
 
 ## Commands
 
-Run from the repo root with the project `.venv` activated (no `.venv` is checked in; create one with `python -m venv .venv && pip install -r requirements.txt`).
+Run from the repo root with the project `.venv` activated (no `.venv` is checked in; create one with `python -m venv .venv && pip install -r requirements-dev.txt`).
 
 ```bash
 python -m uvicorn api.main:app --port 8000 --reload   # backend (docs at /docs)

@@ -7,7 +7,7 @@
 ## Prerequisites
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 cd frontend && npm install && cd ..
 # Optional: set OPENROUTER_API_KEY in .env for live LLM completions
 ```

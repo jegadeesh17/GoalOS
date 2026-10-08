@@ -12,7 +12,7 @@ Persist `goalos.db` and `chroma_db` on a private volume. Keep `.env`, backups, a
 
 ## Cloud Run
 
-Pushing to `main` (or `feat/coach-chat-ui`) runs `.github/workflows/deploy.yml`, which builds the `Dockerfile` and deploys it. The workflow has no path filter, so any push to those branches redeploys, documentation-only pushes included. Deploys can also be started by hand (`workflow_dispatch`).
+Pushing to `main` (or `feat/coach-chat-ui`) runs `.github/workflows/deploy.yml`, which builds the `Dockerfile` and deploys it. Pushes that change only `docs/**` or Markdown files (`**.md`) do not deploy; any other push to those branches does. Deploys can also be started by hand (`workflow_dispatch`).
 
 | Setting | Value (from `deploy.yml`) |
 | :--- | :--- |
@@ -24,7 +24,9 @@ Pushing to `main` (or `feat/coach-chat-ui`) runs `.github/workflows/deploy.yml`,
 | Environment variable set | `ENVIRONMENT=demo` |
 | Access | `--allow-unauthenticated`; no `GOALOS_API_TOKEN` is set, so the API is open |
 
-The image is multi-stage: a Node 20 stage builds the React app, a Python 3.11 stage installs `requirements.txt`, and the runner copies the built `frontend/dist` next to the API. FastAPI serves the SPA itself at `/app`, so no separate static host is used on Cloud Run. The container listens on `$PORT` (default 8080). The image holds the fictional demo database, not a real one. The deploy workflow does not run tests; `ci.yml` does (pytest, ruff, mypy, the retrieval eval script and a Docker build on Python 3.11).
+Artifact Registry keeps only the 2 newest images per service (the current release and one rollback target). `deploy.yml` has no cleanup step, so this retention is configured outside the repository.
+
+The image is multi-stage: a Node 20 stage builds the React app, a Python 3.11 stage installs `requirements.txt`, and the runner copies the built `frontend/dist` next to the API. FastAPI serves the SPA itself at `/app`, so no separate static host is used on Cloud Run. The container listens on `$PORT` (default 8080). The image holds the fictional demo database, not a real one. The deploy workflow does not run tests; `ci.yml` does (pytest, ruff, mypy, the retrieval eval script and a Docker build on Python 3.11). Because PyTorch is installed CPU-only, the image is expected to drop from about 3.4 GB to well under 1 GB; this has not been measured yet.
 
 ## Demo Data (Cloud Run)
 

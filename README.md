@@ -45,7 +45,7 @@ The demo runs the `main` branch, so features that exist only on `dev` (pace poin
 ### Profile, privacy and data portability
 - **Consent switch:** remote LLM coaching is off until you turn it on in Settings.
 - **JSON export:** a full portable backup of tables, goals, memories and logs (`/export`).
-- **Safe factory reset:** writes a timestamped zip backup (`backups/goalos-backup-YYYYMMDD-HHMMSS.zip`, JSON export plus the raw `.db`) before clearing data (`/export/reset`).
+- **Factory reset:** not implemented yet. `/export/reset` returns HTTP 501 and changes nothing (see Known limitations).
 - **Local data:** personal data lives in local `goalos.db` and `chroma_db/`. All API inputs that use Pydantic models are validated; a few routes take raw JSON (see Known limitations).
 
 ## Quick start
@@ -185,8 +185,8 @@ flowchart TD
 - `POST /export/reset` (the Settings "factory reset" button) returns HTTP 501: `DataPortabilityService` has no reset method yet, and nothing is deleted or backed up.
 - Tool arguments are not validated against the declared schemas by the registry. Some handlers check by hand (`get_goal_pacing` rejects an unknown `horizon`; `get_monthly_snapshots` clamps `months`); others convert directly (`int(args.get("days", 7))`). The benchmark report's "Schema validated" label overstates what it checks.
 - The coach chat never lets the model choose tools; `OpenRouterClient.complete_with_tools` is used only by tests.
-- When no birth date is set, the calendar falls back to `2002-06-17` with target age 70 (`api/main.py:165-168`, `models/user.py:12`, migration default).
-- `DELETE /memories/{id}` removes only the SQLite row (`api/main.py:587-593`). The Chroma vector and FTS row stay; retrieval skips ids with no row, and `MemoryService.reconcile_index()`, which removes stale vectors, is not exposed by any route or UI.
+- When no birth date is set, the calendar falls back to `2002-06-17` with target age 70 (`api/main.py:170-177`, `models/user.py:12-13`, migration default).
+- `DELETE /memories/{id}` removes only the SQLite row (`api/main.py:594-599`). The Chroma vector and FTS row stay; retrieval skips ids with no row, and `MemoryService.reconcile_index()`, which removes stale vectors, is not exposed by any route or UI.
 - `LOG_LEVEL` and `LOG_FILE` are defined in settings but nothing reads them.
 - The public demo runs the `main` branch, so pace points are not live there yet. It has no API token set, so its API is unauthenticated (it holds only fictional data).
 - The generated `reports/TOOL_CALLING_BENCHMARK.md` is not hand-edited; its P95 figure is dominated by the first memory-search call (model load).

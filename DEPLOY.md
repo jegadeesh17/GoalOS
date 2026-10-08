@@ -26,7 +26,7 @@ Pushing to `main` (or `feat/coach-chat-ui`) runs `.github/workflows/deploy.yml`,
 
 Artifact Registry keeps only the 2 newest images per service (the current release and one rollback target). `deploy.yml` has no cleanup step, so this retention is configured outside the repository.
 
-The image is multi-stage: a Node 20 stage builds the React app, a Python 3.11 stage installs `requirements.txt`, and the runner copies the built `frontend/dist` next to the API. FastAPI serves the SPA itself at `/app`, so no separate static host is used on Cloud Run. The container listens on `$PORT` (default 8080). The image holds the fictional demo database, not a real one. The deploy workflow does not run tests; `ci.yml` does (pytest, ruff, mypy, the retrieval eval script and a Docker build on Python 3.11). Because PyTorch is installed CPU-only, the image is expected to drop from about 3.4 GB to well under 1 GB; this has not been measured yet.
+The image is multi-stage: a Node 20 stage builds the React app, a Python 3.11 stage installs `requirements.txt`, and the runner copies the built `frontend/dist` next to the API. FastAPI serves the SPA itself at `/app`, so no separate static host is used on Cloud Run. The container listens on `$PORT` (default 8080). The image holds the fictional demo database, not a real one. The deploy workflow does not run tests; `ci.yml` does (pytest, ruff, mypy, the retrieval eval script and a Docker build on Python 3.11). Because PyTorch is installed CPU-only, the image is about 0.54 GB.
 
 ## Demo Data (Cloud Run)
 

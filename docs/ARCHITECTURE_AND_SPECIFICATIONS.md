@@ -415,7 +415,7 @@ Migration 8 also adds `metric_name`, `metric_unit`, `start_value` and `target_va
 | `POST` | `/settings` | Update profile, coach persona and consent | Token |
 | `GET` | `/export` | Full JSON export of the database | Token |
 | `GET` | `/export/weekly-report` | 7-day retrospective digest as Markdown, HTML or JSON (`week_start_date`, `format`) | Token |
-| `POST` | `/export/reset` | Back up, then clear data; body must be `{"confirmation": "RESET"}` | Token |
+| `POST` | `/export/reset` | Not implemented: body must be `{"confirmation": "RESET"}` (400 otherwise); returns 501 and changes nothing | Token |
 
 Outside the router: `GET /` redirects to `/app` (or `/docs` when `frontend/dist` is missing), `GET /app` and `/app/{path}` serve the built SPA, and `/assets`, `/sw.js`, `/registerSW.js`, `/manifest.webmanifest`, `/favicon.svg` serve its bundle files.
 
@@ -432,7 +432,7 @@ Outside the router: `GET /` redirects to `/app` (or `/docs` when `frontend/dist`
 | **FR-03** | Deterministic Fallback: AI pipelines fallback cleanly if OpenRouter is unreachable or consent is disabled. | Mocked network tests |
 | **FR-04** | Memento Mori lifespan calculation computes exact week indices without drift. | `test_life_calendar_and_weekly_sync.py` |
 | **FR-05** | Daily score calculation computes alignment, consistency, health, and productivity deterministically. | `test_analytics.py` |
-| **FR-06** | Safe factory reset generates a backup SQLite file before wiping data. | `test_api.py` |
+| **FR-06** | Safe factory reset generates a backup SQLite file before wiping data. Not implemented: `/export/reset` returns 501 and changes nothing. | `test_api.py` (asserts the 501) |
 | **FR-07** | Deduplication: Duplicate journal memories are identified by SHA-256 content hashes. | Repository unit tests |
 
 ### 6.2 Non-Functional Specifications

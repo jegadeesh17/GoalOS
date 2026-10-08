@@ -59,7 +59,7 @@ Entries are built from this repository's `feat`, `fix` and `refactor` commit sub
 - The real CSV importer now runs through `JournalImportService` (`0d6ae9f`).
 - Unreachable coach and weekly-sync code paths removed (`80db208`).
 - Documentation refresh: standard doc set (README, docs index, changelog, decisions, license, commented `.env.example`), factual corrections to match the code, and superseded docs archived (this change).
-- The container installs CPU-only PyTorch before `requirements.txt`, so CUDA wheels are no longer pulled from PyPI. The image is expected to drop from about 3.4 GB to well under 1 GB; not measured yet (`c48be99`).
+- The container installs CPU-only PyTorch before `requirements.txt`, so CUDA wheels are no longer pulled from PyPI. The image is about 0.54 GB (`c48be99`).
 - The image build sets ownership of `/app` and `/app/chroma_db` only, instead of a recursive `chown` over all of `/app` (`c48be99`).
 - `pytest` moved from `requirements.txt` to `requirements-dev.txt`, which CI now installs (`c48be99`).
 - Pushes that change only `docs/**` or Markdown files no longer trigger the Cloud Run deploy (`c48be99`).

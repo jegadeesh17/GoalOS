@@ -82,7 +82,7 @@ run_app.bat
    - **Coach Chat:** Conversational thread backed by session history and a shared blackboard; context is fetched by the server according to keyword-detected intent.
 5. **Analytics & Patterns:** Vital averages, daily deterministic growth scores, and multi-day behavioral pattern detection.
 6. **Cognitive Memories:** Hybrid search explorer with real-time composite ranking.
-7. **Settings & Sovereign Privacy:** User profile (birth date, target age), one-switch remote AI consent, and safe factory reset with automated SQLite backup.
+7. **Settings & Sovereign Privacy:** User profile (birth date, target age), one-switch remote AI consent, and the factory-reset endpoint, which is not implemented yet (it returns 501 and changes nothing).
 
 ---
 

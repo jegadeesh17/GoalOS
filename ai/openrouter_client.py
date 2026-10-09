@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import time
 from typing import Any, Callable, Optional, Union
 
@@ -25,9 +26,19 @@ class OpenRouterClient:
     "qwen/qwen3.8-27b:free",
   ]
 
+  FREE_ONLY_DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
+
   def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
     self.api_key = api_key or settings.OPENROUTER_API_KEY
-    self.model = model or settings.OPENROUTER_MODEL
+    self.model = self._enforce_free_only(model or settings.OPENROUTER_MODEL)
+
+  @classmethod
+  def _enforce_free_only(cls, model: str) -> str:
+    """With OPENROUTER_FREE_ONLY=1, never use a paid model: swap it for the first free one."""
+    if os.environ.get("OPENROUTER_FREE_ONLY", "").lower() in ("1", "true", "yes") and not model.endswith(":free"):
+      logger.warning("OPENROUTER_FREE_ONLY is set; replacing paid model %s with %s.", model, cls.FREE_ONLY_DEFAULT_MODEL)
+      return cls.FREE_ONLY_DEFAULT_MODEL
+    return model
 
   def refresh_config(self) -> None:
     """Reload API key and model from .env (after Settings save)."""
@@ -35,7 +46,7 @@ class OpenRouterClient:
 
     fresh = reload_settings()
     self.api_key = fresh.OPENROUTER_API_KEY or ""
-    self.model = fresh.OPENROUTER_MODEL or self.model
+    self.model = self._enforce_free_only(fresh.OPENROUTER_MODEL or self.model)
 
   def test_connection(self, allow_fallback: bool = False) -> dict:
     """Quick ping to verify OpenRouter key + model work."""

@@ -73,3 +73,15 @@ def test_complete_failover_on_502_error():
     )
 
   assert res == "Hello from fallback model"
+
+
+def test_free_only_replaces_paid_model(monkeypatch):
+  monkeypatch.setenv("OPENROUTER_FREE_ONLY", "1")
+  client = OpenRouterClient(api_key="test", model="anthropic/claude-sonnet-4")
+  assert client.model.endswith(":free")
+  assert OpenRouterClient(api_key="test", model="google/gemma-4-31b-it:free").model == "google/gemma-4-31b-it:free"
+
+
+def test_paid_model_kept_without_free_only(monkeypatch):
+  monkeypatch.delenv("OPENROUTER_FREE_ONLY", raising=False)
+  assert OpenRouterClient(api_key="test", model="anthropic/claude-sonnet-4").model == "anthropic/claude-sonnet-4"

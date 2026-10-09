@@ -50,5 +50,5 @@ jobs:
             --timeout 300 \
             --min-instances 0 \
             --max-instances 2 \
-            --set-env-vars "ENVIRONMENT=demo"
+            --set-env-vars "^@^ENVIRONMENT=demo@OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}"
 

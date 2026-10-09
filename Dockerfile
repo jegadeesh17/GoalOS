@@ -12,14 +12,27 @@ RUN npm run build
 
 # --- Stage 2: Python Dependency Builder ---
 FROM python:3.11-slim AS python-builder
+# WITH_ML=1 adds torch + sentence-transformers (requirements-ml.txt) for real embeddings.
+# Cloud Run runs ENVIRONMENT=demo, which uses the hash embedder, so the default build leaves them out.
+ARG WITH_ML=0
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential curl && rm -rf /var/lib/apt/lists/*
-COPY requirements.txt ./
-# CPU-only torch first: Cloud Run has no GPU, and the PyPI wheel pulls in CUDA packages.
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt requirements-ml.txt ./
 RUN python -m venv /opt/venv && \
-    /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
-    /opt/venv/bin/pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
-    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+    /opt/venv/bin/pip install --no-cache-dir --no-compile --upgrade pip && \
+    /opt/venv/bin/pip install --no-cache-dir --no-compile -r requirements.txt
+# CPU-only torch first: the PyPI wheel pulls in CUDA packages and Cloud Run has no GPU.
+RUN if [ "$WITH_ML" = "1" ]; then \
+        /opt/venv/bin/pip install --no-cache-dir --no-compile torch --index-url https://download.pytorch.org/whl/cpu && \
+        /opt/venv/bin/pip install --no-cache-dir --no-compile -r requirements-ml.txt; \
+    fi
+# Trim what the runtime never uses: bundled test suites, bytecode, and pip/setuptools themselves.
+RUN find /opt/venv -type d \( -name tests -o -name test \) -prune -exec rm -rf {} + && \
+    find /opt/venv -name "*.pyc" -delete && \
+    find /opt/venv -type d -name __pycache__ -empty -delete && \
+    cd /opt/venv/lib/python3.11/site-packages && \
+    rm -rf pip pip-*.dist-info setuptools setuptools-*.dist-info pkg_resources _distutils_hack distutils-precedence.pth && \
+    rm -f /opt/venv/bin/pip /opt/venv/bin/pip3*
 
 # --- Stage 3: Minimal Production Runner ---
 FROM python:3.11-slim AS runner
@@ -29,8 +42,6 @@ ENV PATH=/opt/venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PORT=8080
-
-RUN apt-get update && apt-get install -y --no-install-recommends curl sqlite3 && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -g 10001 appgroup && \
     useradd -u 10001 -g appgroup -s /bin/bash -m appuser

@@ -8,8 +8,6 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Optional, cast
 
-import pandas as pd
-
 from database.repositories.log_repository import LogRepository
 from models.daily_log import DailyLogCreate
 from models.import_result import ImportResult, ParsedEntry, ParsedTask, ParsedTimeBlock
@@ -54,6 +52,8 @@ class JournalImportService:
     """Read Excel file and import all rows."""
     result = ImportResult()
     try:
+      import pandas as pd  # optional (requirements-import.txt): keeps pandas out of API startup
+
       df = pd.read_excel(file_path)
     except Exception as e:
       result.errors.append(f"Failed to read Excel: {e}")
@@ -621,7 +621,7 @@ class JournalImportService:
     return self.parse_entry(row)
 
   def _clean(self, value) -> Optional[str]:
-    if value is None or (isinstance(value, float) and pd.isna(value)):
+    if value is None or (isinstance(value, float) and math.isnan(value)):
       return None
     text = str(value).strip()
     if not text or text.lower() in ("nan", "(empty)", "empty"):

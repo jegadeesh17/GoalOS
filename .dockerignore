@@ -1,0 +1,41 @@
+# Keep the build context small. The Dockerfile COPYs only: frontend/, ai/, api/, config/, configs/,
+# database/, models/, services/, scripts/, requirements*.txt and the data/demo_* files.
+
+# VCS, environments and secrets
+.git
+.github
+.venv
+**/.env*
+!.env.example
+
+# Dependencies and build output (rebuilt inside the image)
+**/node_modules
+frontend/dist
+**/__pycache__
+**/*.pyc
+
+# Local data and stores (the image ships data/demo_* instead)
+goalos.db
+goalos.log
+chroma_db
+backups
+reports
+static
+data/*
+!data/demo_seed.csv
+!data/demo_goalos.db
+!data/demo_chroma_db
+
+# Tests, docs and tool state
+tests
+docs
+*.md
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.claude
+.impeccable
+**/.impeccable
+.superpowers
+.vscode
+.idea

@@ -28,6 +28,7 @@ def run_progress_coach(context: dict, client: OpenRouterClient | None = None) ->
     "has been quiet (days_quiet null = never). Name goals that got no work from these counts. If every count is "
     "zero the tasks are not linked to goals yet: say so, never call that neglect.\n"
     "- Put the month comparison and the yearly pacing inside progress_narrative.\n\n"
+    "- Output format: plain text only: no markdown in the reply. No asterisks, no #, no backticks, no tables. Write labels as 'Label: text' on their own line and use hyphens for lists.\n"
     "Return JSON with keys:\n"
     "- pacing_status: string (e.g. 'On Track — High Execution', 'Behind Schedule — Repeating Pattern Detected')\n"
     "- monthly_goal_evaluated: string (target 1-Month goal)\n"

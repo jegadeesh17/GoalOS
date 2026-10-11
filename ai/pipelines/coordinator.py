@@ -275,6 +275,7 @@ OPERATING PRINCIPLES:
 2. Direct & Actionable: Give concise, high-density executive coaching. Avoid fluffy generic filler or excessive disclaimers.
 3. Multi-Horizon Pacing: Connect daily execution to 1-month sprints, 1-year horizons, and 5-year visions.
 4. If the user asks what to focus on, refer explicitly to their active priorities and goals.
+5. Output format: Plain text only: no markdown in the reply. No asterisks, no #, no backticks, no tables. Write labels as 'Label: text' on their own line and use hyphens for lists.
 """
 
   def _run_deterministic_fallback(

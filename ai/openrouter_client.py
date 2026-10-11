@@ -31,8 +31,8 @@ class OpenRouterClient:
 
   FREE_ONLY_DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
-  # Reasoning effort sent with paid (non-:free) models. The account's OpenRouter guardrail only allows
-  # openai/gpt-6-luna, so a paid model stays pinned: the free-model rotation is skipped for it.
+  # Reasoning effort sent with paid (non-:free) models. A paid model stays pinned (the account guardrail may
+  # allow only one model), so the free-model rotation is skipped for it.
   REASONING_EFFORT = "medium"
 
   def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):

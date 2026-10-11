@@ -85,3 +85,13 @@ def test_free_only_replaces_paid_model(monkeypatch):
 def test_paid_model_kept_without_free_only(monkeypatch):
   monkeypatch.delenv("OPENROUTER_FREE_ONLY", raising=False)
   assert OpenRouterClient(api_key="test", model="anthropic/claude-sonnet-4").model == "anthropic/claude-sonnet-4"
+
+
+def test_complete_stops_when_time_budget_is_used_up():
+  client = OpenRouterClient(api_key="test-key", model="google/gemma-4-31b-it:free")
+  client.TOTAL_DEADLINE_SECONDS = 0
+
+  with patch("httpx.Client.post", side_effect=AssertionError("must not call the network")):
+    res = client.complete(system_prompt="You are a coach.", user_message="Hello", response_format={"type": "json_object"})
+
+  assert res["error"] == "api_error"

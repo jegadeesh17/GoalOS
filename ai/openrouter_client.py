@@ -17,6 +17,8 @@ class OpenRouterClient:
   """Client for OpenRouter API."""
 
   BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
+  # Budget for one whole complete() call (all retries and model switches); the web page gives up at 45s.
+  TOTAL_DEADLINE_SECONDS = 30.0
   # Ranked best-first for coaching and reasoning quality; all are $0 on OpenRouter.
   FREE_FALLBACK_MODELS = [
     "thinkingmachines/inkling:free",
@@ -113,11 +115,15 @@ class OpenRouterClient:
     last_error = None
     last_status_code: Optional[int] = None
     last_response_text: str = ""
+    deadline = time.time() + self.TOTAL_DEADLINE_SECONDS
     for attempt in range(max_retries):
+      remaining = deadline - time.time()
+      if remaining <= 0:
+        break
       start = time.time()
       try:
         payload["model"] = current_model
-        with httpx.Client(timeout=12.0) as client:
+        with httpx.Client(timeout=max(1.0, min(12.0, remaining))) as client:
           response = client.post(self.BASE_URL, headers=headers, json=payload)
           latency = time.time() - start
           logger.info(

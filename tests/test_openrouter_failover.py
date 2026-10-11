@@ -130,11 +130,11 @@ def _capture_complete(model, temp_db):
   return client, sent
 
 
-def test_paid_model_stays_pinned_and_uses_low_reasoning(temp_db):
+def test_paid_model_stays_pinned_and_uses_no_reasoning(temp_db):
   client, sent = _capture_complete("openai/gpt-6-luna", temp_db)
 
   assert sent["model"] == "openai/gpt-6-luna"
-  assert sent["reasoning"] == {"effort": "low"}
+  assert sent["reasoning"] == {"effort": "none"}
   assert client._pick_next_free_model("openai/gpt-6-luna", {"openai/gpt-6-luna"}) is None
 
 

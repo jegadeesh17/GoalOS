@@ -110,7 +110,7 @@ Copy `.env.example` to `.env`. All variables are read by `configs/settings.py`.
 | Variable | Default | Purpose |
 |---|---|---|
 | `OPENROUTER_API_KEY` | empty | OpenRouter key for remote coaching. Without it the local rule engine answers. |
-| `OPENROUTER_MODEL` | `openai/gpt-oss-20b` | Model slug. Paid models are called with reasoning effort `low` and stay pinned; only a `:free` model rotates through a built-in list of free models on a timeout, rate limit or model error. |
+| `OPENROUTER_MODEL` | `openai/gpt-oss-20b` | Model slug. Paid models are called with reasoning effort `none` (hidden thinking off) and stay pinned; only a `:free` model rotates through a built-in list of free models on a timeout, rate limit or model error. |
 | `DB_PATH` | `<repo>/goalos.db` | SQLite database path. |
 | `CHROMA_PATH` | `<repo>/chroma_db` | ChromaDB directory. |
 | `GOALOS_API_TOKEN` | empty | Bearer token for protected routes; empty means the API is open. Required when `ENVIRONMENT=production`. |

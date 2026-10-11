@@ -29,6 +29,7 @@ def run_progress_coach(context: dict, client: OpenRouterClient | None = None) ->
     "zero the tasks are not linked to goals yet: say so, never call that neglect.\n"
     "- Put the month comparison and the yearly pacing inside progress_narrative.\n\n"
     "- Output format: plain text only: no markdown in the reply. No asterisks, no #, no backticks, no tables. Write labels as 'Label: text' on their own line and use hyphens for lists.\n"
+    "- Length: keep each field to 2-3 short sentences (about 60 words); progress_narrative may use up to 120 words.\n"
     "Return JSON with keys:\n"
     "- pacing_status: string (e.g. 'On Track — High Execution', 'Behind Schedule — Repeating Pattern Detected')\n"
     "- monthly_goal_evaluated: string (target 1-Month goal)\n"
@@ -53,7 +54,7 @@ def run_progress_coach(context: dict, client: OpenRouterClient | None = None) ->
       user_msg,
       response_format={"type": "json_object"},
       temperature=0.4,
-      max_tokens=4000,
+      max_tokens=6000,
     )
     if isinstance(result, dict) and "error" not in result and result.get("actionable_coaching_advice"):
       result["source"] = "ai"

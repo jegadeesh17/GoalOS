@@ -32,9 +32,10 @@ class OpenRouterClient:
 
   FREE_ONLY_DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
-  # Reasoning effort sent with paid (non-:free) models. A paid model stays pinned (the account guardrail may
-  # allow only one model), so the free-model rotation is skipped for it.
-  REASONING_EFFORT = "low"
+  # Reasoning effort sent with paid (non-:free) models. "none" switches hidden thinking off: DeepSeek v4.1 flash
+  # ignored "low" and spent the whole output budget on thinking, returning an empty answer. A paid model stays
+  # pinned (the account guardrail may allow only one model), so the free-model rotation is skipped for it.
+  REASONING_EFFORT = "none"
 
   def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
     self.api_key = api_key or settings.OPENROUTER_API_KEY

@@ -11,8 +11,30 @@ def load_prompt(name: str) -> str:
   return (PROMPTS_DIR / f"{name}.txt").read_text(encoding="utf-8")
 
 
+_PROMPT_DROP_KEYS = ("historical_baseline_logs", "journal_text_digest", "recent_coach_advice")
+_PROMPT_LOG_FIELDS = (
+  "date", "planned_tasks", "time_blocks", "journal_entry", "takeaway", "gratitude", "awake_range", "sleep_hours",
+)
+
+
+def _prune(value: Any) -> Any:
+  """Drop None, empty strings and empty containers so they don't cost prompt tokens."""
+  if isinstance(value, dict):
+    pruned = {k: _prune(v) for k, v in value.items()}
+    return {k: v for k, v in pruned.items() if v not in (None, "", [], {})}
+  if isinstance(value, list):
+    return [v for v in (_prune(v) for v in value) if v not in (None, "", [], {})]
+  return value
+
+
 def format_context(context: dict[str, Any]) -> str:
-  return json.dumps(context, indent=2, default=str)
+  """Compact JSON of the context for the model; fallbacks keep reading the full dict."""
+  view = {k: v for k, v in context.items() if k not in _PROMPT_DROP_KEYS}
+  if isinstance(view.get("recent_logs"), list):
+    view["recent_logs"] = [
+      {f: log.get(f) for f in _PROMPT_LOG_FIELDS} for log in view["recent_logs"] if isinstance(log, dict)
+    ]
+  return json.dumps(_prune(view), separators=(",", ":"), default=str)
 
 
 _STATUS_LABEL = {"ahead": "Ahead of pace", "on_pace": "On pace", "behind": "Behind pace"}

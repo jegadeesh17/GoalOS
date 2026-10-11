@@ -8,6 +8,9 @@ const api = axios.create({
   timeout: 45000,
 });
 
+// Coach replies come from a reasoning model and can take a minute; the server stops waiting at 60s.
+const COACH_TIMEOUT_MS = 90000;
+
 export interface LifeSummary {
   birth_date: string;
   target_age: number;
@@ -511,11 +514,11 @@ export const goalOSApi = {
 
   // AI Coaching
   futureSelfCoach: async (dateStr?: string): Promise<any> => {
-    const res = await api.post('/coach/future-self', { date: dateStr });
+    const res = await api.post('/coach/future-self', { date: dateStr }, { timeout: COACH_TIMEOUT_MS });
     return res.data;
   },
   progressCoach: async (dateStr?: string): Promise<any> => {
-    const res = await api.post('/coach/progress', { date: dateStr });
+    const res = await api.post('/coach/progress', { date: dateStr }, { timeout: COACH_TIMEOUT_MS });
     return res.data;
   },
 
@@ -526,7 +529,7 @@ export const goalOSApi = {
     remote_ai_consent?: boolean;
     preferred_domain?: string;
   }): Promise<CoachChatResponse> => {
-    const res = await api.post<CoachChatResponse>('/coach/chat', payload);
+    const res = await api.post<CoachChatResponse>('/coach/chat', payload, { timeout: COACH_TIMEOUT_MS });
     return res.data;
   },
   listCoachSessions: async (limit = 30): Promise<CoachSession[]> => {

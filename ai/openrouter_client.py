@@ -18,8 +18,8 @@ class OpenRouterClient:
   """Client for OpenRouter API."""
 
   BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
-  # Budget for one whole complete() call (all retries and model switches); the web page gives up at 45s.
-  TOTAL_DEADLINE_SECONDS = 25.0
+  # Budget for one whole complete() call (all retries and model switches); the web client's coach requests give up at 90s.
+  TOTAL_DEADLINE_SECONDS = 60.0
   # Ranked best-first for coaching and reasoning quality; all are $0 on OpenRouter.
   FREE_FALLBACK_MODELS = [
     "thinkingmachines/inkling:free",

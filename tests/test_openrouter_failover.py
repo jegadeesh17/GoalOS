@@ -1,5 +1,6 @@
 """Test OpenRouterClient fast timeout and multi-model failover behavior."""
 
+import time
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -94,4 +95,19 @@ def test_complete_stops_when_time_budget_is_used_up():
   with patch("httpx.Client.post", side_effect=AssertionError("must not call the network")):
     res = client.complete(system_prompt="You are a coach.", user_message="Hello", response_format={"type": "json_object"})
 
+  assert res["error"] == "api_error"
+
+
+def test_complete_gives_up_on_a_call_that_hangs():
+  client = OpenRouterClient(api_key="test-key", model="google/gemma-4-31b-it:free")
+  client.TOTAL_DEADLINE_SECONDS = 0.5
+
+  def hanging_post(url, headers, json):
+    time.sleep(2)
+
+  started = time.time()
+  with patch("httpx.Client.post", side_effect=hanging_post):
+    res = client.complete(system_prompt="You are a coach.", user_message="Hello", response_format={"type": "json_object"})
+
+  assert time.time() - started < 1.5
   assert res["error"] == "api_error"

@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Optional, Union
 
 import httpx
@@ -18,7 +19,7 @@ class OpenRouterClient:
 
   BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
   # Budget for one whole complete() call (all retries and model switches); the web page gives up at 45s.
-  TOTAL_DEADLINE_SECONDS = 30.0
+  TOTAL_DEADLINE_SECONDS = 25.0
   # Ranked best-first for coaching and reasoning quality; all are $0 on OpenRouter.
   FREE_FALLBACK_MODELS = [
     "thinkingmachines/inkling:free",
@@ -73,6 +74,24 @@ class OpenRouterClient:
       return {"ok": False, "error": reply["error"], "detail": reply.get("error_detail", "")}
     return {"ok": False, "error": "empty_response", "detail": "Model returned nothing"}
 
+  def _post_within(
+    self, client: httpx.Client, headers: dict[str, str], payload: dict[str, Any], seconds: float
+  ) -> httpx.Response:
+    """POST with a hard wall-clock limit.
+
+    httpx timeouts apply per read, and OpenRouter sends keep-alive bytes while a request is queued, so one
+    call could otherwise wait for minutes. On timeout the client is closed, which aborts the worker's request.
+    """
+    pool = ThreadPoolExecutor(max_workers=1)
+    future = pool.submit(client.post, self.BASE_URL, headers=headers, json=payload)
+    try:
+      return future.result(timeout=seconds)
+    except TimeoutError:
+      client.close()
+      raise httpx.ReadTimeout("AI call exceeded its time budget") from None
+    finally:
+      pool.shutdown(wait=False)
+
   def complete(
     self,
     system_prompt: str,
@@ -124,7 +143,7 @@ class OpenRouterClient:
       try:
         payload["model"] = current_model
         with httpx.Client(timeout=max(1.0, min(12.0, remaining))) as client:
-          response = client.post(self.BASE_URL, headers=headers, json=payload)
+          response = self._post_within(client, headers, payload, min(remaining, 20.0))
           latency = time.time() - start
           logger.info(
             "OpenRouter request completed in %.2fs (attempt %d, model=%s)",

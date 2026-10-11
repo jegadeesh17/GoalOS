@@ -20,13 +20,14 @@ class OpenRouterClient:
   BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
   # Budget for one whole complete() call (all retries and model switches); the web client's coach requests give up at 90s.
   TOTAL_DEADLINE_SECONDS = 60.0
-  # Ranked best-first for coaching and reasoning quality; all are $0 on OpenRouter.
+  # Free models tried in this order. Each supports JSON output and has a 256k+ context; checked against
+  # OpenRouter's model list on 2026-10-11. The first one is the proven default for Cloud Run.
   FREE_FALLBACK_MODELS = [
-    "thinkingmachines/inkling:free",
-    "nvidia/nemotron-3-ultra-550b-a55b:free",
-    "google/gemma-4-31b-it:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
-    "qwen/qwen3.8-27b:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "dots-studio/dots-3-note-preview:free",
+    "apodex/apodex-1.1-mini:free",
   ]
 
   FREE_ONLY_DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"

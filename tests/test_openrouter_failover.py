@@ -12,11 +12,11 @@ def test_pick_next_free_model():
   client = OpenRouterClient(api_key="test", model="google/gemma-4-31b-it:free")
   tried = {"google/gemma-4-31b-it:free"}
   next_m = client._pick_next_free_model("google/gemma-4-31b-it:free", tried)
-  assert next_m == "thinkingmachines/inkling:free"
+  assert next_m == "nvidia/nemotron-3-super-120b-a12b:free"
 
-  tried.add("thinkingmachines/inkling:free")
+  tried.add("nvidia/nemotron-3-super-120b-a12b:free")
   next_m2 = client._pick_next_free_model(next_m, tried)
-  assert next_m2 == "nvidia/nemotron-3-ultra-550b-a55b:free"
+  assert next_m2 == "google/gemma-4-26b-a4b-it:free"
 
 
 def test_complete_failover_on_timeout():

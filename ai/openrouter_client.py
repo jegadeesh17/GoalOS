@@ -31,6 +31,10 @@ class OpenRouterClient:
 
   FREE_ONLY_DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
+  # Reasoning effort sent with paid (non-:free) models. The account's OpenRouter guardrail only allows
+  # openai/gpt-6-luna, so a paid model stays pinned: the free-model rotation is skipped for it.
+  REASONING_EFFORT = "medium"
+
   def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
     self.api_key = api_key or settings.OPENROUTER_API_KEY
     self.model = self._enforce_free_only(model or settings.OPENROUTER_MODEL)
@@ -127,6 +131,8 @@ class OpenRouterClient:
     }
     if response_format:
       payload["response_format"] = response_format
+    if not self.model.endswith(":free"):
+      payload["reasoning"] = {"effort": self.REASONING_EFFORT}
 
     current_model = self.model
     tried_models = {current_model}
@@ -135,6 +141,7 @@ class OpenRouterClient:
     last_status_code: Optional[int] = None
     last_response_text: str = ""
     deadline = time.time() + self.TOTAL_DEADLINE_SECONDS
+    pinned = not self.model.endswith(":free")  # one paid model, no failover: give it the whole budget
     for attempt in range(max_retries):
       remaining = deadline - time.time()
       if remaining <= 0:
@@ -142,8 +149,8 @@ class OpenRouterClient:
       start = time.time()
       try:
         payload["model"] = current_model
-        with httpx.Client(timeout=max(1.0, min(12.0, remaining))) as client:
-          response = self._post_within(client, headers, payload, min(remaining, 20.0))
+        with httpx.Client(timeout=max(1.0, remaining if pinned else min(12.0, remaining))) as client:
+          response = self._post_within(client, headers, payload, remaining if pinned else min(remaining, 20.0))
           latency = time.time() - start
           logger.info(
             "OpenRouter request completed in %.2fs (attempt %d, model=%s)",
@@ -342,6 +349,8 @@ class OpenRouterClient:
       }
       if response_format and _round == max_tool_rounds - 1:
         payload["response_format"] = response_format
+      if not self.model.endswith(":free"):
+        payload["reasoning"] = {"effort": self.REASONING_EFFORT}
 
       data = self._post_chat_completion(headers, payload, max_retries)
       if isinstance(data, dict) and data.get("error"):
@@ -488,6 +497,8 @@ class OpenRouterClient:
 
   def _pick_next_free_model(self, current_model: str, tried_models: set[str]) -> Optional[str]:
     """Choose next untried free model."""
+    if not self.model.endswith(":free"):
+      return None  # a paid model is pinned; any other model would be refused by the account guardrail
     for model in self.FREE_FALLBACK_MODELS:
       if model != current_model and model not in tried_models:
         return model

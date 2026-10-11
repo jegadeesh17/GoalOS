@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     OPENROUTER_API_KEY: str = Field(default="", description="OpenRouter API key")
     OPENROUTER_MODEL: str = Field(
-        default="anthropic/claude-sonnet-4",
+        default="openai/gpt-6-luna",
         description="Default LLM model slug on OpenRouter",
     )
     DB_PATH: str = Field(

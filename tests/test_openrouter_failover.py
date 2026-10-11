@@ -111,3 +111,34 @@ def test_complete_gives_up_on_a_call_that_hangs():
 
   assert time.time() - started < 1.5
   assert res["error"] == "api_error"
+
+
+def _capture_complete(model, temp_db):
+  """Run complete() against a stubbed 200 reply and return the JSON payload that was sent."""
+  client = OpenRouterClient(api_key="test-key", model=model)
+  sent = {}
+  reply = MagicMock()
+  reply.status_code = 200
+  reply.json.return_value = {"choices": [{"message": {"content": "ok"}}], "usage": {}}
+
+  def capture_post(url, headers, json):
+    sent.update(json)
+    return reply
+
+  with patch("httpx.Client.post", side_effect=capture_post):
+    client.complete(system_prompt="You are a coach.", user_message="Hello")
+  return client, sent
+
+
+def test_paid_model_stays_pinned_and_uses_medium_reasoning(temp_db):
+  client, sent = _capture_complete("openai/gpt-6-luna", temp_db)
+
+  assert sent["model"] == "openai/gpt-6-luna"
+  assert sent["reasoning"] == {"effort": "medium"}
+  assert client._pick_next_free_model("openai/gpt-6-luna", {"openai/gpt-6-luna"}) is None
+
+
+def test_free_model_sends_no_reasoning_field(temp_db):
+  _, sent = _capture_complete("google/gemma-4-31b-it:free", temp_db)
+
+  assert "reasoning" not in sent

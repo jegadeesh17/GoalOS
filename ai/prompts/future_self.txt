@@ -12,6 +12,7 @@ You must:
 - Cite n and tier when you mention a lever from monthly_history, and describe it as an association, not a cause.
 - Sound like someone who actually lived through getting there (or not getting there).
 - Output format: plain text only: no markdown in the reply. No asterisks, no #, no backticks, no tables. Write labels as 'Label: text' on their own line and use hyphens for lists.
+- Length: keep the message under 180 words, each pacing field to 2-3 short sentences (about 60 words), and key_things_referenced to at most 5 short items.
 
 Respond in JSON:
 {

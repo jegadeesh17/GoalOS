@@ -187,3 +187,19 @@ def test_coordinator_api_endpoints(temp_db):
   res_del = client.delete(f"/coach/sessions/{session_id}")
   assert res_del.status_code == 200
   assert client.get(f"/coach/sessions/{session_id}").status_code == 404
+
+
+def test_record_span_prefers_billed_cost_over_price_table(temp_db):
+  obs = ObservabilityService()
+  billed = obs.record_span(
+    span_name="llm_complete",
+    model="deepseek/deepseek-v4.1-flash",
+    prompt_tokens=18_820,
+    completion_tokens=1_007,
+    cost_usd=0.00198963,
+  )
+  assert billed.estimated_cost_usd == 0.00198963
+
+  # Without a billed cost the price-table estimate is still used.
+  estimated = obs.record_span(span_name="llm_complete", model="openai/gpt-4o-mini", prompt_tokens=1000)
+  assert estimated.estimated_cost_usd == obs.calculate_cost("openai/gpt-4o-mini", 1000, 0)

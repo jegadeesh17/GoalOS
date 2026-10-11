@@ -14,6 +14,12 @@ from config.settings import settings
 logger = logging.getLogger(__name__)
 
 
+def _billed_cost(usage: dict) -> Optional[float]:
+  """OpenRouter's billed USD cost for one call (usage.cost), or None when the response has none."""
+  cost = usage.get("cost")
+  return float(cost) if isinstance(cost, (int, float)) and not isinstance(cost, bool) else None
+
+
 class OpenRouterClient:
   """Client for OpenRouter API."""
 
@@ -241,6 +247,7 @@ class OpenRouterClient:
               trace_id=trace_id,
               session_id=session_id,
               status="success",
+              cost_usd=_billed_cost(usage),
             )
           except Exception as tel_err:
             logger.debug("Telemetry recording skipped: %s", tel_err)
@@ -340,6 +347,7 @@ class OpenRouterClient:
     start_time = time.time()
     accumulated_prompt_tokens = 0
     accumulated_comp_tokens = 0
+    accumulated_cost: float | None = None
 
     for _round in range(max_tool_rounds):
       payload: dict[str, Any] = {
@@ -361,6 +369,9 @@ class OpenRouterClient:
       usage = data.get("usage") or {}
       accumulated_prompt_tokens += usage.get("prompt_tokens", 0)
       accumulated_comp_tokens += usage.get("completion_tokens", 0)
+      round_cost = _billed_cost(usage)
+      if round_cost is not None:
+        accumulated_cost = (accumulated_cost or 0.0) + round_cost
 
       message = data["choices"][0]["message"]
       tool_calls = message.get("tool_calls")
@@ -395,6 +406,7 @@ class OpenRouterClient:
           trace_id=trace_id,
           session_id=session_id,
           status="success",
+          cost_usd=accumulated_cost,
         )
       except Exception as tel_err:
         logger.debug("Telemetry recording skipped: %s", tel_err)

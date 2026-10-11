@@ -73,10 +73,15 @@ class ObservabilityService:
     session_id: Optional[str] = None,
     status: str = "success",
     error_message: Optional[str] = None,
+    cost_usd: Optional[float] = None,
   ) -> TelemetrySpan:
-    """Record an individual execution span into telemetry database."""
+    """Record an individual execution span into telemetry database.
+
+    cost_usd is the provider's billed cost (OpenRouter usage.cost) when known; the price table is only a fallback.
+    """
     tid = trace_id or f"tr_{uuid.uuid4().hex[:12]}"
-    cost_usd = self.calculate_cost(model, prompt_tokens, completion_tokens)
+    if cost_usd is None:
+      cost_usd = self.calculate_cost(model, prompt_tokens, completion_tokens)
     total_tokens = prompt_tokens + completion_tokens
 
     return self.repo.record_span(

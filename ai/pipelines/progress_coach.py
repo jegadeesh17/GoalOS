@@ -53,6 +53,7 @@ def run_progress_coach(context: dict, client: OpenRouterClient | None = None) ->
       user_msg,
       response_format={"type": "json_object"},
       temperature=0.4,
+      max_tokens=4000,
     )
     if isinstance(result, dict) and "error" not in result and result.get("actionable_coaching_advice"):
       result["source"] = "ai"

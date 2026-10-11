@@ -13,6 +13,7 @@ def run_future_self_coach(context: dict, client: OpenRouterClient | None = None)
       system, user_msg,
       response_format={"type": "json_object"},
       temperature=0.8,
+      max_tokens=4000,
     )
     if isinstance(result, dict) and "error" not in result:
       return result

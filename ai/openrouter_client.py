@@ -34,7 +34,7 @@ class OpenRouterClient:
 
   # Reasoning effort sent with paid (non-:free) models. A paid model stays pinned (the account guardrail may
   # allow only one model), so the free-model rotation is skipped for it.
-  REASONING_EFFORT = "medium"
+  REASONING_EFFORT = "low"
 
   def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
     self.api_key = api_key or settings.OPENROUTER_API_KEY

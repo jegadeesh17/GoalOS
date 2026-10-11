@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     OPENROUTER_API_KEY: str = Field(default="", description="OpenRouter API key")
     OPENROUTER_MODEL: str = Field(
-        default="deepseek/deepseek-v4.1-flash",
+        default="openai/gpt-oss-20b",
         description="Default LLM model slug on OpenRouter",
     )
     DB_PATH: str = Field(
